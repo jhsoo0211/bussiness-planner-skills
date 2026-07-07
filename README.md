@@ -26,9 +26,15 @@
 
 ## 설치 방법
 
-### ① 로컬 스킬로 설치 (플러그인 없이)
+### ① 로컬 스킬로 설치 (가장 간단)
 
-`skills/` 아래 각 폴더를 사용자 스킬 디렉터리에 복사한다.
+**Step 1.** 이 저장소를 내려받는다 — GitHub에서 `Code → Download ZIP`, 또는:
+
+```bash
+git clone <이 저장소 주소>
+```
+
+**Step 2.** `skills/` 아래 폴더 13개를 사용자 스킬 디렉터리에 복사한다.
 
 ```bash
 # macOS / Linux
@@ -40,7 +46,18 @@ cp -r skills/* ~/.claude/skills/
 Copy-Item -Recurse skills\* $HOME\.claude\skills\
 ```
 
-복사 후 Claude Code를 재시작하면 `psst`, `psst-item` 등의 스킬이 활성화된다.
+원본을 수정하며 쓸 계획이면 복사 대신 **정션/심링크**로 연결한다 (수정이 즉시 반영됨):
+
+```powershell
+# Windows PowerShell — skills 하위 13개 폴더를 정션으로 연결
+Get-ChildItem .\skills -Directory | ForEach-Object {
+  New-Item -ItemType Junction -Path "$HOME\.claude\skills\$($_.Name)" -Target $_.FullName
+}
+```
+
+**Step 3.** Claude Code를 재시작한다.
+
+**Step 4. 설치 확인** — 아무 폴더에서 Claude Code를 열고 `/psst`를 입력했을 때 라우터 스킬이 실행되면 성공.
 
 ### ② 플러그인으로 설치 (마켓플레이스)
 
@@ -51,17 +68,54 @@ Copy-Item -Recurse skills\* $HOME\.claude\skills\
 
 설치 후 스킬이 자동으로 등록된다.
 
-## 사용 예시
+## 빠른 시작 (스텝 바이 스텝)
 
-- "예비창업패키지 사업계획서 쓰고 싶은데 뭐부터 해야 할지 모르겠어" → `psst`(라우터)가 상황을 물어 알맞은 모드로 안내
+**Step 1.** Claude Code에 이렇게 말한다 (공고문 파일이 있으면 함께 첨부):
+
+> 예비창업패키지 사업계획서 쓰고 싶어. 아이템은 시니어용 복약관리 약통이야.
+
+**Step 2.** 라우터(`psst`)가 시작 질문을 한다:
+- 어떤 지원사업·공모전인지 (평가 기준표/배점표가 있으면 첨부 요청)
+- 진행 단계 — 아이디어만 / 특정 섹션 작성 중 / 초안 완성
+- **빠른 버전**(전체 초안 한 번에) vs **꼼꼼 버전**(조사 포함 단계별, 오래 걸림) vs 특정 섹션만
+
+> 질문에 답하기 어려우면 아이디어 메모·파일만 던져도 된다 — 스킬이 기획 요약 초안을 먼저 만들어 "이런 기획이 맞나요?"라고 확인받고 시작한다.
+
+**Step 3.** 선택한 모드가 실행된다. 예를 들어 빠른 버전이면 `psst-quick`이 5가지(업종·타겟·핵심기능·차별점·단점)만 묻고 PSST 전체 초안 + 문제-솔루션 1:1 자체 점검표를 만든다.
+
+**Step 4.** 초안이 나오면 검토를 돌린다:
+
+> 심사위원처럼 점수 매기고 피드백해줘
+
+`psst-review`가 배점 항목별 득점표, 9대 체크포인트(O/△/X), 약점별 "더 나은 방향", 데이터 신뢰도 검증, 예상 질문까지 제공한다. 출력 예시: [examples/예시-검토리포트-PILLY.md](examples/예시-검토리포트-PILLY.md)
+
+**Step 5.** 발표 심사가 있으면:
+
+> 발표 준비해줘. 발표 7분 + 질의응답 10분이야.
+
+`psst-pitch`가 발표 흐름(대회 성격별 조정) → 슬라이드 구성안(슬라이드별 유도 질문 포함) → 장점 30초 답변·약점 방어 → 예상 질문을 만든다.
+
+## 한 줄 사용 예시
+
+- "예비창업패키지 사업계획서 쓰고 싶은데 뭐부터 해야 할지 모르겠어" → `psst`(라우터)
 - "AI 반려동물 건강관리 앱 아이디어를 구체화해줘" → `psst-item`
 - "문제 인식 파트를 심사위원이 납득하게 써줘" → `psst-problem`
 - "이 시장 규모랑 경쟁사 좀 조사해줘" → `psst-research`
 - "예산 계획이랑 8개월 추진 일정 만들어줘" → `psst-solution`
-- "시장 규모 그래프랑 인포그래픽 만들어줘" → `psst-visual`
+- "TAM SAM SOM 도식이랑 시장 그래프 만들어줘" → `psst-visual`
 - "초안 다 썼는데 심사위원처럼 점수 매기고 피드백해줘" → `psst-review`
 - "발표 슬라이드랑 예상 질문 준비해줘" → `psst-pitch`
 - "빠르게 전체 초안부터 뽑아줘" → `psst-quick`
+
+## 산출물 미리보기
+
+`psst-visual`이 실제로 생성하는 시각자료 (가상 아이템 PILLY 예시, 재현 스크립트는 [examples/visuals/](examples/visuals/)):
+
+| TAM/SAM/SOM 동심원 | 경쟁 포지셔닝맵 |
+|---|---|
+| ![TAM/SAM/SOM](examples/visuals/pilly_tam_sam_som.png) | ![포지셔닝맵](examples/visuals/pilly_positioning.png) |
+
+완성 예시 전문: [제작 모드 → 예시 사업계획서](examples/예시-사업계획서-PILLY.md) · [평가 모드 → 검토 리포트](examples/예시-검토리포트-PILLY.md)
 
 ## 참고 문서
 
