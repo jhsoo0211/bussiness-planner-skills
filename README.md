@@ -117,12 +117,14 @@ Get-ChildItem .\skills -Directory | ForEach-Object {
 |---|---|
 | ![TAM/SAM/SOM](examples/visuals/pilly_tam_sam_som.png) | ![포지셔닝맵](examples/visuals/pilly_positioning.png) |
 
-완성 예시 전문: [제작 모드 → 예시 사업계획서](examples/예시-사업계획서-PILLY.md) · [평가 모드 → 검토 리포트](examples/예시-검토리포트-PILLY.md)
+완성 예시 전문:
+- **PILLY** (AI 복약관리 스마트 약통 — 스킬이 직접 작성→검토): [제작 예시](examples/예시-사업계획서-PILLY.md) · [검토 리포트](examples/예시-검토리포트-PILLY.md)
+- **Re:Shell** (굴 패각 제설제 — 외부 작성 계획서를 검토): [사업계획서 예시](examples/예시-사업계획서-리쉘-굴패각제설제.md) · [검토 리포트](examples/예시-검토리포트-리쉘-굴패각제설제.md)
 
 ## 참고 문서
 
 - `docs/psst.md` — 25개 원본 프롬프트를 모드별로 재구성한 마스터 문서
-- `examples/예시-사업계획서-PILLY.md` — 가상 아이템(AI 복약관리 스마트 약통)으로 스킬 파이프라인을 실제로 돌려 만든 완성 예시. 문제-솔루션 1:1 대응표, TAM/SAM/SOM 산정, 시각자료 구성안, 자체 검토(채점·8대 체크포인트)까지 포함
+- `examples/` — 가상 아이템 2종의 완성 예시. **PILLY**(AI 복약관리 약통)는 스킬 파이프라인으로 작성→검토한 예시(문제-솔루션 1:1 대응표·TAM/SAM/SOM 산정·시각자료 구성안·자체 채점 포함). **Re:Shell**(굴 패각 제설제)은 외부에서 작성된 U300 초안을 `bizplan-review`로 평가한 예시(배점 득점표·9대 체크포인트·심사위원 납득도·데이터 검산 포함). 모두 데모용 가상 콘텐츠
 
 ## 유의사항
 
