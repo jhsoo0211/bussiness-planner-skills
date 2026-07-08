@@ -1,6 +1,6 @@
 # bizplan — 정부지원사업 사업계획서 스킬
 
-> 정부지원사업 사업계획서를 **작성·검토·발표 준비**까지 단계별로 돕는 한국어 Claude Code 스킬 13종. (GitHub 저장소 설명용 한 줄: *"정부지원사업 사업계획서 작성·검토·발표를 돕는 한국어 Claude Code 스킬 모음 — PSST 프레임워크 기반"*)
+> 정부지원사업 사업계획서를 **작성·검토·발표 준비**까지 단계별로 돕는 한국어 Claude Code 스킬 15종. (GitHub 저장소 설명용 한 줄: *"정부지원사업 사업계획서 작성·검토·발표를 돕는 한국어 Claude Code 스킬 모음 — PSST 프레임워크 기반"*)
 
 **PSST(Problem-Solution-Scale-Team)** 프레임워크를 기반으로, 막연한 아이디어를 심사위원이 납득하는 사업계획서로 다듬는다.
 
@@ -24,7 +24,9 @@
 | `bizplan-visual` | 시각자료 모드 | 사업계획서에 넣을 그래프·도식·표 구성안 제안 및 제작 지원(matplotlib 그래프, 냅킨AI 인포그래픽 텍스트, 포지셔닝맵·BM구성도 스케치) |
 | `bizplan-review` | ⑧ 심사위원 검토 | 초안 완성 후 점수·강약점·예상 질문, 데이터 신뢰도 검증 |
 | `bizplan-pitch` | 발표(피칭) 준비 | 발표 슬라이드 구성안, 스토리텔링, 예상 질문·모범 답변 |
+| `bizplan-slides` | 발표 슬라이드 제작 | HTML 슬라이드(16:9) 생성 + 레이아웃·콘텐츠 검증 |
 | `bizplan-export` | 수출바우처 | 수출바우처 종합 구성, 목표시장 분석 |
+| `bizplan-analyze` | 벤치마킹 분석 | 남의 계획서·합격 사례 비교 분석, 작성 공식 도출 |
 
 ## 설치 방법
 
@@ -36,7 +38,7 @@
 git clone <이 저장소 주소>
 ```
 
-**Step 2.** `skills/` 아래 폴더 13개를 사용자 스킬 디렉터리에 복사한다.
+**Step 2.** `skills/` 아래 폴더 15개를 사용자 스킬 디렉터리에 복사한다.
 
 ```bash
 # macOS / Linux
@@ -51,7 +53,7 @@ Copy-Item -Recurse skills\* $HOME\.claude\skills\
 원본을 수정하며 쓸 계획이면 복사 대신 **정션/심링크**로 연결한다 (수정이 즉시 반영됨):
 
 ```powershell
-# Windows PowerShell — skills 하위 13개 폴더를 정션으로 연결
+# Windows PowerShell — skills 하위 15개 폴더를 정션으로 연결
 Get-ChildItem .\skills -Directory | ForEach-Object {
   New-Item -ItemType Junction -Path "$HOME\.claude\skills\$($_.Name)" -Target $_.FullName
 }
@@ -68,7 +70,7 @@ Get-ChildItem .\skills -Directory | ForEach-Object {
 /plugin install bizplan@bussiness-planner-skills
 ```
 
-설치 후 `skills/` 안의 13개 스킬이 자동 등록되고 `/bizplan`, `/bizplan-review` 등으로 호출된다. 업데이트는 `/plugin marketplace update`.
+설치 후 `skills/` 안의 15개 스킬이 자동 등록되고 `/bizplan`, `/bizplan-review` 등으로 호출된다. 업데이트는 `/plugin marketplace update`.
 
 ## 빠른 시작 (스텝 바이 스텝)
 
