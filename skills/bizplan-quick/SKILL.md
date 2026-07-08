@@ -1,5 +1,5 @@
 ---
-name: psst-quick
+name: bizplan-quick
 description: 최소한의 인터뷰(업종·타겟·핵심기능·차별점 4가지)만으로 PSST 사업계획서 전체 초안을 한 번에 생성하는 간략 모드 스킬. "빠르게 초안", "전체 한 번에", "일단 다 써줘", "간단히 사업계획서", "전체 틀 잡아줘" 같은 말이 나오면 반드시 이 스킬을 사용한다.
 ---
 
@@ -62,11 +62,11 @@ description: 최소한의 인터뷰(업종·타겟·핵심기능·차별점 4가
 
 ### 섹션별 심화 안내
 
-각 섹션을 더 다듬으려면 해당 모드 스킬을 사용하도록 안내한다: 문제 인식 `psst-problem`, 시장 조사 `psst-research`, 실현 가능성 `psst-solution`, 성장 전략 `psst-growth`, 팀 구성 `psst-team`, 개요·마무리 `psst-summary`, 시각자료 `psst-visual`, 검토 `psst-review`, 발표 준비 `psst-pitch`.
+각 섹션을 더 다듬으려면 해당 모드 스킬을 사용하도록 안내한다: 문제 인식 `bizplan-problem`, 시장 조사 `bizplan-research`, 실현 가능성 `bizplan-solution`, 성장 전략 `bizplan-growth`, 팀 구성 `bizplan-team`, 개요·마무리 `bizplan-summary`, 시각자료 `bizplan-visual`, 검토 `bizplan-review`, 발표 준비 `bizplan-pitch`.
 
 ## 작성 원칙
 
 - 개조식으로 작성하고 핵심 키워드·수치는 **굵게** 표시한다.
-- 축약 초안이므로 수치는 예시로 채우되 "AI 생성 데이터, 검증 필요"를 명시한다. **제출용 완성본으로 승격하려면 `psst-research`(실데이터·출처 확보)와 `psst-visual`(시각자료·TAM/SAM/SOM 산정)을 반드시 병행하도록 안내한다.**
+- 축약 초안이므로 수치는 예시로 채우되 "AI 생성 데이터, 검증 필요"를 명시한다. **제출용 완성본으로 승격하려면 `bizplan-research`(실데이터·출처 확보)와 `bizplan-visual`(시각자료·TAM/SAM/SOM 산정)을 반드시 병행하도록 안내한다.**
 - 개인정보(학교명·직장명)는 기재하지 않는다.
 - 문제-솔루션 1:1 대응을 반드시 지킨다.

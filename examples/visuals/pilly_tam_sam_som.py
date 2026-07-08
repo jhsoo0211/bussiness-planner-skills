@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PILLY TAM/SAM/SOM 동심원 — psst-visual visual-guide.md 동심원 코드를 PILLY 데이터로 변형.
+PILLY TAM/SAM/SOM 동심원 — bizplan-visual visual-guide.md 동심원 코드를 PILLY 데이터로 변형.
 각 층위에 금액 + 산정근거 한 줄 병기, SOM만 진한 색으로 강조.
 실행: python pilly_tam_sam_som.py  ->  pilly_tam_sam_som.png
 """

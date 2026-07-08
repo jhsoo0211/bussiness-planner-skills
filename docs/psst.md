@@ -8,7 +8,7 @@
 
 ---
 
-## ① 아이템 구체화 (psst-item)
+## ① 아이템 구체화 (bizplan-item)
 
 ### 1.1 기본 PSST 추출
 
@@ -83,7 +83,7 @@
 
 ---
 
-## ② 문제 인식 (psst-problem)
+## ② 문제 인식 (bizplan-problem)
 
 ### 2.1 SPIN 기법 적용 문제 인식
 
@@ -159,7 +159,7 @@
 
 ---
 
-## ③ 시장·고객·경쟁 조사 (psst-research)
+## ③ 시장·고객·경쟁 조사 (bizplan-research)
 
 ### 3.1 Perplexity 시장 조사
 
@@ -315,7 +315,7 @@
 
 ---
 
-## ④ 실현 가능성 (psst-solution)
+## ④ 실현 가능성 (bizplan-solution)
 
 ### 4.1 기술적 실현 가능성
 
@@ -425,7 +425,7 @@
 
 ---
 
-## ⑤ 성장 전략 (psst-growth)
+## ⑤ 성장 전략 (bizplan-growth)
 
 ### 5.1 성장 전략 종합
 
@@ -576,7 +576,7 @@
 
 ---
 
-## ⑥ 팀 구성 (psst-team)
+## ⑥ 팀 구성 (bizplan-team)
 
 ### 6.1 팀 구성 종합
 
@@ -625,7 +625,7 @@
 
 ---
 
-## ⑦ 개요·마무리 (psst-summary)
+## ⑦ 개요·마무리 (bizplan-summary)
 
 ### 7.1 창업 아이템 개요 요약
 
@@ -691,7 +691,7 @@
 
 ---
 
-## 시각자료 모드 (psst-visual)
+## 시각자료 모드 (bizplan-visual)
 
 > 사업계획서에 넣을 그래프·도식·표를 만든다. matplotlib 시장 그래프, 냅킨AI 인포그래픽 텍스트, 포지셔닝맵·BM 구성도 스케치 등.
 
@@ -747,7 +747,7 @@
 
 ---
 
-## ⑧ 심사위원 검토 (psst-review)
+## ⑧ 심사위원 검토 (bizplan-review)
 
 ### 12.1 심사위원 관점 검토
 
@@ -818,7 +818,7 @@
 
 ---
 
-## 수출바우처 전용 (psst-export)
+## 수출바우처 전용 (bizplan-export)
 
 ### 13.1 수출바우처 사업계획서 종합
 

@@ -1,5 +1,5 @@
 ---
-name: psst-problem
+name: bizplan-problem
 description: 사업계획서의 문제 인식(P) 파트를 SPIN 기법으로 설득력 있게 쓰고 "창업 아이템 배경 및 필요성"을 작성하는 스킬. "문제 인식", "배경 및 필요성", "Pain Point", "고객 문제 정의", "왜 필요한지 써줘", "SPIN" 같은 말이 나오면 반드시 이 스킬을 사용한다.
 ---
 
@@ -24,7 +24,7 @@ description: 사업계획서의 문제 인식(P) 파트를 SPIN 기법으로 설
 1. 위 입력을 확보한다.
 2. **SPIN 4단계**로 문제를 논리적으로 전개한다(Situation → Problem → Implication → Need-payoff).
 3. 이를 사업계획서 양식의 **"배경 및 필요성"** 형식으로 정리한다.
-4. 시장 데이터가 부족하면 `psst-research`로 조사할 것을 안내한다.
+4. 시장 데이터가 부족하면 `bizplan-research`로 조사할 것을 안내한다.
 
 ## 출력 형식
 
