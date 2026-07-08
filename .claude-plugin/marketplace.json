@@ -1,7 +1,7 @@
 {
-  "name": "business-plan-skills",
+  "name": "bussiness-planner-skills",
   "owner": {
-    "name": "jhsoo"
+    "name": "jhsoo0211"
   },
   "description": "정부지원사업 사업계획서 작성·검토·발표 준비를 돕는 한국어 Claude Code 스킬 마켓플레이스",
   "plugins": [

@@ -64,8 +64,8 @@ Get-ChildItem .\skills -Directory | ForEach-Object {
 ### ② 플러그인으로 설치 (마켓플레이스)
 
 ```
-/plugin marketplace add <your-github-id>/business-plan-skills
-/plugin install bizplan@business-plan-skills
+/plugin marketplace add jhsoo0211/bussiness-planner-skills
+/plugin install bizplan@bussiness-planner-skills
 ```
 
 설치 후 `skills/` 안의 13개 스킬이 자동 등록되고 `/bizplan`, `/bizplan-review` 등으로 호출된다. 업데이트는 `/plugin marketplace update`.
