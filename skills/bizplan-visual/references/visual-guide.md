@@ -253,6 +253,43 @@ B2B/B2G → 자사: 폐블록 회수 → 재생산
 
 생성 후 수치·기관명이 누락되지 않았는지 반드시 대조하라. 도식화 과정에서 숫자가 떨어져 나가면 정성 도식(공공 감리 제안서 사례의 8개 무수치 카드)이 된다.
 
+### 이미지 생성 AI (GPT-4o·Gemini·Nano Banana 등) — 개념 도식용 영문 프롬프트
+
+이미지 생성 AI는 **개념 도식·일러스트(서비스 개요도, 사용 시나리오 컷, BM 순환 구성도)**에만 쓴다. 수치·축이 들어가는 그래프는 숫자를 정확히 그리지 못하므로 matplotlib로 만든다(위 절 참조). 편집 가능한 구조 도식이 필요하면 냅킨AI가 낫다.
+
+**원칙**
+
+1. 프롬프트는 영어로 쓴다(이미지 모델은 영어 지시 추종이 더 정확하다). 단 도식 안 텍스트·라벨은 전부 한국어로, 프롬프트에 따옴표로 그대로 지정하고 "번역·변형 금지"를 명시한다.
+2. 스타일은 정부지원사업 문서 톤으로 고정한다: 플랫·미니멀 벡터, 흰 배경, 기본 1색+강조 1색(아래 PPT 도식 팁과 동일 원칙). 미국식 클립아트 인물·핸드셰이크 스톡 사진·만화 마스코트·달러 기호를 금지 항목으로 프롬프트에 적는다.
+3. 생성 후 한국어 라벨을 지정 문구와 전수 대조한다. 이미지 모델은 한글 획을 자주 뭉갠다 — 깨진 라벨은 재생성하거나, 라벨 없이 생성한 뒤 PPT·이미지 편집 도구로 텍스트를 얹는다.
+
+**프롬프트 템플릿** (대괄호를 채워 사용, 한국어 라벨은 그대로 유지)
+
+```text
+Create a clean, professional [DIAGRAM TYPE — e.g., circular business-model flow diagram / service overview diagram / 3-step process illustration] for a formal Korean government startup grant application document (사업계획서).
+
+Structure:
+- [Describe layout and elements: e.g., three boxes connected in a cycle by labeled arrows, with the company box at the center]
+
+All text labels inside the image MUST be written in Korean, exactly as specified below — do not translate, romanize, or alter them:
+- [Element 1]: "한국어 라벨 1"
+- [Element 2]: "한국어 라벨 2"
+- [Arrow / caption]: "한국어 라벨 3"
+
+Style:
+- Flat, minimal vector infographic; white background; one base color (navy) plus one accent color only
+- Calm, neutral, document-friendly tone appropriate for an official Korean business plan — not flashy, not cartoonish
+- Do NOT use American/Western stock-imagery cliches: no clip-art office workers, no handshake photos, no cartoon mascots, no dollar-sign icons
+- No photorealistic people; if human figures are needed, use simple abstract pictograms in a Korean business context
+- Generous white space; labels large enough to remain legible when printed on A4
+
+Format: 16:9, high resolution, plain background without decorative frames.
+```
+
+**작성 예시** — 순환 BM 구성도(투수 보도블록 사례 p.4 구조): Structure에 "three entities in a circular flow", 라벨에 `"협력 업체 (폐기물 수거 기관)"`, `"자사 (제품 생산)"`, `"B2B/B2G 고객"`, 화살표 라벨 `"무상 원료 공급"`, `"제품 판매"`, `"폐블록 회수"`를 지정한다.
+
+**검수 체크**: ① 모든 한국어 라벨이 지정 문구와 정확히 일치하는가(오타·누락·획 뭉개짐) ② 라벨에 숫자를 넣었다면 정확한가(의심되면 숫자는 라벨에서 빼고 본문·캡션으로) ③ 스타일이 문서의 다른 도식과 이질적이지 않은가(기본 1색+강조 1색 유지).
+
 ### 마크다운 표 → 한글(HWP)/워드 이관
 1. 표를 마크다운으로 먼저 작성(버전 관리·검산 용이).
 2. VS Code 미리보기 또는 브라우저에서 렌더한 표를 드래그 복사 → 한글/워드에 '표'로 붙여넣기. 또는 `pandoc 파일.md -o 파일.docx`로 변환 후 한글에서 열기.
