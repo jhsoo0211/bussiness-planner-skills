@@ -1,0 +1,32 @@
+{
+  "purpose": "bizplan 스킬군 트리거 정확도 회귀 테스트. 각 발화에 대해 어떤 스킬이 발화(트리거)되어야 하는지 정의한다. 'expected: null'은 어떤 bizplan 스킬도 트리거되면 안 되는 near-miss 케이스.",
+  "usage": "새 대화에서 query를 그대로 입력하고, Claude가 참조한 스킬이 expected와 일치하는지 확인한다. description 수정 후에는 전체 세트를 재실행한다.",
+  "evals": [
+    {"id": 1, "query": "예비창업패키지 지원하려는데 사업계획서 어떻게 시작해야 할지 모르겠어. 도와줘", "expected": "bizplan", "note": "막연한 시작 요청 → 라우터"},
+    {"id": 2, "query": "시간이 없어서 일단 전체 틀부터 빠르게 잡아줘. 업종은 반려동물 헬스케어 앱이야", "expected": "bizplan-quick", "note": "속도 요청"},
+    {"id": 3, "query": "대학생 대상 소비 습관 앱 아이디어가 있는데 아이템명이랑 뼈대 좀 구체화해줘", "expected": "bizplan-item"},
+    {"id": 4, "query": "배경 및 필요성 파트를 SPIN으로 설득력 있게 써줘. 타겟은 1인 가구야", "expected": "bizplan-problem"},
+    {"id": 5, "query": "국내 펫테크 시장 규모랑 CAGR, 경쟁사 3곳 비교해줘", "expected": "bizplan-research"},
+    {"id": 6, "query": "예산 계획이랑 8개월 추진 일정표 만들어줘. 개발비 위주로", "expected": "bizplan-solution"},
+    {"id": 7, "query": "수익 모델이랑 SWOT 정리하고 BM 캔버스 짜줘", "expected": "bizplan-growth"},
+    {"id": 8, "query": "대표자 역량이랑 팀원 소개, 협력 기관 현황 정리해줘. 내 경력은 백엔드 3년", "expected": "bizplan-team"},
+    {"id": 9, "query": "심사위원이 10초만에 파악할 수 있는 한 장 요약이랑 기업명 후보 5개 지어줘", "expected": "bizplan-summary"},
+    {"id": 10, "query": "TAM SAM SOM 도식이랑 포지셔닝맵 그려줘. 파일로", "expected": "bizplan-visual"},
+    {"id": 11, "query": "초안 다 썼는데 심사위원 관점에서 점수 매기고 약점 찾아줘", "expected": "bizplan-review"},
+    {"id": 12, "query": "다음주 발표 심사인데 5분 피칭 흐름이랑 예상 질문 뽑아줘", "expected": "bizplan-pitch"},
+    {"id": 13, "query": "수출바우처 계획서 써야 해. 진출 국가는 베트남이고 제품은 화장품이야", "expected": "bizplan-export"},
+    {"id": 14, "query": "그냥 알아서 사업계획서 다 써줘", "expected": "bizplan", "note": "라우터가 quick으로 안내"},
+    {"id": 15, "query": "PSST 구조가 뭔지 설명해주고 우리 아이템에 맞춰줘", "expected": "bizplan", "note": "bare PSST는 라우터 소유"},
+    {"id": 16, "query": "청창사랑 예창패 중에 뭐가 우리한테 맞을까? 계획서 준비도 해야 해", "expected": "bizplan"},
+    {"id": 17, "query": "시장 조사 결과를 그래프로 만들어줘, matplotlib으로 한글 깨지지 않게", "expected": "bizplan-visual", "note": "조사 아닌 시각화 → research가 아님"},
+    {"id": 18, "query": "회사 분기 매출 데이터로 대시보드 만들어줘", "expected": null, "note": "near-miss: 사업계획서 무관 → data 플러그인 영역"},
+    {"id": 19, "query": "논문 초록 검토하고 피드백 해줘", "expected": null, "note": "near-miss: '검토·피드백' 키워드 있으나 사업계획서 아님"},
+    {"id": 20, "query": "우리 제품 스펙 문서에서 빠진 요구사항 분석해줘", "expected": null, "note": "near-miss: 갭 분석이지만 bizplan 아님"},
+    {"id": 21, "query": "회사 소개 PPT 슬라이드 10장 만들어줘", "expected": null, "note": "near-miss: 발표자료지만 심사 피칭 맥락 아님 → bizplan-slides·pitch 모두 아님, pptx 스킬 영역"},
+    {"id": 22, "query": "경쟁 제품이랑 성능 벤치마크 비교표 만들어줘. 개발 문서용이야", "expected": null, "note": "near-miss: '경쟁 비교'지만 사업계획서 맥락 아님"},
+    {"id": 23, "query": "SWOT 분석이 뭔지 개념만 설명해줘", "expected": null, "note": "near-miss: 개념 질문은 스킬 불필요"},
+    {"id": 24, "query": "취업 면접 예상 질문 뽑아줘", "expected": null, "note": "near-miss: '예상 질문'이지만 pitch 아님"},
+    {"id": 25, "query": "합격 사례 사업계획서 3건을 비교 분석해서 작성 공식 뽑아줘", "expected": "bizplan-analyze"},
+    {"id": 26, "query": "발표 구성안 확정했으니 16:9 HTML 슬라이드 파일로 만들어줘", "expected": "bizplan-slides"}
+  ]
+}
