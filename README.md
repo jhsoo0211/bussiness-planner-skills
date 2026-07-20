@@ -66,8 +66,8 @@ Get-ChildItem .\skills -Directory | ForEach-Object {
 ### ② 플러그인으로 설치 (마켓플레이스)
 
 ```
-/plugin marketplace add jhsoo0211/bussiness-planner-skills
-/plugin install bizplan@bussiness-planner-skills
+/plugin marketplace add jhsoo0211/bussiness-planner-skills   # GitHub 저장소 경로(저장소명 변경 전까지 유지)
+/plugin install bizplan@business-planner-skills
 ```
 
 설치 후 `skills/` 안의 15개 스킬이 자동 등록되고 `/bizplan`, `/bizplan-review` 등으로 호출된다. 업데이트는 `/plugin marketplace update`.
@@ -93,7 +93,7 @@ Get-ChildItem .\skills -Directory | ForEach-Object {
 
 > 심사위원처럼 점수 매기고 피드백해줘
 
-`bizplan-review`가 배점 항목별 득점표, 10대 체크포인트(O/△/X), 약점별 "더 나은 방향", 데이터 신뢰도 검증, 예상 질문까지 제공한다. 출력 예시: [examples/예시-검토리포트-PILLY.md](examples/예시-검토리포트-PILLY.md)
+`bizplan-review`가 배점 항목별 득점표, 11대 체크포인트(O/△/X), 약점별 "더 나은 방향", 데이터 신뢰도 검증, 예상 질문까지 제공한다. 출력 예시: [examples/예시-검토리포트-PILLY.md](examples/예시-검토리포트-PILLY.md)
 
 **Step 5.** 발표 심사가 있으면:
 
@@ -129,7 +129,7 @@ Get-ChildItem .\skills -Directory | ForEach-Object {
 ## 참고 문서
 
 - `docs/psst.md` — 25개 원본 프롬프트를 모드별로 재구성한 마스터 문서
-- `examples/` — 가상 아이템 2종의 완성 예시. **PILLY**(AI 복약관리 약통)는 스킬 파이프라인으로 작성→검토한 예시(문제-솔루션 1:1 대응표·TAM/SAM/SOM 산정·시각자료 구성안·자체 채점 포함). **Re:Shell**(굴 패각 제설제)은 외부에서 작성된 U300 초안을 `bizplan-review`로 평가한 예시(배점 득점표·9대 체크포인트·심사위원 납득도·데이터 검산 포함). 모두 데모용 가상 콘텐츠
+- `examples/` — 가상 아이템 2종의 완성 예시. **PILLY**(AI 복약관리 약통)는 스킬 파이프라인으로 작성→검토한 예시(문제-솔루션 1:1 대응표·TAM/SAM/SOM 산정·시각자료 구성안·자체 채점 포함). **Re:Shell**(굴 패각 제설제)은 외부에서 작성된 U300 초안을 `bizplan-review`로 평가한 예시(배점 득점표·11대 체크포인트·심사위원 납득도·데이터 검산 포함). 모두 데모용 가상 콘텐츠
 
 ## 유의사항
 

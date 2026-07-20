@@ -17,7 +17,11 @@ PALETTE = ["#2563eb", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#64748b"]
 def setup_korean_font():
     """설치된 한글 폰트를 탐색해 matplotlib 기본으로 지정. 없으면 경고만 하고 진행."""
     candidates = ["NanumGothic", "NanumBarunGothic", "Malgun Gothic",
-                  "Noto Sans CJK KR", "Noto Sans KR", "AppleGothic"]
+                  "Noto Sans CJK KR", "Noto Sans KR",
+                  # Noto CJK JP/SC/TC/HK ttc에도 한글 글리프가 포함되어 있다 —
+                  # 리눅스 컨테이너에는 KR 대신 이들만 있는 경우가 많다.
+                  "Noto Sans CJK JP", "Noto Sans CJK SC",
+                  "Noto Sans CJK TC", "Noto Sans CJK HK", "AppleGothic"]
     installed = {f.name for f in fm.fontManager.ttflist}
     for name in candidates:
         if name in installed:
@@ -28,6 +32,11 @@ def setup_korean_font():
     plt.rcParams["axes.unicode_minus"] = False
     plt.rcParams["figure.dpi"] = 150
     return plt.rcParams["font.family"]
+
+
+def _fmt_val(v):
+    """값 라벨 포맷: 정수는 천단위 콤마, 소수는 1자리 유지."""
+    return f"{v:,.0f}" if float(v).is_integer() else f"{v:,.1f}"
 
 
 def _save(fig, out):
@@ -45,7 +54,7 @@ def bar_compare(labels, values, title, ylabel, out="bar.png", source=None, highl
         if highlight else PALETTE[: len(labels)]
     bars = ax.bar(labels, values, color=colors, width=0.55)
     for b, v in zip(bars, values):
-        ax.text(b.get_x() + b.get_width() / 2, v, f"{v:,.0f}", ha="center", va="bottom", fontsize=11, fontweight="bold")
+        ax.text(b.get_x() + b.get_width() / 2, v, _fmt_val(v), ha="center", va="bottom", fontsize=11, fontweight="bold")
     ax.set_title(title, fontsize=14, fontweight="bold", pad=12)
     ax.set_ylabel(ylabel)
     ax.spines[["top", "right"]].set_visible(False)
@@ -59,11 +68,17 @@ def growth_line(years, values, title, ylabel, out="growth.png", cagr=None, sourc
     setup_korean_font()
     fig, ax = plt.subplots(figsize=(7, 4.2))
     ax.plot(years, values, marker="o", lw=2.5, color=PALETTE[0])
+    # 연도 축은 소수 눈금(2022.5 등)이 나오지 않도록 실제 연도값으로 고정
+    if all(isinstance(x, (int, float)) for x in years):
+        ax.set_xticks(list(years))
+        ax.set_xticklabels([f"{int(x)}" if float(x).is_integer() else str(x) for x in years])
     for x, y in zip(years, values):
-        ax.annotate(f"{y:,.0f}", (x, y), textcoords="offset points", xytext=(0, 8),
+        ax.annotate(_fmt_val(y), (x, y), textcoords="offset points", xytext=(0, 8),
                     ha="center", fontsize=10, fontweight="bold")
     if cagr:
-        ax.text(0.03, 0.92, f"CAGR {cagr}", transform=ax.transAxes, fontsize=13,
+        # 숫자로 받으면 %를 붙이고, 문자열이면 호출자가 정한 표기를 그대로 쓴다
+        cagr_label = f"CAGR {cagr}%" if isinstance(cagr, (int, float)) else f"CAGR {cagr}"
+        ax.text(0.03, 0.92, cagr_label, transform=ax.transAxes, fontsize=13,
                 fontweight="bold", color=PALETTE[3],
                 bbox=dict(boxstyle="round,pad=0.35", fc="#fef2f2", ec=PALETTE[3]))
     ax.set_title(title, fontsize=14, fontweight="bold", pad=12)
