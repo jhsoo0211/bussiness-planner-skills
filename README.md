@@ -59,8 +59,12 @@ python scripts/install_skills.py --agent codex --dest 'C:\Projects\my-project\.a
 
 ```text
 $bizplan 예비창업패키지 사업계획서를 쓰고 싶어. 공고문을 먼저 확인해줘.
+$bizplan-problem 제공한 메모의 문제 우선순위를 유지해 문제 인식 파트를 써줘.
+$bizplan-growth 제공한 근거와 제약을 반영해 성장 전략 파트를 써줘.
 $bizplan-review 이 초안을 제공한 배점표로 검토해줘.
 ```
+
+특정 파트를 정했다면 라우터를 거치지 않고 해당 스킬을 직접 지정할 수 있다. 이름을 지정하지 않는 자연어 요청에서는 Codex가 설명에 맞는 스킬을 선택한다. **직접 지정과 자동 선택은 별도로 검증**하며, 스킬을 불렀다는 사실만으로 모든 파트·참고문서를 적용했다고 보지 않는다.
 
 설치본에 `bizplan/references/common-rules.md`가 포함됐는지 확인한다. 세부 스킬도 이 공통 문서를 참조하므로 15개를 함께 설치하는 것을 권장한다. Codex용 별도 프롬프트 복사본이나 영구 분기 없이 같은 스킬을 유지한다.
 
@@ -72,14 +76,31 @@ $bizplan-review 이 초안을 제공한 배점표로 검토해줘.
 python scripts/install_skills.py --agent claude
 ```
 
-Claude Code를 재시작하고 `/bizplan` 또는 자연어로 요청한다. 기존 Claude Code 마켓플레이스 설치도 사용할 수 있다:
+이 로컬 설치에서는 `/bizplan` 또는 자연어로 요청한다. 특정 파트는 다음처럼 직접 지정한다. 스킬이 보이지 않으면 Claude Code를 재시작한다.
+
+```text
+/bizplan-problem 제공한 메모의 문제 우선순위를 유지해 문제 인식 파트를 써줘.
+/bizplan-growth 제공한 근거와 제약을 반영해 성장 전략 파트를 써줘.
+```
+
+기존 Claude Code 마켓플레이스 설치도 사용할 수 있다:
 
 ```text
 /plugin marketplace add jhsoo0211/bussiness-planner-skills
 /plugin install bizplan@business-planner-skills
 ```
 
+플러그인 이름은 `bizplan`이므로 플러그인 설치에서는 `/bizplan:bizplan-problem`, `/bizplan:bizplan-growth`, `/bizplan:bizplan-review`처럼 namespace를 포함해 지정한다. Claude Code도 직접 호출과 자동 선택을 모두 지원한다. [Claude Code 공식 스킬 문서](https://code.claude.com/docs/en/skills)
+
 이 `/plugin` 명령은 **Claude Code용**이다. Codex에서는 위의 로컬 설치 절차를 사용한다. 마켓플레이스 업데이트는 Claude Code의 `/plugin marketplace update`를 사용한다.
+
+**Claude.ai 일반 채팅은 별도 환경이다.** 공식 도움말은 Customize → Skills에서 활성화하고, 필요하면 사용할 스킬 이름을 요청에 명시하도록 안내한다. 이 저장소의 Claude Code 설치·slash 명령을 그대로 적용할 수 있다는 뜻은 아니다. [Claude.ai 공식 스킬 도움말](https://support.claude.com/en/articles/12512180-use-skills-in-claude)
+
+### 저자 인사이트와 파트별 작성
+
+각 파트와 `bizplan-quick`은 **[파트별 저자 인사이트 지도](skills/bizplan/references/author-insights.md)에 연결된 필수 원문을 작성 전에 읽고**, 해당 파트의 작성 기준에 적용해야 한다. 검토 단계까지 미루거나 공통 규칙만 읽은 것으로 대신하지 않는다. 사용자가 제공한 메모의 문제 우선순위·기술·비용·안전 제약은 양식의 해당 항목에 연결하고, 사례에서 얻은 작성 원칙과 현재 팀의 검증된 사실은 구분한다.
+
+검증에서는 **참고문서를 읽은 기록**과 **본문에 실제 적용한 근거**를 따로 확인한다. 필수 참조 연결을 추가했다는 사실만으로 검증 완료를 주장하지 않는다. 이전 U300 실행은 Codex에서 자동으로 quick 경로를 선택한 1회 작성 사례이며 Claude 성능 비교가 아니다. 변경 후의 제한된 명시 호출 검사는 [가상 입력과 결과](evals/author-insights/README.md)에 기록한다. 전체 작성 흐름·Claude 비교·원본 문서의 페이지 검증은 별도다. [평가 절차와 증거 범위](evals/README.md)
 
 ### 도구와 검증 범위
 
