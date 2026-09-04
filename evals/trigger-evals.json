@@ -1,6 +1,6 @@
 {
   "purpose": "bizplan 스킬군 트리거 정확도 회귀 테스트. 각 발화에 대해 어떤 스킬이 발화(트리거)되어야 하는지 정의한다. 'expected: null'은 어떤 bizplan 스킬도 트리거되면 안 되는 near-miss 케이스.",
-  "usage": "새 대화에서 query를 그대로 입력하고, Claude가 참조한 스킬이 expected와 일치하는지 확인한다. description 수정 후에는 전체 세트를 재실행한다.",
+  "usage": "새 대화에서 query를 그대로 입력하고, Claude Code 또는 Codex가 실제 참조한 스킬이 expected와 일치하는지 확인한다. 호스트·모델·스킬 커밋·도구 조건을 기록한다. description 수정 후에는 전체 세트를 재실행한다. 실행 절차와 성능 평가 한계는 evals/README.md를 참고한다.",
   "evals": [
     {"id": 1, "query": "예비창업패키지 지원하려는데 사업계획서 어떻게 시작해야 할지 모르겠어. 도와줘", "expected": "bizplan", "note": "막연한 시작 요청 → 라우터"},
     {"id": 2, "query": "시간이 없어서 일단 전체 틀부터 빠르게 잡아줘. 업종은 반려동물 헬스케어 앱이야", "expected": "bizplan-quick", "note": "속도 요청"},

@@ -1,11 +1,13 @@
-# bizplan — 정부지원사업 사업계획서 스킬
+# bizplan — 한국 PSST 사업계획서 스킬
 
-> 정부지원사업 사업계획서를 **작성·검토·발표 준비**까지 단계별로 돕는 한국어 Claude Code 스킬 15종. (GitHub 저장소 설명용 한 줄: *"정부지원사업 사업계획서 작성·검토·발표를 돕는 한국어 Claude Code 스킬 모음 — PSST 프레임워크 기반"*)
+[한국어](README.md) | [English](README.en.md)
 
-**PSST(Problem-Solution-Scale-Team)** 프레임워크를 기반으로, 막연한 아이디어를 심사위원이 납득하는 사업계획서로 다듬는다.
+> 한국 정부 창업지원사업의 사업계획서를 **작성·검토·발표 준비**까지 단계별로 돕는 한국어 스킬 15종. Claude Code와 Codex에서 같은 `skills/` 원본을 사용한다.
+
+**한국 사업계획서의 PSST(Problem · Solution · Scale-up · Team) 구조에 맞춰 설계했다.** 문제 인식 → 실현 가능성 → 성장 전략 → 팀 구성의 흐름으로 아이디어를 구체화한다. 범용 글로벌 사업계획서나 해외 투자 IR 전용 템플릿이 아니며, 다른 유형에는 해당 공고·양식·평가 기준에 맞춘 조정이 필요하다.
 
 - 대상 사업: 예비창업패키지, 청년창업사관학교(청창사), U300, 로컬크리에이터, 수출바우처 등
-- 모든 스킬은 한국어로 안내한다.
+- 스킬 본문·기본 안내·예시는 한국어다. **영어 README는 사용 설명의 번역이며, 스킬 전체의 영어 현지화나 해외 지원사업 적합성을 의미하지 않는다.**
 - 지원사업마다 양식·금액·기간이 다르므로, 각 스킬은 먼저 **어떤 지원사업·양식 대상인지 확인**하고 예산·기간을 해당 공고 기준으로 조정한다. (기본값 예시: 예창패 1단계 2천만 + 2단계 4천만, 8개월)
 
 ## 스킬 목록
@@ -13,7 +15,7 @@
 | 스킬                 | 용도                     | 이럴 때                                                                                                                               |
 | -------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `bizplan`          | 라우터                   | "사업계획서 도와줘"처럼 막연할 때. 상황을 물어 알맞은 모드로 안내                                                                     |
-| `bizplan-quick`    | 간략 모드                | 4가지(업종·타겟·핵심기능·차별점)만 답하고 PSST 전체 초안을 한 번에                                                                 |
+| `bizplan-quick`    | 간략 모드                | 5가지(업종·타겟·핵심기능·차별점·약점)만 답하고 PSST 전체 초안을 한 번에                                                                 |
 | `bizplan-item`     | ① 아이템 구체화         | 아이디어만 있음. 아이템명·문제·솔루션·차별점·페르소나 도출                                                                        |
 | `bizplan-problem`  | ② 문제 인식 (P)         | SPIN 기법으로 Pain Point 설득, "배경 및 필요성" 작성                                                                                  |
 | `bizplan-research` | ③ 시장·고객·경쟁 조사 | 시장 규모, 타겟 고객·페르소나, 경쟁사 비교 분석                                                                                      |
@@ -30,51 +32,71 @@
 
 ## 설치 방법
 
-### ① 로컬 스킬로 설치 (가장 간단)
+### ① Codex에 설치
 
-**Step 1.** 이 저장소를 내려받는다 — GitHub에서 `Code → Download ZIP`, 또는:
+Git과 Python 3가 필요하다. 먼저 이 저장소를 내려받고 저장소 폴더로 이동한다. Windows에서 `python` 대신 `py`를 사용하는 환경이면 아래 명령의 `python`을 `py`로 바꾼다.
 
 ```bash
-git clone <이 저장소 주소>
+git clone https://github.com/jhsoo0211/bussiness-planner-skills.git
+cd bussiness-planner-skills
+python scripts/install_skills.py --agent codex
 ```
 
-**Step 2.** `skills/` 아래 폴더 15개를 사용자 스킬 디렉터리에 복사한다.
+15개 스킬과 하위 참조 문서·스크립트를 `~/.agents/skills/`에 설치한다. 하나라도 같은 이름이 이미 있으면 **아무것도 덮어쓰지 않고 중단**한다. 기존 설치를 업데이트할 때는 사용자 수정본을 먼저 백업하고 대상 폴더를 비운 뒤 다시 실행한다. 여러 위치에 중복 설치하지 않는다.
+
+특정 프로젝트에서만 쓰려면 목적지를 지정한다:
 
 ```bash
-# macOS / Linux
-cp -r skills/* ~/.claude/skills/
+python scripts/install_skills.py --agent codex --dest /path/to/project/.agents/skills
 ```
 
 ```powershell
 # Windows PowerShell
-Copy-Item -Recurse skills\* $HOME\.claude\skills\
+python scripts/install_skills.py --agent codex --dest 'C:\Projects\my-project\.agents\skills'
 ```
 
-원본을 수정하며 쓸 계획이면 복사 대신 **정션/심링크**로 연결한다 (수정이 즉시 반영됨):
+새 턴/세션에서 `bizplan` 스킬을 선택하거나 다음처럼 요청한다. Codex CLI/IDE에서는 `/skills` 또는 `$`로 스킬을 찾을 수 있다. 보이지 않으면 Codex를 재시작한다. [공식 스킬 문서](https://learn.chatgpt.com/docs/build-skills)
 
-```powershell
-# Windows PowerShell — skills 하위 15개 폴더를 정션으로 연결
-Get-ChildItem .\skills -Directory | ForEach-Object {
-  New-Item -ItemType Junction -Path "$HOME\.claude\skills\$($_.Name)" -Target $_.FullName
-}
+```text
+$bizplan 예비창업패키지 사업계획서를 쓰고 싶어. 공고문을 먼저 확인해줘.
+$bizplan-review 이 초안을 제공한 배점표로 검토해줘.
 ```
 
-**Step 3.** Claude Code를 재시작한다.
+설치본에 `bizplan/references/common-rules.md`가 포함됐는지 확인한다. 세부 스킬도 이 공통 문서를 참조하므로 15개를 함께 설치하는 것을 권장한다. Codex용 별도 프롬프트 복사본이나 영구 분기 없이 같은 스킬을 유지한다.
 
-**Step 4. 설치 확인** — 아무 폴더에서 Claude Code를 열고 `/bizplan`를 입력했을 때 라우터 스킬이 실행되면 성공.
+### ② Claude Code에 설치
 
-### ② 플러그인으로 설치 (마켓플레이스)
+위와 같이 저장소를 내려받은 뒤 실행하면 `~/.claude/skills/`에 설치한다:
 
+```bash
+python scripts/install_skills.py --agent claude
 ```
-/plugin marketplace add jhsoo0211/bussiness-planner-skills   # GitHub 저장소 경로(저장소명 변경 전까지 유지)
+
+Claude Code를 재시작하고 `/bizplan` 또는 자연어로 요청한다. 기존 Claude Code 마켓플레이스 설치도 사용할 수 있다:
+
+```text
+/plugin marketplace add jhsoo0211/bussiness-planner-skills
 /plugin install bizplan@business-planner-skills
 ```
 
-설치 후 `skills/` 안의 15개 스킬이 자동 등록되고 `/bizplan`, `/bizplan-review` 등으로 호출된다. 업데이트는 `/plugin marketplace update`.
+이 `/plugin` 명령은 **Claude Code용**이다. Codex에서는 위의 로컬 설치 절차를 사용한다. 마켓플레이스 업데이트는 Claude Code의 `/plugin marketplace update`를 사용한다.
+
+### 도구와 검증 범위
+
+- 기본 작성·검토 지침은 Markdown 스킬이며 별도의 API 키를 포함하지 않는다. 실행할 Claude Code 또는 Codex 계정·환경은 사용자가 준비한다.
+- 웹 조사, Python 그래프, DOCX 변환, HTML 슬라이드 검수는 해당 환경의 도구·권한이 있을 때 수행한다. 설치만으로 외부 도구나 서비스를 추가하지 않는다.
+- 도구가 없으면 수행하지 못한 작업과 필요한 자료를 밝힌다. 확인하지 못한 통계·출처·팀 실적을 검증 완료로 쓰지 않는다.
+- `dist/*v0.4.0.zip`은 기존 배포 파일이다. 이번 Codex 안내와 변경을 사용하려면 이 저장소의 현재 체크아웃으로 설치한다.
+
+```bash
+python scripts/check_installation.py
+```
+
+위 명령은 임시 폴더에서 15개 스킬·리소스 복사와 덮어쓰기 방지를 확인한다. 모델을 실행하지 않으며 **Codex와 Claude의 작성 품질·속도·비용을 비교한 결과가 아니다**. 실제 평가 절차와 기록 기준은 [evals/README.md](evals/README.md)를 참고한다.
 
 ## 빠른 시작 (스텝 바이 스텝)
 
-**Step 1.** Claude Code에 이렇게 말한다 (공고문 파일이 있으면 함께 첨부):
+**Step 1.** Claude Code 또는 Codex에 이렇게 말한다 (공고문 파일이 있으면 함께 첨부):
 
 > 예비창업패키지 사업계획서 쓰고 싶어. 아이템은 시니어용 복약관리 약통이야.
 
@@ -133,7 +155,7 @@ Get-ChildItem .\skills -Directory | ForEach-Object {
 
 ## 유의사항
 
-- 정부지원사업 외의 사업계획서(투자 IR·민간 공모전·정책자금·B2B 제안 등)도 지원한다 — 라우터가 해당 심사 자료 첨부를 요청하거나 유형별 부각 포인트를 안내한다.
+- 정부지원사업 외 문서(투자 IR·민간 공모전·정책자금·B2B 제안 등)는 해당 심사 자료·양식에 맞춰 조정한 뒤 보조 도구로 활용한다. 기본 PSST 구성을 그대로 적용하면 맞지 않을 수 있다.
 - 공식 평가 기준표(배점표)가 있으면 스킬에 첨부하라 — 배점 항목에 본문을 매핑해 검토·작성한다.
 - 개인정보(학교명·직장명)는 기재하지 않는다. 필요하면 이니셜(예: S대학교)을 사용한다. 단, **제출 양식이 소속·실명 기재를 공식 요구하면**(예: 학생창업 트랙의 소속대학) 양식을 따른다.
 - AI가 생성한 시장 데이터·통계는 **반드시 원출처로 검증**한 뒤 제출한다.
