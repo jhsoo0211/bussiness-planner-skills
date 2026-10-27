@@ -33,6 +33,8 @@
     {"id": 29, "query": "초기창업패키지 지원하려는데 업력 2년차야. 사업계획서 어떻게 준비하지?", "expected": "bizplan", "note": "추가 지원사업명 → 라우터"},
     {"id": 30, "query": "예산표 합계가 맞는지 검산하고 정부지원금·자부담 조달 계획 표로 다시 짜줘", "expected": "bizplan-solution", "note": "비목 예산·조달 → solution"},
     {"id": 31, "query": "3년치 매출 추정이랑 손익분기점 계산해서 성장 전략에 넣어줘", "expected": "bizplan-growth", "note": "재무추정 → growth"},
-    {"id": 32, "query": "회사 워크숍용 PPT 템플릿 하나 새로 디자인해줘", "expected": null, "note": "near-miss: 템플릿 디자인 자체는 사업계획서 발표 맥락 아님"}
+    {"id": 32, "query": "회사 워크숍용 PPT 템플릿 하나 새로 디자인해줘", "expected": null, "note": "near-miss: 템플릿 디자인 자체는 사업계획서 발표 맥락 아님"},
+    {"id": 33, "query": "사업계획서 쓰기 전에 내 상황부터 꼼꼼하게 인터뷰해서 정리해줘. 질문지로 줘도 돼", "expected": "bizplan-interview", "note": "심층 인터뷰·브리프"},
+    {"id": 34, "query": "채용 면접관용 인터뷰 질문지 만들어줘", "expected": null, "note": "near-miss: '인터뷰 질문지'지만 사업계획서 아님"}
   ]
 }

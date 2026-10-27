@@ -9,7 +9,7 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = {"bizplan", "bizplan-quick", "bizplan-item", "bizplan-outline", "bizplan-problem",
+EXPECTED = {"bizplan", "bizplan-interview", "bizplan-quick", "bizplan-item", "bizplan-outline", "bizplan-problem",
             "bizplan-research", "bizplan-solution", "bizplan-growth", "bizplan-team",
             "bizplan-summary", "bizplan-visual", "bizplan-review", "bizplan-pitch",
             "bizplan-slides", "bizplan-export", "bizplan-analyze"}

@@ -2,7 +2,7 @@
 
 [한국어](README.md) | [English](README.en.md)
 
-16 skills for drafting, reviewing, and presenting business plans for **Korean government startup-support programs**. Claude Code and Codex use the same `skills/` source.
+17 skills for drafting, reviewing, and presenting business plans for **Korean government startup-support programs**. Claude Code and Codex use the same `skills/` source.
 
 ## Scope: designed for Korean PSST applications
 
@@ -24,6 +24,7 @@ The intended context includes 예비창업패키지, 초기창업패키지, 창�
 | Skill | Use it for |
 | --- | --- |
 | `bizplan` | Choosing the right workflow and gathering application requirements |
+| `bizplan-interview` | An up-front, block-by-block interview that fixes every fact, gap, and constraint in `브리프.md`; later modes read this brief instead of relying on a long chat |
 | `bizplan-quick` | A full PSST draft from five inputs: industry, target, features, differentiation, weaknesses |
 | `bizplan-item` | Refining an idea, customer, problem, and value proposition |
 | `bizplan-outline` | Fixing the outline before drafting: headings, one-line summaries, evidence slots, and page allocation |
@@ -50,7 +51,7 @@ cd bussiness-planner-skills
 python scripts/install_skills.py --agent codex
 ```
 
-This copies all 16 skill folders, including their references and scripts, into `~/.agents/skills/`. It **stops before copying if any target skill already exists**. To update an installation, back up any local edits and move the old target skill folders out of the installation location before running the installer again. Avoid duplicate installations in multiple skill locations.
+This copies all 17 skill folders, including their references and scripts, into `~/.agents/skills/`. It **stops before copying if any target skill already exists**. To update an installation, back up any local edits and move the old target skill folders out of the installation location before running the installer again. Avoid duplicate installations in multiple skill locations.
 
 For a project-only installation, specify that project's skills directory:
 
@@ -168,7 +169,7 @@ Run the offline installation smoke test:
 python scripts/check_installation.py
 ```
 
-It checks all 16 skill folders, exact resource copying, existing-installation protection, and source/destination overlap protection in temporary directories. It does **not** run either model, measure skill discovery, or establish output quality, speed, or cost. The [evaluation guide](evals/README.md) separates installation checks, trigger tests, and controlled quality comparisons.
+It checks all 17 skill folders, exact resource copying, existing-installation protection, and source/destination overlap protection in temporary directories. It does **not** run either model, measure skill discovery, or establish output quality, speed, or cost. The [evaluation guide](evals/README.md) separates installation checks, trigger tests, and controlled quality comparisons.
 
 The ZIP files named `dist/*v0.4.0.zip` are earlier distribution artifacts. Install from the current checkout to use the Codex documentation and changes described here.
 
