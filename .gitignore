@@ -5,3 +5,9 @@
 __pycache__/
 
 graphify-out/
+
+# 비공개 발표 템플릿(학교·기관 지정 양식, 유료 템플릿) — 로컬 설치본에서만 사용
+skills/bizplan-slides/assets/templates/local/
+
+# 사업계획서 원문·합격 사례 등 재배포 불가 자료(패턴만 references에 반영)
+자료/
