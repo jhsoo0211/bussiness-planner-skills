@@ -2,6 +2,13 @@
 
 [한국어](README.md) | [English](README.en.md)
 
+<p align="center">
+  <a href="docs/motion-graphic/reel/bizplan-reel.mp4">
+    <img src="docs/motion-graphic/reel/bizplan-reel-preview.webp" width="100%" alt="bizplan 소개 영상: 큰틀 잡기, PSST 작성, 문제-해결 1:1 대응, 시장 규모 도식, 심사위원 채점, 한글·워드 내보내기, 채팅 링크로 설치">
+  </a>
+</p>
+<p align="center"><sub>▶ <b>소개 영상 (50초)</b> — 이미지를 누르면 소리가 포함된 원본 영상(mp4)으로 이동합니다</sub></p>
+
 > 한국 정부 창업지원사업의 사업계획서를 **작성·검토·발표 준비**까지 단계별로 돕는 한국어 스킬 15종. Claude Code와 Codex에서 같은 `skills/` 원본을 사용한다.
 
 **한국 사업계획서의 PSST(Problem · Solution · Scale-up · Team) 구조에 맞춰 설계했다.** 문제 인식 → 실현 가능성 → 성장 전략 → 팀 구성의 흐름으로 아이디어를 구체화한다. 범용 글로벌 사업계획서나 해외 투자 IR 전용 템플릿이 아니며, 다른 유형에는 해당 공고·양식·평가 기준에 맞춘 조정이 필요하다.

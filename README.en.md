@@ -2,6 +2,13 @@
 
 [한국어](README.md) | [English](README.en.md)
 
+<p align="center">
+  <a href="docs/motion-graphic/reel/bizplan-reel-en.mp4">
+    <img src="docs/motion-graphic/reel/bizplan-reel-en-preview.webp" width="100%" alt="bizplan intro video: outline first, PSST drafting, 1:1 problem–solution matching, market sizing, judge-style review, Hangul/Word export, install by pasting the GitHub link in chat">
+  </a>
+</p>
+<p align="center"><sub>▶ <b>Intro video (50 s)</b> — click the preview to open the full video with sound (mp4)</sub></p>
+
 15 skills for drafting, reviewing, and presenting business plans for **Korean government startup-support programs**. Claude Code and Codex use the same `skills/` source.
 
 ## Scope: designed for Korean PSST applications

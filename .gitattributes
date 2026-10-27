@@ -5,3 +5,7 @@
 *.woff2 binary
 *.hwp binary
 *.hwpx binary
+*.webp binary
+*.gif binary
+*.jpg binary
+*.wav binary

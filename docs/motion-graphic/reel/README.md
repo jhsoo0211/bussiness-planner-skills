@@ -1,6 +1,8 @@
 # bizplan 소개 릴 (50초 · 사운드 포함 · 반복 재생)
 
-`bizplan-reel.mp4` — 1920×1080, 30fps, 50초, AAC 스테레오. 마지막 프레임이 첫 프레임으로 이어지는 루프.
+`bizplan-reel.mp4`(한국어) · `bizplan-reel-en.mp4`(영어) — 1920×1080, 30fps, 50초, AAC 스테레오. 마지막 프레임이 첫 프레임으로 이어지는 루프.
+
+저장소 README 상단에는 소리 없는 미리보기(`bizplan-reel-preview.webp`, `bizplan-reel-en-preview.webp`, 960px · 12fps 애니메이션 WebP)를 두고, 누르면 원본 mp4로 이동한다.
 
 ## 연출 원칙
 
@@ -33,10 +35,10 @@
 
 | 파일 | 용도 |
 |------|------|
-| `bizplan-reel.src.html` | 편집용 원본(캔버스 렌더러, 장면 시작 시각 `SEC`, 문구, 효과음 이벤트, 음악 스타일) |
-| `bizplan-reel.html` | 글꼴을 넣은 단일 파일. 브라우저로 열면 반복 재생, 스페이스바로 일시정지 |
+| `bizplan-reel.src.html` | 편집용 원본(캔버스 렌더러, 장면 시작 시각 `SEC`, 한·영 문구 표 `I18N`, 효과음 이벤트, 음악 스타일) |
+| `bizplan-reel.html` | 글꼴을 넣은 단일 파일. 브라우저로 열면 반복 재생(`?lang=en`이면 영어), 스페이스바로 일시정지 |
 | `build.py` | Geist · Geist Mono · Pretendard 서브셋을 넣어 `bizplan-reel.html` 생성 |
-| `render.cjs` | Playwright로 프레임 PNG와 효과음·음악 정보(`events.json`) 추출. `--range a,b`로 나눠 병렬 렌더 가능 |
+| `render.cjs` | Playwright로 프레임 PNG와 효과음·음악 정보(`events.json`) 추출. `--lang en`으로 영어판, `--range a,b`로 나눠 병렬 렌더 |
 | `sound.py` | numpy로 120 BPM 음악 + 화면 동기 효과음 합성, 루프 이음새 처리, 약 -14 LUFS |
 
 ## 다시 만들기
@@ -45,10 +47,12 @@
 pip install fonttools brotli numpy
 npm pack geist pretendard   # 글꼴 패키지 내려받아 압축 해제
 python build.py --geist <geist>/dist/fonts --pretendard <pretendard>/dist/web/static/woff2
-node render.cjs 30 /tmp/frames                       # playwright 필요, 프레임 + events.json
+node render.cjs 30 /tmp/frames                       # playwright 필요, 프레임 + events.json (영어판: --lang en)
 python sound.py /tmp/frames/events.json /tmp/reel.wav
 ffmpeg -y -framerate 30 -i /tmp/frames/f%04d.png -i /tmp/reel.wav \
   -c:v libx264 -preset slow -crf 21 -pix_fmt yuv420p -c:a aac -b:a 160k -shortest -movflags +faststart bizplan-reel.mp4
+# README 미리보기
+ffmpeg -y -i bizplan-reel.mp4 -vf "fps=12,scale=960:-2:flags=lanczos" -an -c:v libwebp_anim -q:v 60 -compression_level 6 -loop 0 bizplan-reel-preview.webp
 ```
 
-장면 길이는 원본의 `SEC`(장면 시작 시각)만 바꾸면 그 안의 타이밍·자막·효과음이 함께 따라간다(자막 표시 구간은 `CAPTIONS`에서 조정). 문구를 바꾸면 `build.py`를 다시 실행해야 새 글자가 글꼴에 들어간다. 명령어 철자 주의: 저장소 `bussiness-planner-skills`, 마켓플레이스 `business-planner-skills`.
+문구는 `I18N.ko` / `I18N.en`에서 고친다. 장면 길이는 원본의 `SEC`(장면 시작 시각)만 바꾸면 그 안의 타이밍·자막·효과음이 함께 따라간다(자막 표시 구간은 `CAPTIONS`에서 조정). 문구를 바꾸면 `build.py`를 다시 실행해야 새 글자가 글꼴에 들어간다. 명령어 철자 주의: 저장소 `bussiness-planner-skills`, 마켓플레이스 `business-planner-skills`.

@@ -1,5 +1,5 @@
 // bizplan-reel.html -> PNG 프레임 + 사운드 이벤트(events.json)
-// 사용: node render.cjs [fps=30] [outDir=frames] [--stills 1.2,4.5,...]
+// 사용: node render.cjs [fps=30] [outDir=frames] [--lang ko|en] [--stills 1.2,4.5,...] [--range a,b]
 const { chromium } = require('playwright');
 const { mkdirSync, writeFileSync } = require('node:fs');
 const { pathToFileURL } = require('node:url');
@@ -10,6 +10,7 @@ const path = require('node:path');
   const stillsArg = args.indexOf('--stills');
   const stills = stillsArg >= 0 ? args.splice(stillsArg, 2)[1].split(',').map(Number) : null;
   const ra = args.indexOf('--range'); if (ra >= 0) args.splice(ra, 2);
+  const la = args.indexOf('--lang'); const lang = la >= 0 ? args.splice(la, 2)[1] : 'ko';
   const fps = Number(args[0] || 30);
   const outDir = path.resolve(args[1] || path.join(__dirname, 'frames'));
   mkdirSync(outDir, { recursive: true });
@@ -19,7 +20,7 @@ const path = require('node:path');
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.text()); });
-  await page.goto(pathToFileURL(path.join(__dirname, 'bizplan-reel.html')).href + '?render=1');
+  await page.goto(pathToFileURL(path.join(__dirname, 'bizplan-reel.html')).href + `?render=1&lang=${lang}`);
   await page.evaluate(() => window.__ready);
 
   const duration = await page.evaluate(() => window.__duration);
