@@ -73,6 +73,39 @@ def _theme(path):
     return colors, fonts
 
 
+OFFICE_ACCENT1 = {"#4F81BD", "#4472C4", "#156082", "#0F9ED5"}   # Office 기본 테마 accent1
+
+
+def _fill(sp):
+    """도형의 단색 채우기 색(#RRGGBB). 없거나 테마 색이면 None."""
+    spPr = sp._element.find("{http://schemas.openxmlformats.org/presentationml/2006/main}spPr")
+    el = spPr.find(NS_A + "solidFill") if spPr is not None else None
+    if el is None:
+        return None
+    rgb = el.find(NS_A + "srgbClr")
+    return "#" + rgb.get("val").upper() if rgb is not None else None
+
+
+def _deco(shapes, sw, sh):
+    """자리표시자가 아닌 도형(띠·로고·바닥글 글상자 등)을 나열한다."""
+    out = []
+    for sp in shapes:
+        if sp.is_placeholder:
+            continue
+        item = {"name": sp.name, "kind": sp.shape_type and str(sp.shape_type).split(".")[-1].split(" ")[0],
+                "box_pct": _box(sp, sw, sh)}
+        color = _fill(sp)
+        if color:
+            item["fill"] = color
+        if sp.has_text_frame and sp.text_frame.text.strip():
+            item["text"] = sp.text_frame.text.strip()[:80]
+            run_color = sp._element.find(".//" + NS_A + "rPr/" + NS_A + "solidFill/" + NS_A + "srgbClr")
+            if run_color is not None:
+                item["text_color"] = "#" + run_color.get("val").upper()
+        out.append(item)
+    return out
+
+
 def inspect(path):
     prs = open_presentation(path)
     sw, sh = prs.slide_width, prs.slide_height
@@ -84,6 +117,8 @@ def inspect(path):
         "layouts": [], "slides": [], "warnings": [],
     }
     profile["theme_colors"], profile["theme_fonts"] = _theme(path)
+    profile["master_shapes"] = _deco(prs.slide_master.shapes, sw, sh)
+    profile["layout_shapes"] = {l.name: _deco(l.shapes, sw, sh) for l in prs.slide_layouts if _deco(l.shapes, sw, sh)}
 
     narrow = []
     for li, layout in enumerate(prs.slide_layouts):
@@ -93,10 +128,14 @@ def inspect(path):
                         "name": ph.name, "box_pct": _box(ph, sw, sh)})
         profile["layouts"].append({"index": li, "name": layout.name, "placeholders": phs})
         # 16:9인데 본문 자리표시자들의 오른쪽 끝이 80%에 못 미치면 4:3에서 늘리지 않은 레이아웃일 가능성
-        rights = [p["box_pct"][0] + p["box_pct"][2] for p in phs
-                  if p["box_pct"] and p["type"] not in ("DATE", "FOOTER", "SLIDE_NUMBER")]
-        if profile["aspect"] == "16:9" and rights and max(rights) < 80:
-            narrow.append(layout.name)
+        boxes = [p["box_pct"] for p in phs if p["box_pct"] and p["type"] not in ("DATE", "FOOTER", "SLIDE_NUMBER")]
+        # 4:3(10in) 기준 배치를 16:9(13.33in)에 그대로 두면 '왼쪽 여백 + 오른쪽 끝'이 약 75%가 된다.
+        # 가운데 정렬로 좁게 둔 디자인(합이 약 100%)은 잔재가 아니다.
+        if profile["aspect"] == "16:9" and boxes:
+            right = max(b[0] + b[2] for b in boxes)
+            left = min(b[0] for b in boxes)
+            if right < 80 and left + right < 85:
+                narrow.append(layout.name)
     if narrow:
         profile["warnings"].append(
             f"16:9 슬라이드인데 자리표시자가 왼쪽 80% 안에 몰린 레이아웃: {', '.join(narrow)} (4:3 잔재 의심) — "
@@ -117,11 +156,28 @@ def inspect(path):
             shapes.append(item)
         profile["slides"].append({"index": si + 1, "layout": slide.slide_layout.name, "shapes": shapes})
 
-    custom = [l["name"] for l in profile["layouts"] if l["name"] not in DEFAULT_LAYOUTS]
-    if profile["slides"] and not custom:
+    # 실제 디자인 색: 마스터·레이아웃·샘플 슬라이드 도형의 채우기·글자색(테마 accent가 Office 기본값이면 이쪽이 진짜)
+    colors = []
+    for item in profile["master_shapes"] + [i for v in profile["layout_shapes"].values() for i in v]:
+        for key in ("fill", "text_color"):
+            if item.get(key) and item[key] not in colors and item[key] not in ("#FFFFFF", "#000000"):
+                colors.append(item[key])
+    for slide in prs.slides:
+        for item in _deco(slide.shapes, sw, sh):
+            if item.get("fill") and item["fill"] not in colors and item["fill"] not in ("#FFFFFF", "#000000"):
+                colors.append(item["fill"])
+    profile["design_colors"] = colors
+    if profile["theme_colors"].get("accent1") in OFFICE_ACCENT1 and colors:
         profile["warnings"].append(
-            "사용자 정의 레이아웃이 없다 — 디자인이 샘플 슬라이드에 들어 있을 가능성이 높다. "
-            "spec에서 from_slide(샘플 슬라이드 복제 + 글자 교체)를 우선 사용")
+            f"테마 색이 Office 기본값이다 — 차트·강조색은 실제 디자인 색 {', '.join(colors[:3])}을 쓴다(use_palette)")
+
+    # 디자인이 마스터·레이아웃에 없고 샘플 슬라이드에만 있을 때만 복제 방식을 권한다
+    custom = [l["name"] for l in profile["layouts"] if l["name"] not in DEFAULT_LAYOUTS]
+    slide_deco = any(_deco(s.shapes, sw, sh) for s in prs.slides)
+    if profile["slides"] and not custom and not profile["master_shapes"] and not profile["layout_shapes"] and slide_deco:
+        profile["warnings"].append(
+            "마스터·레이아웃에는 디자인 도형이 없고 샘플 슬라이드에만 있다 — "
+            "spec에서 from_slide(샘플 슬라이드 복제 + 글 교체, 필요하면 add로 그림·표 추가)를 우선 사용")
     fonts = profile["theme_fonts"]
     if fonts and not any(f.get("ea") or f.get("Hang") for f in fonts.values()):
         profile["warnings"].append("테마에 한글(동아시아) 글꼴이 없다 — pptx_build.py가 --ea-font(기본 '맑은 고딕')로 지정한다")
@@ -136,6 +192,18 @@ def _print(profile):
     if profile["theme_fonts"]:
         print("테마 글꼴: " + "; ".join(f"{k}: latin={v['latin']} ea={v['ea'] or v['Hang'] or '-'}"
                                       for k, v in profile["theme_fonts"].items()))
+    if profile.get("design_colors"):
+        print("디자인 색(도형 채우기·글자): " + ", ".join(profile["design_colors"]))
+    if profile.get("master_shapes"):
+        print("\n[마스터 도형 — 모든 장에 나타남, 지우거나 옮기지 않는다]")
+        for it in profile["master_shapes"]:
+            extra = (f" 채우기 {it['fill']}" if it.get("fill") else "") + (f" \"{it['text']}\"" if it.get("text") else "")
+            print(f"  - {it['name']} ({it['kind']}) {it['box_pct']}{extra}")
+    for lname, items in profile.get("layout_shapes", {}).items():
+        print(f"\n[레이아웃 '{lname}' 고유 도형]")
+        for it in items:
+            extra = (f" 채우기 {it['fill']}" if it.get("fill") else "") + (f" \"{it['text']}\"" if it.get("text") else "")
+            print(f"  - {it['name']} ({it['kind']}) {it['box_pct']}{extra}")
     print("\n[레이아웃]")
     for l in profile["layouts"]:
         phs = ", ".join(f"{p['idx']}:{p['type']}{p['box_pct']}" for p in l["placeholders"])

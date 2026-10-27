@@ -5,12 +5,15 @@
     python3 -B pptx_build.py --spec deck.json --out 발표.pptx [--template 템플릿.pptx]
                              [--ea-font "맑은 고딕"] [--stretch-placeholders] [--keep-template-slides]
 
-spec(JSON) 형식 — 슬라이드마다 둘 중 하나:
+spec(JSON) 최상위 키: "template"(경로, --template가 우선), "ea_font", "stretch_placeholders", "keep_template_slides", "slides"(목록).
+슬라이드마다 둘 중 하나:
   레이아웃 채우기  {"layout": "Title and Content", "title": "...", "bullets": ["문장", ["하위1", "하위2"]],
                    "image": "차트.png", "caption": "결론 한 줄", "table": {"header": [...], "rows": [[...]], "highlight_row": 2},
                    "left": {...}, "right": {...}, "subtitle": "...", "source": "출처", "notes": "발표 대본"}
   샘플 복제·교체  {"from_slide": 3, "replace": {"도형 이름 또는 #도형id": "새 글" | ["불릿", ...] | {"image": "a.png"}
-                   | {"table": {...}}}, "notes": "..."}
+                   | {"table": {...}}}, "add": [{"image"|"table"|"bullets": ..., "box_pct": [x, y, w, h]}], "notes": "..."}
+                   (add는 복제한 장에 그림·표·글을 더한다. box_pct를 생략하면 제목 아래 본문 영역)
+한 영역에 bullets와 image/table을 함께 주면 영역을 좌(글 45%)·우(그림·표 55%)로 나눠 둘 다 넣는다.
 레이아웃은 이름(부분 일치) 또는 번호. 생략하면 내용에 맞춰 고른다(이미지·표만 → Title Only, 그 외 → Title and Content).
 템플릿에 원래 있던 샘플 슬라이드는 기본으로 지운다(--keep-template-slides로 유지).
 글이 상자를 넘칠 것으로 추정되면 글자 크기를 2pt씩 줄이고(본문 최소 14pt, 제목 최소 20pt) 그래도 넘치면 경고한다.
@@ -121,6 +124,12 @@ def _fit(shape, paras, size, title, slide_no):
         s -= 2
     if _needed_height(paras, s, width) > height:
         warn(slide_no, f"'{shape.name}' 글이 넘칠 수 있다({s:.0f}pt에서도) — 문장을 줄이거나 장을 나눈다")
+    # 공백 없이 이어진 어절이 한 줄 폭을 넘으면 음절 단위로 끊긴다(예: '테스트·가입·리텐션·멘토링')
+    for text, level in paras:
+        for token in text.split():
+            if _em(token) * s > (width - level * s * 1.2 - s * 0.8) * 0.92:
+                warn(slide_no, f"'{shape.name}' 공백 없는 긴 어절 '{token[:20]}'이 음절 단위로 끊길 수 있다 — 띄어 쓴다")
+                break
     return s if s != size else None
 
 
@@ -179,6 +188,8 @@ def _set_paragraphs(shape, paras, ea_font, slide_no, title=False, keep_format=Fa
             para.text = (("• ", "– ", "· ")[min(level, 2)] + text) if not shape.is_placeholder and not title else text
         if level and shape.is_placeholder:
             para.level = min(level, 4)
+        # 한국어를 어절(띄어쓰기) 단위로 줄바꿈 — PowerPoint의 '한글 단어 잘림 허용' 끔
+        para._p.get_or_add_pPr().set("eaLnBrk", "0")
         for run in para.runs:
             _ea(run, ea_font)
             if fitted:
@@ -243,7 +254,7 @@ def _table(slide, spec, box, ea_font, slide_no):
         return None
     nrows = len(rows) + (1 if header else 0)
     left, top, width, height = box
-    row_h = min(int(height / max(nrows, 1)), int(Pt(34)))
+    row_h = min(int(height / max(nrows, 1)), int(Pt(spec.get("max_row_pt", 48))))
     gt = slide.shapes.add_table(nrows, ncols, left, top, width, row_h * nrows)
     table = gt.table
     # 열 너비: 열별 최장 글 길이에 비례(최소 12%)
@@ -254,7 +265,7 @@ def _table(slide, spec, box, ea_font, slide_no):
     norm = sum(shares)
     for c in range(ncols):
         table.columns[c].width = int(width * shares[c] / norm)
-    size = 14 if nrows <= 6 else 12 if nrows <= 9 else 10
+    size = spec.get("font_size") or (16 if nrows <= 5 else 14 if nrows <= 8 else 12 if nrows <= 11 else 10)
     all_rows = ([header] if header else []) + rows
     hl = spec.get("highlight_row")
     for ri, row in enumerate(all_rows):
@@ -295,18 +306,38 @@ def _pick_layout(prs, spec, slide_no):
 
 
 def _fill_region(slide, prs, region, box, ph, ea_font, slide_no):
-    """region={bullets|image|table|caption} 을 box(또는 ph 자리표시자)에 채운다."""
-    if "bullets" in region and ph is not None:
-        _set_paragraphs(ph, _flatten(region["bullets"]), ea_font, slide_no)
-        return
+    """region={bullets|image|table|caption} 을 box(또는 ph 자리표시자)에 채운다.
+
+    글과 그림·표가 함께 있으면 영역을 좌(글 45%)·우(그림·표 55%)로 나눈다.
+    """
+    visual = "image" in region or "table" in region
     if ph is not None:
         box = (ph.left, ph.top, ph.width, ph.height)
-        ph._element.getparent().remove(ph._element)
-    if "bullets" in region:
-        tb = slide.shapes.add_textbox(*box)
-        tb.text_frame.word_wrap = True
-        _set_paragraphs(tb, _flatten(region["bullets"]), ea_font, slide_no)
+    if "bullets" in region and visual:
+        gap = int(box[2] * 0.03)
+        text_w = int(box[2] * 0.45)
+        text_box = (box[0], box[1], text_w, box[3])
+        vis_box = (box[0] + text_w + gap, box[1], box[2] - text_w - gap, box[3])
+        if ph is not None:
+            ph.left, ph.top, ph.width, ph.height = text_box
+            _set_paragraphs(ph, _flatten(region["bullets"]), ea_font, slide_no)
+        else:
+            tb = slide.shapes.add_textbox(*text_box)
+            tb.text_frame.word_wrap = True
+            _set_paragraphs(tb, _flatten(region["bullets"]), ea_font, slide_no)
+        rest = {k: v for k, v in region.items() if k != "bullets"}
+        _fill_region(slide, prs, rest, vis_box, None, ea_font, slide_no)
         return
+    if "bullets" in region:
+        if ph is not None:
+            _set_paragraphs(ph, _flatten(region["bullets"]), ea_font, slide_no)
+        else:
+            tb = slide.shapes.add_textbox(*box)
+            tb.text_frame.word_wrap = True
+            _set_paragraphs(tb, _flatten(region["bullets"]), ea_font, slide_no)
+        return
+    if ph is not None:
+        ph._element.getparent().remove(ph._element)
     cap_h = int(prs.slide_height * 0.06) if region.get("caption") else 0
     inner = (box[0], box[1], box[2], box[3] - cap_h)
     if "image" in region:
@@ -333,6 +364,13 @@ def build_layout_slide(prs, spec, ea_font, slide_no):
         elif t == PP_PLACEHOLDER.PICTURE:
             phs["picture"] = ph
     phs["body"].sort(key=lambda p: (p.left or 0))
+    if spec.get("source"):
+        limit = _source_top(slide, prs) - int(prs.slide_height * 0.01)
+        for ph in phs["body"] + ([phs["picture"]] if phs["picture"] is not None else []):
+            if ph.top is not None and ph.top + ph.height > limit:
+                # 상속받은 위치만 있는 자리표시자에 높이만 쓰면 너비가 0이 된다 — 네 값을 함께 쓴다
+                l, t, w = ph.left, ph.top, ph.width
+                ph.left, ph.top, ph.width, ph.height = l, t, w, max(limit - t, int(prs.slide_height * 0.2))
     used = set()
     if spec.get("title") and phs["title"] is not None:
         _set_paragraphs(phs["title"], [(spec["title"], 0)], ea_font, slide_no, title=True)
@@ -379,12 +417,14 @@ def build_layout_slide(prs, spec, ea_font, slide_no):
     return slide
 
 
+def _source_top(slide, prs):
+    return _footer_top(slide, prs) - int(prs.slide_height * 0.05)
+
+
 def _source_and_notes(slide, prs, spec, ea_font):
     if spec.get("source"):
         sw, sh = prs.slide_width, prs.slide_height
-        bottom = _footer_top(slide, prs)
-        h = int(sh * 0.045)
-        _textbox(slide, (int(sw * 0.04), bottom - h - int(sh * 0.005), int(sw * 0.7), h),
+        _textbox(slide, (int(sw * 0.04), _source_top(slide, prs), int(sw * 0.7), int(sh * 0.045)),
                  spec["source"], 10, ea_font, color="64748B")
     if spec.get("notes"):
         slide.notes_slide.notes_text_frame.text = spec["notes"]
@@ -467,6 +507,15 @@ def build_cloned_slide(prs, originals, spec, ea_font, slide_no):
             _set_paragraphs(shape, paras, ea_font, slide_no, title=is_title, keep_format=True)
         else:
             warn(slide_no, f"'{key}'에는 글을 넣을 수 없다")
+    title = next((sp for sp in slide.shapes if sp.is_placeholder and sp.placeholder_format.type in TITLE_TYPES), None)
+    for extra in spec.get("add") or []:
+        if extra.get("box_pct"):
+            x, y, w, h = extra["box_pct"]
+            box = (int(prs.slide_width * x / 100), int(prs.slide_height * y / 100),
+                   int(prs.slide_width * w / 100), int(prs.slide_height * h / 100))
+        else:
+            box = _content_box(slide, prs, title)
+        _fill_region(slide, prs, extra, box, None, ea_font, slide_no)
     _source_and_notes(slide, prs, spec, ea_font)
     return slide
 
@@ -538,7 +587,7 @@ def main():
         for side in ("left", "right"):
             if isinstance(s.get(side), dict) and "image" in s[side] and not os.path.isabs(s[side]["image"]):
                 s[side]["image"] = os.path.join(base, s[side]["image"])
-        for v in (s.get("replace") or {}).values():
+        for v in list((s.get("replace") or {}).values()) + list(s.get("add") or []):
             if isinstance(v, dict) and "image" in v and not os.path.isabs(v["image"]):
                 v["image"] = os.path.join(base, v["image"])
         if "from_slide" in s:

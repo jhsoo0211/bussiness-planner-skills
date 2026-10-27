@@ -7,6 +7,7 @@
 각 함수는 데이터만 바꿔 호출하며 저장된 파일 경로를 반환한다. 출력 파일은 작업 폴더에 둔다.
 공통 규칙: 심사용 도표는 장식보다 가독성 — 큰 글씨, 값 라벨 직접 표기, 출처는 그림 안 캡션에.
 """
+import logging
 import tempfile
 import os
 
@@ -14,6 +15,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
+
+# 굵은 글꼴 파일이 따로 없을 때 매번 찍히는 findfont 경고를 숨긴다(결과물에는 굵게 표시된다)
+logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
 
 PALETTE = ["#2563eb", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#64748b"]
 DPI = 200            # 문서·슬라이드 공통 저장 해상도 (bizplan-visual 규격)
@@ -242,7 +246,8 @@ def gantt(tasks, out="gantt.png", title="사업 추진 일정", xlabel="개월�
     ax.grid(axis="x", which="minor", color="#e2e8f0", lw=0.8)
     ax.tick_params(axis="x", which="major", length=0)
     ax.set_axisbelow(True)
-    _source(fig, source, prefix="")
+    # x축 이름(개월차) 아래로 내려 겹치지 않게
+    _source(fig, source, prefix="", y=-0.04)
     return _save(fig, out)
 
 
