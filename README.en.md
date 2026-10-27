@@ -152,6 +152,10 @@ This repository is **public**. Commit only material that may be redistributed.
 | Original winning plans (PDF/HWP) | `자료/` or a private repository | No (gitignored) |
 | Anonymized writing patterns / review lessons | `skills/bizplan/references/award-patterns.md`, `skills/bizplan-review/references/cases/` | Yes |
 
+## Program rubrics
+
+`skills/bizplan-review/references/rubrics.md` collects evaluation stages, criteria, cut-off scores, bonus points, page limits, and blind-review rules for ten 2026 Korean startup programs, each tagged with its verification level. The original announcement files could not be downloaded in the research environment, so the entries are provisional, based on search-index excerpts; most per-item point values were absent or unconfirmed. A supplied official announcement always takes precedence.
+
 ## Tools and verification
 
 The core package contains Markdown instructions and optional Python scripts (form reading, table checks, DOCX/HWPX export, charts, PPTX template filling, PDF export). It does not include an API key, install external services, or grant tool access. Use the capabilities and permissions available in your agent environment:
