@@ -9,7 +9,10 @@
 | `assets/templates/` (이 폴더) | **공개** | 재배포해도 되는 템플릿만. 직접 만든 디자인, 무료·재배포 허용 라이선스 |
 | `assets/templates/local/` | 비공개(`.gitignore`) | 학교·기관 지정 양식, 유료 구매 템플릿, 실명·로고가 든 파일. 설치 스크립트는 이 폴더도 복사하므로 로컬 설치본에서는 쓸 수 있다 |
 
-- 형식: `.pptx` 또는 `.potx`. Keynote·구글 슬라이드는 `.pptx`로 내보낸 뒤 넣는다. PDF·이미지만 있으면 디자인 참고용으로만 쓴다(HTML 경로에서 색·배치를 따라 함).
+- 형식: `.pptx` 또는 `.potx`. Keynote·구글 슬라이드는 `.pptx`로 내보낸 뒤 넣는다.
+- **PDF·이미지만 있는 템플릿**은 글상자가 없어 직접 채울 수 없다. `local/`에 원본을 두고 경로 R로 다시 그린다.
+  - 색은 `scripts/theme_from_pdf.py`로 뽑아 `assets/themes/local/` 테마로 만든다([테마 안내](../themes/README.md)).
+  - 장 구성은 `references/blueprints.md` 형식으로 같은 이름 `.md`에 적는다.
 - 파일 이름: `<용도>-<특징>.pptx` 예) `u300-school.pptx`, `ir-dark.pptx`. 한글 이름도 된다.
 - 같은 이름의 `.md`를 두면 스킬이 함께 읽는다. 적을 것: 출처·라이선스, 레이아웃별 용도(예: "표지=Title Slide, 본문=제목 및 내용, 그림 장=제목만"), 샘플 슬라이드 번호별 용도, 꼭 지킬 규칙(바닥글 문구·로고 위치·장수 제한).
 
@@ -18,6 +21,7 @@
 | 파일 | 용도 | 비고 |
 |------|------|------|
 | `bizplan-basic.pptx` | 사용자 템플릿이 없을 때 기본값 | 16:9, 흰 배경·남색·강조 1색, 맑은 고딕. `scripts/make_basic_template.py`로 다시 만든다 |
+| `local/*.pdf` (비공개, 저장소 밖) | 사용자 제공 그림 템플릿 3종 — 필수 구성 제안서(30장)·Annual Business Plan(20장)·기본 구성(15장) | 구조는 `references/blueprints.md` 청사진 A·B·C, 색은 테마 `report-blue`·`mono-line` |
 
 ## 넣기 전 확인
 

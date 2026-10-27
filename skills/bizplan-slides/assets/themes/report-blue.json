@@ -1,0 +1,18 @@
+{
+  "name": "report-blue",
+  "label": "리포트 블루",
+  "summary": "밝은 회색 바탕에 선명한 파랑 1색. 작은 영문 머리말·굵은 제목·오른쪽 한 줄 설명의 머리, 흰 카드와 파란 알약 라벨, 점 격자 모티프. 연간 사업계획·성과 보고·정부지원사업 발표에 무난하다.",
+  "derived_from": "사용자 제공 PDF 'Annual Business Plan'(20쪽)의 색·여백·머리 문법을 다시 그린 것 — 원본 그림·문구·로고는 넣지 않았다",
+  "fonts": {"head": "Pretendard", "body": "Pretendard", "accent": "Pretendard"},
+  "colors": {
+    "bg": "F7F8FB", "surface": "FFFFFF", "text": "111827", "muted": "5B6472", "faint": "A3ABB8",
+    "line": "DFE3EA", "soft": "EDF0F5", "primary": "0066FF", "neutral": "8A94A6",
+    "series": ["0066FF", "7FB2FF", "1F2937", "B9C2D0", "00A3FF"]
+  },
+  "chrome": {"header": "split"},
+  "layout": {"x": 64, "title_y": 66, "bottom": 506, "gap": 24},
+  "sizes": {"title": 24, "lead": 12, "eyebrow": 10, "body": 16, "small": 12.5},
+  "styles": {"cover": "dots", "section": "full", "toc": "list", "card": "pill", "kpi": "bar",
+             "process": "pill-line", "callout": "soft", "table": "soft", "closing": "full",
+             "bullet": "•", "radius": 8}
+}
