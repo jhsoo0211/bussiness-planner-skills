@@ -9,7 +9,7 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = {"bizplan", "bizplan-quick", "bizplan-item", "bizplan-problem",
+EXPECTED = {"bizplan", "bizplan-quick", "bizplan-item", "bizplan-outline", "bizplan-problem",
             "bizplan-research", "bizplan-solution", "bizplan-growth", "bizplan-team",
             "bizplan-summary", "bizplan-visual", "bizplan-review", "bizplan-pitch",
             "bizplan-slides", "bizplan-export", "bizplan-analyze"}
@@ -42,7 +42,7 @@ def main():
             result = run(agent, destination)
             assert result.returncode != 0 and "Existing skills" in result.stderr
             assert snapshot(destination) == before, "Repeated install changed existing files"
-            print(f"PASS {agent}: 15 skills, exact resource copies, no overwrite on repeat")
+            print(f"PASS {agent}: {len(EXPECTED)} skills, exact resource copies, no overwrite on repeat")
 
         # Even a late-name collision must be caught before any earlier skills are copied.
         partial = Path(temporary) / "partial"

@@ -2,13 +2,13 @@
 
 [한국어](README.md) | [English](README.en.md)
 
-> 한국 정부 창업지원사업의 사업계획서를 **작성·검토·발표 준비**까지 단계별로 돕는 한국어 스킬 15종. Claude Code와 Codex에서 같은 `skills/` 원본을 사용한다.
+> 한국 정부 창업지원사업의 사업계획서를 **작성·검토·발표 준비**까지 단계별로 돕는 한국어 스킬 16종. Claude Code와 Codex에서 같은 `skills/` 원본을 사용한다.
 
 **한국 사업계획서의 PSST(Problem · Solution · Scale-up · Team) 구조에 맞춰 설계했다.** 문제 인식 → 실현 가능성 → 성장 전략 → 팀 구성의 흐름으로 아이디어를 구체화한다. 범용 글로벌 사업계획서나 해외 투자 IR 전용 템플릿이 아니며, 다른 유형에는 해당 공고·양식·평가 기준에 맞춘 조정이 필요하다.
 
-- 대상 사업: 예비창업패키지, 청년창업사관학교(청창사), U300, 로컬크리에이터, 수출바우처 등
+- 대상 사업: 예비창업패키지, 초기창업패키지, 창업도약패키지, 청년창업사관학교(청창사), U300, 창업중심대학, 재도전성공패키지, 로컬크리에이터, TIPS, 수출바우처 등
 - 스킬 본문·기본 안내·예시는 한국어다. **영어 README는 사용 설명의 번역이며, 스킬 전체의 영어 현지화나 해외 지원사업 적합성을 의미하지 않는다.**
-- 지원사업마다 양식·금액·기간이 다르므로, 각 스킬은 먼저 **어떤 지원사업·양식 대상인지 확인**하고 예산·기간을 해당 공고 기준으로 조정한다. (기본값 예시: 예창패 1단계 2천만 + 2단계 4천만, 8개월)
+- 지원사업마다 양식·금액·기간이 다르므로, 각 스킬은 먼저 **어떤 지원사업·양식 대상인지 확인**하고 예산·기간을 해당 공고 기준으로 조정한다. 공고 확인 전 초안용 기본값은 [공통 규칙](skills/bizplan/references/common-rules.md)의 '기본값과 기준 연도' 절 한 곳에만 둔다.
 
 ## 스킬 목록
 
@@ -17,16 +17,17 @@
 | `bizplan`          | 라우터                   | "사업계획서 도와줘"처럼 막연할 때. 상황을 물어 알맞은 모드로 안내                                                                     |
 | `bizplan-quick`    | 간략 모드                | 5가지(업종·타겟·핵심기능·차별점·약점)만 답하고 PSST 전체 초안을 한 번에                                                                 |
 | `bizplan-item`     | ① 아이템 구체화         | 아이디어만 있음. 아이템명·문제·솔루션·차별점·페르소나 도출                                                                        |
+| `bizplan-outline`  | 큰틀 보기                | 본문 전에 대제목→중제목→소제목→한두 줄 요약·증빙 슬롯·배점 비례 분량을 한눈에 확정                                                   |
 | `bizplan-problem`  | ② 문제 인식 (P)         | SPIN 기법으로 Pain Point 설득, "배경 및 필요성" 작성                                                                                  |
 | `bizplan-research` | ③ 시장·고객·경쟁 조사 | 시장 규모, 타겟 고객·페르소나, 경쟁사 비교 분석                                                                                      |
-| `bizplan-solution` | ④ 실현 가능성 (S)       | 기술 구현 계획, 예산 계획(1·2단계), 추진 일정표                                                                                      |
-| `bizplan-growth`   | ⑤ 성장 전략 (S)         | 비즈니스 모델·마케팅, SWOT, BM 구성도                                                                                                |
+| `bizplan-solution` | ④ 실현 가능성 (S)       | 기술 구현 계획, 정부 사업비 비목별 예산·자금 조달 계획, 추진 일정표                                                                 |
+| `bizplan-growth`   | ⑤ 성장 전략 (S)         | 비즈니스 모델·마케팅, SWOT, BM 구성도, 매출 분해·손익·손익분기점                                                                    |
 | `bizplan-team`     | ⑥ 팀 구성 (T)           | 대표자 역량, 팀 현황, 협력 기관                                                                                                       |
 | `bizplan-summary`  | ⑦ 개요·마무리          | 개요 요약, 기업명·스토리텔링                                                                                                         |
 | `bizplan-visual`   | 시각자료 모드            | 사업계획서에 넣을 그래프·도식·표 구성안 제안 및 제작 지원(matplotlib 그래프, 냅킨AI 인포그래픽 텍스트, 이미지 생성 AI용 영문 프롬프트, 포지셔닝맵·BM구성도 스케치) |
 | `bizplan-review`   | ⑧ 심사위원 검토         | 초안 완성 후 점수·강약점·예상 질문, 데이터 신뢰도 검증                                                                              |
 | `bizplan-pitch`    | 발표(피칭) 준비          | 발표 슬라이드 구성안, 스토리텔링, 예상 질문·모범 답변                                                                                |
-| `bizplan-slides`   | 발표 슬라이드 제작       | HTML 슬라이드(16:9) 생성 + 레이아웃·콘텐츠 검증                                                                                      |
+| `bizplan-slides`   | 발표 슬라이드 제작       | 받은 PPT 템플릿 디자인 그대로 PPTX·PDF 생성(없으면 기본 템플릿 또는 HTML) + 렌더 검증                                                |
 | `bizplan-export`   | 수출바우처               | 수출바우처 종합 구성, 목표시장 분석                                                                                                   |
 | `bizplan-analyze`  | 벤치마킹 분석            | 남의 계획서·합격 사례 비교 분석, 작성 공식 도출                                                                                      |
 
@@ -42,7 +43,7 @@ cd bussiness-planner-skills
 python scripts/install_skills.py --agent codex
 ```
 
-15개 스킬과 하위 참조 문서·스크립트를 `~/.agents/skills/`에 설치한다. 하나라도 같은 이름이 이미 있으면 **아무것도 덮어쓰지 않고 중단**한다. 기존 설치를 업데이트할 때는 사용자 수정본을 먼저 백업하고 대상 폴더를 비운 뒤 다시 실행한다. 여러 위치에 중복 설치하지 않는다.
+16개 스킬과 하위 참조 문서·스크립트를 `~/.agents/skills/`에 설치한다. 하나라도 같은 이름이 이미 있으면 **아무것도 덮어쓰지 않고 중단**한다. 기존 설치를 업데이트할 때는 사용자 수정본을 먼저 백업하고 대상 폴더를 비운 뒤 다시 실행한다. 여러 위치에 중복 설치하지 않는다.
 
 특정 프로젝트에서만 쓰려면 목적지를 지정한다:
 
@@ -66,7 +67,7 @@ $bizplan-review 이 초안을 제공한 배점표로 검토해줘.
 
 특정 파트를 정했다면 라우터를 거치지 않고 해당 스킬을 직접 지정할 수 있다. 이름을 지정하지 않는 자연어 요청에서는 Codex가 설명에 맞는 스킬을 선택한다. **직접 지정과 자동 선택은 별도로 검증**하며, 스킬을 불렀다는 사실만으로 모든 파트·참고문서를 적용했다고 보지 않는다.
 
-설치본에 `bizplan/references/common-rules.md`가 포함됐는지 확인한다. 세부 스킬도 이 공통 문서를 참조하므로 15개를 함께 설치하는 것을 권장한다. Codex용 별도 프롬프트 복사본이나 영구 분기 없이 같은 스킬을 유지한다.
+설치본에 `bizplan/references/common-rules.md`가 포함됐는지 확인한다. 세부 스킬도 이 공통 문서를 참조하므로 16개를 함께 설치하는 것을 권장한다. Codex용 별도 프롬프트 복사본이나 영구 분기 없이 같은 스킬을 유지한다.
 
 ### ② Claude Code에 설치
 
@@ -105,7 +106,7 @@ python scripts/install_skills.py --agent claude
 ### 도구와 검증 범위
 
 - 기본 작성·검토 지침은 Markdown 스킬이며 별도의 API 키를 포함하지 않는다. 실행할 Claude Code 또는 Codex 계정·환경은 사용자가 준비한다.
-- 웹 조사, Python 그래프, DOCX 변환, HTML 슬라이드 검수는 해당 환경의 도구·권한이 있을 때 수행한다. 설치만으로 외부 도구나 서비스를 추가하지 않는다.
+- 웹 조사, Python 그래프, 문서 변환, 슬라이드 렌더 검수는 해당 환경의 도구·권한이 있을 때 수행한다. 설치만으로 외부 도구나 서비스를 추가하지 않는다. 스크립트별 필요 도구는 아래 '포함된 스크립트' 표.
 - 도구가 없으면 수행하지 못한 작업과 필요한 자료를 밝힌다. 확인하지 못한 통계·출처·팀 실적을 검증 완료로 쓰지 않는다.
 - `dist/*v0.4.0.zip`은 기존 배포 파일이다. 이번 Codex 안내와 변경을 사용하려면 이 저장소의 현재 체크아웃으로 설치한다.
 
@@ -113,7 +114,40 @@ python scripts/install_skills.py --agent claude
 python scripts/check_installation.py
 ```
 
-위 명령은 임시 폴더에서 15개 스킬·리소스 복사와 덮어쓰기 방지를 확인한다. 모델을 실행하지 않으며 **Codex와 Claude의 작성 품질·속도·비용을 비교한 결과가 아니다**. 실제 평가 절차와 기록 기준은 [evals/README.md](evals/README.md)를 참고한다.
+위 명령은 임시 폴더에서 16개 스킬·리소스 복사와 덮어쓰기 방지를 확인한다. 모델을 실행하지 않으며 **Codex와 Claude의 작성 품질·속도·비용을 비교한 결과가 아니다**. 실제 평가 절차와 기록 기준은 [evals/README.md](evals/README.md)를 참고한다.
+
+## 포함된 스크립트
+
+스킬 폴더의 `scripts/`에 있다. 모델이 지침에 따라 실행하며, 직접 써도 된다(`python3 -B <스크립트> --help`).
+
+| 스크립트 | 하는 일 | 필요 도구 |
+|----------|---------|-----------|
+| `bizplan/scripts/read_form.py` | 공고·제출 양식(.hwp/.hwpx/.docx/.pdf)에서 목차·안내 문구·분량 지시·표 추출 | python-hwpx(.hwp), pdftotext(.pdf) |
+| `bizplan/scripts/check_tables.py` | 합계·비율 100%·곱셈식 검산, `=SUM` 수식 검산표 .xlsx | openpyxl(.xlsx) |
+| `bizplan/scripts/md_to_docx.py` | .md → A4·맑은 고딕·표 테두리 .docx (`--gov-bullets`로 □○-·) | python-docx, pandoc(선택) |
+| `bizplan/scripts/md_to_hwpx.py` | .md → 한글 .hwpx/.hwp (개조식·표·그림) + 구조 검증 | python-hwpx |
+| `bizplan-visual/scripts/chart_templates.py` | 시장 추이·비교·TAM/SAM/SOM·포지셔닝맵·간트 차트(200dpi, 출처 캡션) | matplotlib, 한글 폰트 |
+| `bizplan-slides/scripts/pptx_inspect.py` | 발표 템플릿의 레이아웃·자리표시자·샘플 슬라이드·테마 분석 | python-pptx |
+| `bizplan-slides/scripts/pptx_build.py` | 템플릿 디자인을 유지한 채 스펙(JSON)대로 PPTX 생성 | python-pptx, Pillow |
+| `bizplan-slides/scripts/export_pdf.py` | PPTX/DOCX → PDF(LibreOffice), HTML 슬라이드 → PDF(Playwright) | LibreOffice / Node+Playwright |
+| `bizplan-slides/scripts/preview.py` | PDF를 장별 PNG·모아보기로 렌더 | pdftoppm, Pillow |
+| `bizplan-slides/scripts/make_basic_template.py` | 기본 16:9 한국어 템플릿 재생성 | python-pptx |
+
+## 자료 넣는 법 (템플릿 · 사업계획서 자료)
+
+이 저장소는 **공개**다. 공개해도 되는 것만 커밋하고, 나머지는 비공개 위치에 둔다.
+
+| 자료 | 넣는 곳 | 커밋 |
+|------|---------|------|
+| 재배포해도 되는 발표 템플릿(.pptx/.potx) | `skills/bizplan-slides/assets/templates/` + 같은 이름의 `.md` 설명 | 예 |
+| 학교·기관 지정 양식, 유료 템플릿, 로고·실명이 든 템플릿 | `skills/bizplan-slides/assets/templates/local/` | 아니오(gitignore, 로컬 설치본에서만 사용) |
+| 합격·수상 사업계획서 원문(PDF·HWP) | `자료/` 또는 비공개 저장소 | 아니오(gitignore) |
+| 원문에서 뽑은 작성 패턴 | `skills/bizplan/references/award-patterns.md` | 예(익명화) |
+| 원문에서 뽑은 검토 교훈 | `skills/bizplan-review/references/cases/<분야>.md` | 예(익명화) |
+
+- 템플릿을 넣으면 `python3 -B skills/bizplan-slides/scripts/pptx_inspect.py <파일>`로 경고(4:3 잔재·레이아웃 없음·한글 글꼴)를 먼저 확인한다. 자세한 규칙은 [템플릿 폴더 안내](skills/bizplan-slides/assets/templates/README.md).
+- 사업계획서 원문은 `bizplan-analyze`로 분석하면 패턴·교훈을 위 파일들에 익명으로 옮기는 추가안을 만들어 준다.
+- `.pptx`·`.pdf`·`.hwp` 같은 바이너리는 `.gitattributes`가 줄바꿈 변환에서 보호한다.
 
 ## 빠른 시작 (스텝 바이 스텝)
 
@@ -126,7 +160,7 @@ python scripts/check_installation.py
 - 어떤 지원사업·공모전인지 (평가 기준표/배점표가 있으면 첨부 요청)
 - 진행 단계 — 아이디어만 / 특정 섹션 작성 중 / 초안 완성
 - **빠른 버전**(전체 초안 한 번에) vs **꼼꼼 버전**(조사 포함 단계별, 오래 걸림) vs 특정 섹션만
-- 출력 형식 — 채팅만 / .md 파일 저장 / .docx 파일 (세션에서 한 번만 정한다)
+- 출력 형식 — 채팅만 / .md 파일 저장 / .docx / .hwpx(한글) (세션에서 한 번만 정한다)
 
 > 질문에 답하기 어려우면 아이디어 메모·파일만 던져도 된다 — 스킬이 기획 요약 초안을 먼저 만들어 "이런 기획이 맞나요?"라고 확인받고 시작한다.
 
@@ -144,6 +178,12 @@ python scripts/check_installation.py
 
 `bizplan-pitch`가 발표 흐름(대회 성격별 조정) → 슬라이드 구성안(슬라이드별 유도 질문 포함) → 장점 30초 답변·약점 방어 → 예상 질문을 만든다.
 
+**Step 6.** 발표자료 파일이 필요하면:
+
+> 학교 템플릿(첨부한 pptx)에 넣어서 PPT랑 PDF로 뽑아줘.
+
+`bizplan-slides`가 템플릿을 분석해 레이아웃 매핑표를 보여주고, 템플릿 디자인(마스터·색·바닥글)을 유지한 채 내용을 채운 `발표.pptx`와 `발표.pdf`, 장별 미리보기를 만든다.
+
 ## 한 줄 사용 예시
 
 - "예비창업패키지 사업계획서 쓰고 싶은데 뭐부터 해야 할지 모르겠어" → `bizplan`(라우터)
@@ -154,6 +194,8 @@ python scripts/check_installation.py
 - "TAM SAM SOM 도식이랑 시장 그래프 만들어줘" → `bizplan-visual`
 - "초안 다 썼는데 심사위원처럼 점수 매기고 피드백해줘" → `bizplan-review`
 - "발표 슬라이드랑 예상 질문 준비해줘" → `bizplan-pitch`
+- "이 템플릿에 넣어서 피피티로 뽑아줘" → `bizplan-slides`
+- "본문 쓰기 전에 목차랑 요약부터 잡아줘" → `bizplan-outline`
 - "빠르게 전체 초안부터 뽑아줘" → `bizplan-quick`
 
 ## 산출물 미리보기
@@ -178,8 +220,8 @@ python scripts/check_installation.py
 
 - 정부지원사업 외 문서(투자 IR·민간 공모전·정책자금·B2B 제안 등)는 해당 심사 자료·양식에 맞춰 조정한 뒤 보조 도구로 활용한다. 기본 PSST 구성을 그대로 적용하면 맞지 않을 수 있다.
 - 공식 평가 기준표(배점표)가 있으면 스킬에 첨부하라 — 배점 항목에 본문을 매핑해 검토·작성한다.
-- 개인정보(학교명·직장명)는 기재하지 않는다. 필요하면 이니셜(예: S대학교)을 사용한다. 단, **제출 양식이 소속·실명 기재를 공식 요구하면**(예: 학생창업 트랙의 소속대학) 양식을 따른다.
+- 개인정보(학교명·직장명)는 ○○로 가린다(예: ○○대학교 ○○학과). 'S대'처럼 기관을 연상시키는 이니셜은 쓰지 않는다. 단, **제출 양식이 소속·실명 기재를 공식 요구하는 칸**(예: 학생창업 트랙의 소속대학)은 양식을 따른다.
 - AI가 생성한 시장 데이터·통계는 **반드시 원출처로 검증**한 뒤 제출한다.
 - 비현실적인 예산·일정은 지양한다.
-- 출력 형식(채팅/.md/.docx)은 라우터가 세션 시작 때 한 번 묻는다. 웹/앱에서는 섹션별로 파일에 누적하고 채팅에는 요약만 보여준다(.docx 변환은 pandoc, 없으면 python-docx).
+- 출력 형식(채팅/.md/.docx/.hwpx)은 라우터가 세션 시작 때 한 번 묻는다. 웹/앱에서는 섹션별로 파일에 누적하고 채팅에는 요약만 보여준다. 변환본은 A4·한글 글꼴·표 테두리 서식으로 만들며, .hwpx는 한컴오피스에서 한 번 열어 확인한다.
 - U300 등 학생 트랙은 라우터가 깊이 인터뷰(원가·시제품·실적·재무 근거 보유 여부)를 먼저 한다 — 증빙이 있는 항목만 예창패 수준 깊이로 쓰고, 없는 항목은 "산정 예정(근거·확보 시점 명시)"로 처리한다.

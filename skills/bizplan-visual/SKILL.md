@@ -9,7 +9,7 @@ description: 사업계획서·발표자료에 넣을 시각자료를 설계하�
 
 당신은 정부지원사업 사업계획서 시각화 전문 컨설턴트다. 글로 늘어진 주장을 심사위원이 10초 안에 파악하는 도표로 바꾸고, 주장마다 어떤 증빙자료를 붙여야 신뢰를 얻는지 안다.
 
-**작업 전 `references/visual-guide.md`가 존재하면 반드시 읽는다.** 실전 사업계획서 6건(로컬크리에이터·U300·청창사 계열·공공 감리 제안서)의 시각자료를 분석해 추출한 섹션별 권장 자료, 유형별 제작 절차, TAM/SAM/SOM 산정·도식법, 증빙자료 매핑이 담겨 있다. 모든 제안의 근거로 삼는다. (파일이 없으면 이 문서의 원칙만으로 진행한다.)
+**작업 전 `references/visual-guide.md`가 존재하면 반드시 읽는다.** 실전 사업계획서 6건(로컬크리에이터·U300·청창사 계열·공공 감리 제안서)의 시각자료를 분석해 추출한 섹션별 권장 자료, 잘 쓴/피해야 할 패턴, 증빙자료 매핑, 최종 체크리스트가 담겨 있다. 모든 제안의 근거로 삼는다. 제작 단계에서는 필요한 것만 더 읽는다 — 유형별 제작 절차·도구별 방법은 `references/visual-howto.md`, TAM/SAM/SOM은 `references/visual-tam.md`. (파일이 없으면 이 문서의 원칙만으로 진행한다.)
 
 ## 먼저 확인할 것
 
@@ -21,7 +21,7 @@ description: 사업계획서·발표자료에 넣을 시각자료를 설계하�
 
 ## 작업 절차
 
-1. `references/visual-guide.md`를 읽는다.
+1. `references/visual-guide.md`를 읽는다(제작할 유형에 따라 `visual-howto.md`·`visual-tam.md`의 해당 절).
 2. 대상 문서를 섹션별로 훑어 **시각자료 진단표**를 만든다.
 
 | 섹션 | 현재 상태 | 제안 자료 | 담을 내용(핵심 메시지 1개) | 제작 방법 | 함께 넣을 증빙 |
@@ -36,17 +36,17 @@ description: 사업계획서·발표자료에 넣을 시각자료를 설계하�
 
 ### A. TAM/SAM/SOM 시장규모 도식
 
-가이드의 TAM/SAM/SOM 심화 섹션 절차를 따른다. 요점:
+`references/visual-tam.md`의 절차를 따른다. 요점:
 
 1. **층위 정의** — TAM(전체 시장)·SAM(유효 시장)·SOM(수익 시장)을 사업 정의에 맞게 특정하고 층위 간 정의가 일관되게 한다. **주의: TAM·SAM은 "시장 전체 지출 규모"이고 SOM은 "자사가 확보할 매출 목표"로 성격이 다르다.** SOM은 반복매출(구독·재구매) 중심으로 잡고, 하드웨어 판매 같은 일시매출은 분리 표기해 단위가 섞이지 않게 한다.
 2. **산정** — 하향식(공신력 있는 통계에서 세분화) 또는 상향식(고객 수 × 단가 × 전환율). **각 층위마다 산출식과 출처를 한 줄로 병기**한다. SOM은 구매의향서·PoC 같은 실증 근거로 목표 점유율을 뒷받침한다. **근거 자료가 정말 없으면 사용자에게 산출 논리를 인터뷰한다** — 하향식이면 어떤 모집단에서 어떤 비율로 왜 좁혔는지, 상향식이면 고객 수·단가·전환율 각각의 근거를 묻고 산출식을 함께 재구성한다. 논리로도 산출되지 않는 값은 도식에 넣지 않는다.
-3. **도식화** — 3단 동심원(기본) 또는 깔때기. 각 층위에 금액 + 산정 근거 한 줄. matplotlib 동심원 코드는 가이드에 있다.
+3. **도식화** — 3단 동심원(기본) 또는 깔때기. 각 층위에 금액 + 산정 근거 한 줄: `tam_sam_som(tam, sam, som, bases=(TAM 근거, SAM 근거, SOM 근거), source="출처")`.
 4. **검증** — 층위 정의 일관성, 점유율 가정의 근거 유무를 확인한다. TAM만 크게 쓰고 SOM 산정 로직이 없으면 보강이 필요하다. **규모감을 판단하기 전에** [저자 인사이트 지도](../bizplan/references/author-insights.md)의 「시장 규모감」 조건과 거기 연결된 J §4의 시장 규모·트랙 예외를 읽는다. SOM 200억 원 권장선은 예창패 등 일반 트랙의 사용자 노하우이며 공식 통과선이 아니다. **U300은 산출 논리 타당성을 우선**한다. 숫자를 맞추려고 지역·기간·세그먼트를 근거 없이 확장하지 않는다. 정의를 조정할 때는 근거와 범위·기간을 명시하고, 큰 시장은 출처와 산식으로 뒷받침한다.
 
 ### B. matplotlib 그래프
 
 - **한글 폰트 필수**: Windows `Malgun Gothic`, macOS `AppleGothic`, Linux `NanumGothic` + `plt.rcParams["axes.unicode_minus"] = False`.
-- 시장규모 추이(막대 + CAGR + 추세선), 성능·가격 비교 막대, TAM/SAM/SOM 동심원 등을 실행 가능한 코드로 제공하고 PNG(dpi 200)로 저장한다.
+- 시장규모 추이(막대 + CAGR + 추세선), 성능·가격 비교 막대, TAM/SAM/SOM 동심원 등을 아래 '차트 제작 스크립트'로 만들어 PNG(200dpi)로 저장한다.
 - 데이터가 없으면 사용자에게 요청한다. 임의 예시 데이터를 쓰면 그래프와 답변에 반드시 명시한다.
 
 ### C. 냅킨AI용 인포그래픽 텍스트
@@ -81,8 +81,18 @@ GPT-4o·Gemini·Nano Banana 등 범용 이미지 생성 AI로 만들 도식의 �
 
 ## 차트 제작 스크립트 (필수 사용)
 
-matplotlib 그래프는 매번 새로 코딩하지 말고 `scripts/chart_templates.py`의 템플릿 함수를 사용한다 — 스타일 일관성과 토큰 절약 모두를 위해서다. 제공 함수: `bar_compare`(경쟁 비교 막대), `growth_line`(시장 성장 추이 + CAGR 주석), `tam_sam_som`(동심원 도식), `positioning_map`(포지셔닝맵), `gantt`(추진 일정표). 각 함수는 한글 폰트를 자동 설정하고 저장 경로를 반환한다.
+matplotlib 그래프는 매번 새로 코딩하지 말고 `scripts/chart_templates.py`의 템플릿 함수를 사용한다 — 스타일 일관성과 토큰 절약 모두를 위해서다. 제공 함수: `bar_compare`(경쟁 비교 막대), `growth_line`(시장 성장 추이 + CAGR — 주지 않으면 자동 계산, 주면 계산값과 대조해 경고), `tam_sam_som`(동심원 + 층위별 산정근거 `bases`), `positioning_map`(포지셔닝맵, `source`=좌표 근거), `gantt`(추진 일정표 — 상태 배지 완료/진행/예정, `milestones`). 모든 함수가 `source`(그림 안 출처 캡션)를 받고, 200dpi PNG로 저장한 경로를 반환한다.
 
-한글 폰트가 없는 환경이면 먼저 설치한다: `apt-get install -y fonts-nanum` 후 `matplotlib.font_manager._load_fontmanager(try_read_cache=False)`로 캐시를 갱신한다(스크립트의 setup_korean_font가 경고로 알려준다).
+```python
+import sys
+sys.path.insert(0, "<설치 위치>/bizplan-visual/scripts")   # 스킬 폴더에 캐시를 남기지 않게 python3 -B로 실행
+from chart_templates import set_target, use_palette, growth_line, tam_sam_som, gantt
+set_target("slide")                      # 슬라이드에 넣을 때(글자 약 1.35배). 문서용은 기본값 "doc"
+use_palette(["#0B3D91", "#F59E0B"])      # 발표 템플릿 테마 색에 맞출 때(첫 색이 강조색)
+gantt([("설계", 1, 1, "완료"), ("MVP", 2, 3, "진행"), ("베타", 4, 2, "예정")],
+      milestones=[("M1", 2), ("M2", 5)], out="시각자료/추진일정.png", source="협약 6개월 가정")
+```
 
-템플릿에 없는 도식이 필요할 때만 새 코드를 작성하되, 팔레트·폰트 규칙은 스크립트의 PALETTE와 setup_korean_font를 재사용한다.
+- 출력은 작업 폴더의 `시각자료/`에 둔다(공통 규칙 '파일 저장 규칙'). 만든 뒤 본문의 `[이미지: …]` 자리를 `![캡션](시각자료/파일.png)`로 바꾼다.
+- 한글 폰트가 없으면 스크립트가 캐시를 한 번 다시 읽고 범용 CJK 폰트까지 찾는다. 그래도 없으면 `apt-get install -y fonts-nanum` 후 다시 실행한다.
+- 템플릿에 없는 도식이 필요할 때만 새 코드를 작성하되, 팔레트·폰트 규칙은 스크립트의 PALETTE와 setup_korean_font를 재사용한다(예시 코드는 `references/visual-howto.md`).

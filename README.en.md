@@ -2,7 +2,7 @@
 
 [한국어](README.md) | [English](README.en.md)
 
-15 skills for drafting, reviewing, and presenting business plans for **Korean government startup-support programs**. Claude Code and Codex use the same `skills/` source.
+16 skills for drafting, reviewing, and presenting business plans for **Korean government startup-support programs**. Claude Code and Codex use the same `skills/` source.
 
 ## Scope: designed for Korean PSST applications
 
@@ -15,7 +15,7 @@ The workflow follows **PSST: Problem · Solution · Scale-up · Team**, commonly
 | Scale-up — 성장 전략 | Business model, market entry, and growth |
 | Team — 팀 구성 | Founder capabilities, team, and partners |
 
-The intended context includes 예비창업패키지, 청년창업사관학교, U300, 로컬크리에이터, and 수출바우처. Their requirements differ: the current official announcement, application form, and scoring rubric take precedence over the default PSST outline. Example budgets and schedules in the skills are illustrative, not current program rules.
+The intended context includes 예비창업패키지, 초기창업패키지, 창업도약패키지, 청년창업사관학교, U300, 창업중심대학, 재도전성공패키지, 로컬크리에이터, TIPS, and 수출바우처. Their requirements differ: the current official announcement, application form, and scoring rubric take precedence over the default PSST outline. Example budgets and schedules in the skills are illustrative, not current program rules.
 
 **This is an English usage guide. The skill instructions, default interaction, and examples remain Korean.** It does not establish an English-localized workflow or suitability for non-Korean funding programs. Investor decks and other proposals require adaptation to their own audience and requirements.
 
@@ -26,16 +26,17 @@ The intended context includes 예비창업패키지, 청년창업사관학교, U
 | `bizplan` | Choosing the right workflow and gathering application requirements |
 | `bizplan-quick` | A full PSST draft from five inputs: industry, target, features, differentiation, weaknesses |
 | `bizplan-item` | Refining an idea, customer, problem, and value proposition |
+| `bizplan-outline` | Fixing the outline before drafting: headings, one-line summaries, evidence slots, and page allocation |
 | `bizplan-problem` | Framing the problem and need with SPIN |
 | `bizplan-research` | Market size, customer research, and competitor comparisons |
-| `bizplan-solution` | Implementation, budget, and schedule planning |
-| `bizplan-growth` | Business model, marketing, SWOT, and growth strategy |
+| `bizplan-solution` | Implementation, grant budget by official cost category, funding sources, and schedule |
+| `bizplan-growth` | Business model, marketing, SWOT, growth strategy, and revenue/P&L/break-even projections |
 | `bizplan-team` | Founder capabilities, team, and partners |
 | `bizplan-summary` | An executive summary, naming, and brand story |
 | `bizplan-visual` | Evidence visuals, charts, positioning maps, and image prompts |
 | `bizplan-review` | Reviewing a draft against the rubric, checking claims, and anticipating questions |
 | `bizplan-pitch` | Presentation flow, storytelling, scripts, and Q&A |
-| `bizplan-slides` | Producing and checking 16:9 HTML slides |
+| `bizplan-slides` | Producing PPTX and PDF decks that keep a supplied template's design (or a built-in template / HTML), then checking renders |
 | `bizplan-export` | Export-voucher plans and target-market analysis |
 | `bizplan-analyze` | Comparing completed plans and extracting reusable writing patterns |
 
@@ -49,7 +50,7 @@ cd bussiness-planner-skills
 python scripts/install_skills.py --agent codex
 ```
 
-This copies all 15 skill folders, including their references and scripts, into `~/.agents/skills/`. It **stops before copying if any target skill already exists**. To update an installation, back up any local edits and move the old target skill folders out of the installation location before running the installer again. Avoid duplicate installations in multiple skill locations.
+This copies all 16 skill folders, including their references and scripts, into `~/.agents/skills/`. It **stops before copying if any target skill already exists**. To update an installation, back up any local edits and move the old target skill folders out of the installation location before running the installer again. Avoid duplicate installations in multiple skill locations.
 
 For a project-only installation, specify that project's skills directory:
 
@@ -117,7 +118,7 @@ Evaluation must separately record **evidence that a reference was read** and **e
 2. `bizplan` checks the target program, working mode, and output format. Choose a quick draft, a step-by-step workflow with research, or a specific section. Existing answers are reused.
 3. Draft the plan. `bizplan-quick` asks for five core inputs and produces a PSST outline with a problem-to-solution consistency check. Illustrative data must remain labeled as unverified.
 4. Use `bizplan-review` to identify weak claims, missing evidence, inconsistencies, and likely reviewer questions. Its scores are feedback, not an official assessment or funding prediction.
-5. If presentation review is required, use `bizplan-pitch` for the narrative and Q&A, then `bizplan-slides` for HTML slides.
+5. If presentation review is required, use `bizplan-pitch` for the narrative and Q&A, then `bizplan-slides` to fill your presentation template (or a built-in one) and export PPTX and PDF.
 
 The detailed path is:
 
@@ -139,14 +140,26 @@ These are existing repository outputs for the fictional **PILLY** concept, not m
 
 These Korean-language examples demonstrate output structure. They are not controlled Claude-versus-Codex benchmarks or evidence of application success.
 
+## Adding templates and reference plans
+
+This repository is **public**. Commit only material that may be redistributed.
+
+| Material | Location | Committed |
+| --- | --- | --- |
+| Redistributable presentation templates (.pptx/.potx) | `skills/bizplan-slides/assets/templates/` with a same-name `.md` note | Yes |
+| School/agency-mandated, paid, or branded templates | `skills/bizplan-slides/assets/templates/local/` | No (gitignored; used by local installs) |
+| Original winning plans (PDF/HWP) | `자료/` or a private repository | No (gitignored) |
+| Anonymized writing patterns / review lessons | `skills/bizplan/references/award-patterns.md`, `skills/bizplan-review/references/cases/` | Yes |
+
 ## Tools and verification
 
-The core package contains Markdown instructions and optional Python chart templates. It does not include an API key, install external services, or grant tool access. Use the capabilities and permissions available in your agent environment:
+The core package contains Markdown instructions and optional Python scripts (form reading, table checks, DOCX/HWPX export, charts, PPTX template filling, PDF export). It does not include an API key, install external services, or grant tool access. Use the capabilities and permissions available in your agent environment:
 
 - Web research requires browsing access or supplied source materials.
 - Python charts require Python, relevant libraries, and a Korean font.
-- DOCX conversion requires a document tool such as Pandoc or `python-docx`.
-- HTML slide review requires an appropriate renderer/browser for visual checks.
+- DOCX export uses `python-docx` (Pandoc optional); HWPX/HWP export and reading use `python-hwpx`; spreadsheet checks use `openpyxl`.
+- PPTX template filling uses `python-pptx`; PDF export uses LibreOffice (PPTX/DOCX) or Node + Playwright (HTML); previews use `pdftoppm`.
+- HWPX files are structurally validated only; open them once in Hancom Office to confirm layout.
 - If a tool is unavailable, the skill should state what remains unverified and request the missing material instead of claiming completion.
 
 Run the offline installation smoke test:
@@ -155,7 +168,7 @@ Run the offline installation smoke test:
 python scripts/check_installation.py
 ```
 
-It checks all 15 skill folders, exact resource copying, existing-installation protection, and source/destination overlap protection in temporary directories. It does **not** run either model, measure skill discovery, or establish output quality, speed, or cost. The [evaluation guide](evals/README.md) separates installation checks, trigger tests, and controlled quality comparisons.
+It checks all 16 skill folders, exact resource copying, existing-installation protection, and source/destination overlap protection in temporary directories. It does **not** run either model, measure skill discovery, or establish output quality, speed, or cost. The [evaluation guide](evals/README.md) separates installation checks, trigger tests, and controlled quality comparisons.
 
 The ZIP files named `dist/*v0.4.0.zip` are earlier distribution artifacts. Install from the current checkout to use the Codex documentation and changes described here.
 

@@ -27,6 +27,12 @@
     {"id": 23, "query": "SWOT 분석이 뭔지 개념만 설명해줘", "expected": null, "note": "near-miss: 개념 질문은 스킬 불필요"},
     {"id": 24, "query": "취업 면접 예상 질문 뽑아줘", "expected": null, "note": "near-miss: '예상 질문'이지만 pitch 아님"},
     {"id": 25, "query": "합격 사례 사업계획서 3건을 비교 분석해서 작성 공식 뽑아줘", "expected": "bizplan-analyze"},
-    {"id": 26, "query": "발표 구성안 확정했으니 16:9 HTML 슬라이드 파일로 만들어줘", "expected": "bizplan-slides"}
+    {"id": 26, "query": "발표 구성안 확정했으니 16:9 HTML 슬라이드 파일로 만들어줘", "expected": "bizplan-slides"},
+    {"id": 27, "query": "사업계획서 본문 쓰기 전에 목차랑 소제목별 한두 줄 요약부터 잡아줘. 예창패야", "expected": "bizplan-outline", "note": "쓰기 전 큰틀 → outline (완성본 압축인 summary와 구분)"},
+    {"id": 28, "query": "학교 창업지원단 PPT 템플릿 첨부할게. 이 템플릿에 우리 발표 구성안 넣어서 피피티랑 PDF로 뽑아줘", "expected": "bizplan-slides", "note": "템플릿 채우기 PPTX·PDF"},
+    {"id": 29, "query": "초기창업패키지 지원하려는데 업력 2년차야. 사업계획서 어떻게 준비하지?", "expected": "bizplan", "note": "추가 지원사업명 → 라우터"},
+    {"id": 30, "query": "예산표 합계가 맞는지 검산하고 정부지원금·자부담 조달 계획 표로 다시 짜줘", "expected": "bizplan-solution", "note": "비목 예산·조달 → solution"},
+    {"id": 31, "query": "3년치 매출 추정이랑 손익분기점 계산해서 성장 전략에 넣어줘", "expected": "bizplan-growth", "note": "재무추정 → growth"},
+    {"id": 32, "query": "회사 워크숍용 PPT 템플릿 하나 새로 디자인해줘", "expected": null, "note": "near-miss: 템플릿 디자인 자체는 사업계획서 발표 맥락 아님"}
   ]
 }
