@@ -127,6 +127,7 @@ python scripts/check_installation.py
 | `bizplan/scripts/check_tables.py` | 합계·비율 100%·곱셈식 검산, `=SUM` 수식 검산표 .xlsx | openpyxl(.xlsx) |
 | `bizplan/scripts/md_to_docx.py` | .md → A4·맑은 고딕·표 테두리 .docx (`--gov-bullets`로 □○-·) | python-docx, pandoc(선택) |
 | `bizplan/scripts/md_to_hwpx.py` | .md → 한글 .hwpx/.hwp (개조식·표·그림) + 구조 검증 | python-hwpx |
+| `bizplan/scripts/coach_draft.py` | 초안 사본에 소제목마다 '디벨롭 가이드' 상자를 넣은 코칭본 골격(PSST 작성법 항목 판정·미확보 표기·검토 점수 영향·넣어 줄 자산) | — |
 | `bizplan-visual/scripts/chart_templates.py` | 시장 추이·비교·TAM/SAM/SOM·포지셔닝맵·간트 차트(200dpi, 출처 캡션) | matplotlib, 한글 폰트 |
 | `bizplan-slides/scripts/pptx_inspect.py` | 발표 템플릿의 레이아웃·자리표시자·샘플 슬라이드·테마 분석 | python-pptx |
 | `bizplan-slides/scripts/pptx_build.py` | 템플릿 디자인을 유지한 채 스펙(JSON)대로 PPTX 생성 | python-pptx, Pillow |
@@ -137,6 +138,16 @@ python scripts/check_installation.py
 | `bizplan-slides/scripts/theme_deck.py` | 내용 스펙(JSON) → 테마 디자인의 편집 가능한 PPTX(패턴 23종·네이티브 차트), 스펙 검사·누락 대조 | python-pptx, Pillow |
 | `bizplan-slides/scripts/deck_check.py` | 발표 PPTX의 수치·날짜(차트 값 포함)를 원문과 대조, 미확보 표기·작은 글자 집계 | python-pptx |
 | `bizplan-slides/scripts/theme_from_pdf.py` | 그림 템플릿(PDF·PNG)에서 쪽 이미지·모아보기·색 후보·시작용 테마 JSON 추출 | pdftoppm, Pillow |
+
+## 초안과 함께 받는 코칭
+
+초안만 주지 않고 "여기서 무엇을 고려하고 무엇을 더 적어야 하는지"를 함께 준다(기준: [작성 코칭](skills/bizplan/references/coaching.md)).
+
+- **채팅 작성 팁**: 섹션마다 3~4줄로 준다. 내용은 PSST 작성법의 그 절 기준, 이 초안에서 디벨롭할 곳, 다음 행동이다.
+- **코칭본** `사업계획서_코칭본.md`: 초안 사본에 소제목마다 디벨롭 가이드 상자를 넣는다.
+  - 상자 칸: 작성법 기준 ✓·△·✗, 심사 관점, 디벨롭 방법, 사실 확인 후 쓸 초안 문장, 발표에서 말로 할 것, 점수 영향, **있으면 넣어 주세요**(인터뷰 메모·견적서·LOI 같은 자산)
+  - 맨 앞 '한눈에': 점수가 가장 많이 오르는 행동 3개와 모아 주실 자료
+  - 제출본은 상자 없는 `사업계획서.md`다.
 
 ## 정보를 어떤 구조로 보여줄지 (파싱 기준)
 

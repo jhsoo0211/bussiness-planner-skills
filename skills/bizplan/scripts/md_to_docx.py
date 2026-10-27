@@ -119,10 +119,47 @@ def _widths(tbl, total_mm=170):
                 row.cells[c].width = w
 
 
+def _shade(p, fill="FFF8E6", bar="F59E0B"):
+    """인용·코칭 상자 문단에 옅은 바탕과 왼쪽 막대를 넣는다(코칭본의 '디벨롭 가이드'가 본문과 구분되게)."""
+    pPr = p._p.get_or_add_pPr()
+    for tag in ("w:pBdr", "w:shd"):
+        old = pPr.find(qn(tag))
+        if old is not None:
+            pPr.remove(old)
+    bdr = OxmlElement("w:pBdr")
+    left = OxmlElement("w:left")
+    for k, v in (("w:val", "single"), ("w:sz", "18"), ("w:space", "6"), ("w:color", bar)):
+        left.set(qn(k), v)
+    bdr.append(left)
+    shd = OxmlElement("w:shd")
+    for k, v in (("w:val", "clear"), ("w:color", "auto"), ("w:fill", fill)):
+        shd.set(qn(k), v)
+    # pPr 자식 순서: pStyle, keepNext, …, numPr, …, pBdr, shd, … — numPr 뒤에 둔다
+    anchor = None
+    for tag in ("w:numPr", "w:suppressLineNumbers", "w:keepLines", "w:keepNext", "w:pStyle"):
+        anchor = pPr.find(qn(tag))
+        if anchor is not None:
+            break
+    if anchor is not None:
+        anchor.addnext(bdr)
+    else:
+        pPr.insert(0, bdr)
+    bdr.addnext(shd)
+
+
 def postprocess(path, font):
     doc = Document(path)
     _page(doc)
     _set_fonts(doc, font)
+    paras = doc.paragraphs
+    for i, p in enumerate(paras):
+        if p.style.name == "Block Text":
+            _shade(p)
+            if p.text.strip().startswith("디벨롭 가이드"):     # 상자 제목 뒤 목록(Compact)까지 같은 상자로
+                j = i + 1
+                while j < len(paras) and paras[j].style.name in ("Compact", "Block Text"):
+                    _shade(paras[j])
+                    j += 1
     for tbl in doc.tables:
         _borders(tbl)
         _widths(tbl)
@@ -256,9 +293,14 @@ def via_python(md_text, out, resource_path):
             i += 1
             continue
         if s.startswith(">"):
+            body = s.lstrip(">").strip()
+            if not body:
+                i += 1
+                continue
             p = doc.add_paragraph()
             p.paragraph_format.left_indent = Mm(6)
-            _runs(p, s.lstrip("> "))
+            _runs(p, body)
+            _shade(p)
             i += 1
             continue
         buf = [s]

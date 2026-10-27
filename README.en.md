@@ -153,6 +153,17 @@ This repository is **public**. Commit only material that may be redistributed.
 | Original winning plans (PDF/HWP) | `자료/` or a private repository | No (gitignored) |
 | Anonymized writing patterns / review lessons | `skills/bizplan/references/award-patterns.md`, `skills/bizplan-review/references/cases/` | Yes |
 
+## Coaching with every draft
+
+Each draft comes with coaching, defined in `skills/bizplan/references/coaching.md`.
+
+- **Chat tips**: three or four lines per section. Each gives the PSST method's rule for that section, where this draft needs work, and the next action.
+- **Coaching copy** (`사업계획서_코칭본.md`): a copy of the draft with a "development guide" box under every heading.
+  - Each box covers the method checklist (✓/△/✗), the reviewer's view, how to develop the section, fill-in sentences to use once the facts are confirmed, talking points for the pitch, score impact, and assets to send (interview notes, quotes, LOIs).
+  - A summary at the top lists the three actions that raise the score most.
+  - `coach_draft.py` builds the skeleton.
+  - The submission copy remains `사업계획서.md`.
+
 ## Information types and deck blueprints
 
 Content is mapped to a visual form by the **relationship between pieces of information**, not by topic. There are 23 relationship types; examples include parallel items, items converging on a conclusion, key numbers, trends, market nesting, criteria comparison, steps, milestones, task × period, and label → content pairs.
