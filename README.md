@@ -2,6 +2,13 @@
 
 [한국어](README.md) | [English](README.en.md)
 
+<p align="center">
+  <a href="docs/motion-graphic/reel/bizplan-reel.mp4">
+    <img src="docs/motion-graphic/reel/bizplan-reel-preview.webp" width="100%" alt="bizplan 소개 영상: 큰틀 잡기, PSST 작성, 문제-해결 1:1 대응, 시장 규모 도식, 심사위원 채점, 한글·워드 내보내기, 채팅 링크로 설치">
+  </a>
+</p>
+<p align="center"><sub>▶ <b>소개 영상 (50초)</b> — 이미지를 누르면 소리가 포함된 원본 영상(mp4)으로 이동합니다</sub></p>
+
 > 한국 정부 창업지원사업의 사업계획서를 **작성·검토·발표 준비**까지 단계별로 돕는 한국어 스킬 15종. Claude Code와 Codex에서 같은 `skills/` 원본을 사용한다.
 
 **한국 사업계획서의 PSST(Problem · Solution · Scale-up · Team) 구조에 맞춰 설계했다.** 문제 인식 → 실현 가능성 → 성장 전략 → 팀 구성의 흐름으로 아이디어를 구체화한다. 범용 글로벌 사업계획서나 해외 투자 IR 전용 템플릿이 아니며, 다른 유형에는 해당 공고·양식·평가 기준에 맞춘 조정이 필요하다.
@@ -32,7 +39,25 @@
 
 ## 설치 방법
 
-### ① Codex에 설치
+### ① 채팅으로 설치 (가장 쉬움)
+
+Claude Code나 Codex 채팅창에 저장소 링크를 붙여넣고 설치를 부탁한다. 에이전트가 저장소를 내려받아 아래 ②·③의 설치 스크립트를 대신 실행한다.
+
+```text
+https://github.com/jhsoo0211/bussiness-planner-skills 이 스킬 설치해줘
+```
+
+더 확실하게 하려면 설치 방법까지 적어 준다:
+
+```text
+https://github.com/jhsoo0211/bussiness-planner-skills 를 내려받아 scripts/install_skills.py 로 bizplan 스킬을 설치해줘
+```
+
+- 설치 위치: Claude Code는 `~/.claude/skills/`, Codex는 `~/.agents/skills/`. 에이전트가 명령 실행 허락을 물으면 내용을 확인하고 승인한다.
+- 설치가 끝나면 새 세션을 열거나 재시작한 뒤 `/bizplan`(Claude Code) 또는 `$bizplan`(Codex)으로 시작한다.
+- 에이전트가 설치하지 못하거나 다른 위치에 설치하려 하면 ②·③의 명령을 직접 실행한다.
+
+### ② Codex에 설치 (터미널)
 
 Git과 Python 3가 필요하다. 먼저 이 저장소를 내려받고 저장소 폴더로 이동한다. Windows에서 `python` 대신 `py`를 사용하는 환경이면 아래 명령의 `python`을 `py`로 바꾼다.
 
@@ -64,7 +89,7 @@ $bizplan-review 이 초안을 제공한 배점표로 검토해줘.
 
 설치본에 `bizplan/references/common-rules.md`가 포함됐는지 확인한다. 세부 스킬도 이 공통 문서를 참조하므로 15개를 함께 설치하는 것을 권장한다. Codex용 별도 프롬프트 복사본이나 영구 분기 없이 같은 스킬을 유지한다.
 
-### ② Claude Code에 설치
+### ③ Claude Code에 설치 (터미널)
 
 위와 같이 저장소를 내려받은 뒤 실행하면 `~/.claude/skills/`에 설치한다:
 

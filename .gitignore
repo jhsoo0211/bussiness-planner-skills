@@ -5,3 +5,8 @@
 __pycache__/
 
 graphify-out/
+
+# 모션그래픽 렌더 프레임
+docs/motion-graphic/20s/frames/
+docs/motion-graphic/reel/frames/
+docs/motion-graphic/reel/*.wav

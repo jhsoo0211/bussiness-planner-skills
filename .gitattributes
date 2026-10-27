@@ -1,3 +1,11 @@
 * text eol=lf
 *.png binary
 *.zip binary
+*.mp4 binary
+*.woff2 binary
+*.hwp binary
+*.hwpx binary
+*.webp binary
+*.gif binary
+*.jpg binary
+*.wav binary
