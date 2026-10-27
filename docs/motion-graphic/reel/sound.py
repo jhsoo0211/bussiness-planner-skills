@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """bizplan reel 사운드트랙: 120 BPM 음악 + 화면 이벤트 동기 효과음 (numpy만 사용).
 
-render.cjs가 만든 events.json을 읽어, 34초 루프가 이어지도록(끝 꼬리를 앞에 겹침) 48kHz 스테레오 WAV를 만든다.
+render.cjs가 만든 events.json을 읽어, 영상 길이 그대로 루프가 이어지도록(끝 꼬리를 앞에 겹침) 48kHz 스테레오 WAV를 만든다.
 
     python sound.py <frames>/events.json bizplan-reel.wav
 """
@@ -16,13 +16,7 @@ SR = 48000
 BEAT = 0.5
 RNG = np.random.default_rng(7)
 
-# 바(2초)별 섹션: 종이(paper) 0–5·16, 청사진(blue) 6–9, 홀로그램(holo) 10–15
-def section(bar):
-    if 6 <= bar <= 9:
-        return "blue"
-    if 10 <= bar <= 15:
-        return "holo"
-    return "paper"
+# 마디(2초)별 스타일은 events.json의 music.styles(paper / blue / note)를 따른다.
 
 # Am – F – C – G (베이스 루트, 3화음)
 CHORDS = [(45, [57, 60, 64]), (41, [53, 57, 60]), (48, [55, 60, 64]), (43, [55, 59, 62])]
@@ -101,12 +95,12 @@ def hat(open_=False):
     return hp(noise(n), 7000, 3) * env(n, 0.0005, 0.08 if open_ else 0.014)
 
 
-def bass(note, dur, holo=False):
+def bass(note, dur, bright=False):
     n = secs(dur)
     t = np.arange(n) / SR
     f = midi(note)
     saw = 2 * ((t * f) % 1) - 1
-    sig = np.sin(2 * np.pi * f * t) + (0.35 if holo else 0.15) * lp(saw, 420 if holo else 300)
+    sig = np.sin(2 * np.pi * f * t) + (0.3 if bright else 0.15) * lp(saw, 420 if bright else 300)
     e = np.minimum(1, t / 0.004) * np.exp(-t / (dur * 1.6)) * np.clip((dur - t) / 0.02, 0, 1)
     return sig * e
 
@@ -115,14 +109,11 @@ def pluck(note, style):
     n = secs(0.6)
     t = np.arange(n) / SR
     f = midi(note)
-    if style == "paper":   # felt piano-ish
-        sig = np.sin(2 * np.pi * f * t) + 0.3 * np.sin(4 * np.pi * f * t) * np.exp(-t / 0.08)
-        return sig * env(n, 0.003, 0.32)
-    if style == "blue":    # clean triangle pluck
-        tri = 2 * np.abs(2 * ((t * f) % 1) - 1) - 1
-        return lp(tri, 2600) * env(n, 0.002, 0.18)
-    saw = 2 * ((t * f) % 1) - 1 + 0.6 * (2 * ((t * f * 1.006) % 1) - 1)
-    return lp(saw, 3800) * env(n, 0.002, 0.14) * 0.6
+    if style in ("paper", "note"):   # felt piano-ish (note: a touch brighter, shorter)
+        sig = np.sin(2 * np.pi * f * t) + (0.3 if style == "paper" else 0.45) * np.sin(4 * np.pi * f * t) * np.exp(-t / 0.08)
+        return sig * env(n, 0.003, 0.32 if style == "paper" else 0.22)
+    tri = 2 * np.abs(2 * ((t * f) % 1) - 1) - 1   # blue: clean triangle pluck
+    return lp(tri, 2600) * env(n, 0.002, 0.18)
 
 
 def pad(notes, dur, style):
@@ -131,13 +122,13 @@ def pad(notes, dur, style):
     sig = np.zeros(n)
     for note in notes:
         f = midi(note)
-        if style == "paper":
+        if style in ("paper", "note"):
             sig += np.sin(2 * np.pi * f * t)
         else:
             for d in (0.997, 1.003):
                 sig += 0.5 * (2 * ((t * f * d) % 1) - 1)
-    if style != "paper":
-        sig = lp(sig, 900 if style == "blue" else 1400)
+    if style == "blue":
+        sig = lp(sig, 900)
     e = np.clip(t / 0.35, 0, 1) * np.clip((dur + 0.6 - t) / 0.6, 0, 1)
     return sig * e / len(notes)
 
@@ -258,51 +249,51 @@ def sfx(kind, e):
 
 
 # ───────────── arrangement ─────────────
-def build(events, duration):
+def build(events, duration, styles):
     n = int(duration * SR)
     total = n + 3 * SR
     drums, music, fx = Bus(total), Bus(total), Bus(total)
     duck = np.ones(total)
     bars = int(duration / 2)
+    first, last = 0, bars - 1   # the first and last bars are kept sparse so the loop joins cleanly
 
     for b in range(bars):
-        sec = section(b)
+        sec = styles[b]
         t0 = b * 2.0
         root, triad = CHORDS[b % 4]
         # drums
-        kicks = [0, 2] if sec != "holo" else [0, 1, 2, 3]
-        if sec == "blue":
-            kicks = [0, 2, 3.5]
+        kicks = {"paper": [0, 2], "blue": [0, 2, 3.5], "note": [0, 1, 2, 3]}[sec]
         for k in kicks:
             tk = t0 + k * BEAT
             drums.add(tk, kick(soft=sec == "paper"), 0.85)
             i = int(tk * SR)
             m = secs(0.25)
             duck[i:i + m] = np.minimum(duck[i:i + m], 1 - 0.35 * np.exp(-np.arange(m) / SR / 0.09))
-        if sec != "paper" or 2 <= b <= 5:
+        sparse = b in (first, last) or (sec == "paper" and b < 2)
+        if not sparse:
             for k in (1, 3):
-                drums.add(t0 + k * BEAT, clap(rim=sec == "paper"), 0.3 if sec == "paper" else 0.42, 0.05)
-        hats = 0 if (sec == "paper" and (b < 2 or b == 16)) else (8 if sec != "holo" else 16)
+                drums.add(t0 + k * BEAT, clap(rim=sec == "paper"), 0.3 if sec == "paper" else 0.4, 0.05)
+        hats = 0 if sparse else (16 if sec == "note" else 8)
         for h in range(hats):
             th = t0 + h * (2.0 / hats)
             accent = (h % 2 == 1) if hats == 8 else (h % 4 == 2)
-            drums.add(th, hat(open_=sec == "holo" and h % 8 == 6), (0.16 if accent else 0.09) * (0.8 if sec == "paper" else 1), 0.25)
+            drums.add(th, hat(open_=sec == "note" and h % 8 == 6), (0.15 if accent else 0.07) * (0.8 if sec == "paper" else 1), 0.25)
         # bass
-        if sec != "paper" or 2 <= b <= 5:
+        if not sparse:
             step = 0.5 if sec == "paper" else 0.25
             for s in range(int(2 / step)):
-                note = root + (12 if sec == "holo" and s % 2 == 1 else 0)
-                music.add(t0 + s * step, bass(note, step * 0.9, sec == "holo"), 0.42)
+                note = root + (12 if sec == "note" and s % 4 == 3 else 0)
+                music.add(t0 + s * step, bass(note, step * 0.9, sec == "blue"), 0.42)
         # arp
         tones = triad + [triad[0] + 12]
         pattern = [0, 1, 2, 3, 2, 1, 2, 3]
         step = 0.25 if sec == "paper" else 0.125
-        shift = {"paper": 0, "blue": 12, "holo": 12}[sec]
+        shift = {"paper": 0, "blue": 12, "note": 12}[sec]
         for s in range(int(2 / step)):
             music.add(t0 + s * step, pluck(tones[pattern[s % 8]] + shift, sec),
-                      {"paper": 0.2, "blue": 0.13, "holo": 0.1}[sec], -0.35 if s % 2 else 0.35)
+                      {"paper": 0.2, "blue": 0.13, "note": 0.12}[sec], -0.35 if s % 2 else 0.35)
         # pad
-        music.add(t0, pad([triad[0] - 12] + triad, 2.0, sec), {"paper": 0.08, "blue": 0.12, "holo": 0.12}[sec])
+        music.add(t0, pad([triad[0] - 12] + triad, 2.0, sec), {"paper": 0.08, "blue": 0.12, "note": 0.09}[sec])
 
     for e in events:
         sig, gain, pan = sfx(e["kind"], e)
@@ -337,7 +328,9 @@ def build(events, duration):
 def main():
     events_path, out_path = sys.argv[1], sys.argv[2]
     data = json.load(open(events_path, encoding="utf-8"))
-    audio = build(data["events"], data["duration"])
+    bars = int(data["duration"] / 2)
+    styles = (data.get("music") or {}).get("styles") or ["paper"] * bars
+    audio = build(data["events"], data["duration"], styles)
     pcm = (np.clip(audio.T, -1, 1) * 32767).astype("<i2")
     with wave.open(out_path, "wb") as w:
         w.setnchannels(2)
