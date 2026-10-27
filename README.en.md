@@ -158,11 +158,10 @@ This repository is **public**. Commit only material that may be redistributed.
 Each draft comes with coaching, defined in `skills/bizplan/references/coaching.md`.
 
 - **Chat tips**: three or four lines per section. Each gives the PSST method's rule for that section, where this draft needs work, and the next action.
-- **Coaching copy** (`사업계획서_코칭본.md`): a copy of the draft with a "development guide" box under every heading.
-  - Each box covers the method checklist (✓/△/✗), the reviewer's view, how to develop the section, fill-in sentences to use once the facts are confirmed, talking points for the pitch, score impact, and assets to send (interview notes, quotes, LOIs).
-  - A summary at the top lists the three actions that raise the score most.
-  - `coach_draft.py` builds the skeleton.
-  - The submission copy remains `사업계획서.md`.
+- **Writing guide** (`작성가이드.md`): a separate deliverable, read alongside the plan. It follows the plan's table of contents and says, for each part, what to consider and what must be written.
+  - Each part covers the current state (method checklist ✓/△/✗), points to consider, a must-write checklist, fill-in sentences to use once the facts are confirmed, talking points for the pitch, how to secure the evidence, and assets to send (interview notes, quotes, LOIs).
+  - A summary at the top lists the three actions that raise the score most and the materials to collect; a pre-submission checklist closes it.
+  - `guide_draft.py` builds the skeleton. Nothing is inserted into the plan itself; the submission copy remains `사업계획서.md`.
 
 ## Information types and deck blueprints
 

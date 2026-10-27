@@ -120,7 +120,7 @@ def _widths(tbl, total_mm=170):
 
 
 def _shade(p, fill="FFF8E6", bar="F59E0B"):
-    """인용·코칭 상자 문단에 옅은 바탕과 왼쪽 막대를 넣는다(코칭본의 '디벨롭 가이드'가 본문과 구분되게)."""
+    """인용 문단에 옅은 바탕과 왼쪽 막대를 넣는다(작성 가이드의 '이렇게 써 보세요' 예문이 설명과 구분되게)."""
     pPr = p._p.get_or_add_pPr()
     for tag in ("w:pBdr", "w:shd"):
         old = pPr.find(qn(tag))

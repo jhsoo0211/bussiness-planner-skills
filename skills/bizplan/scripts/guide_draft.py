@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""사업계획서 .md 사본에 소제목마다 '디벨롭 가이드' 상자를 끼운 코칭본 골격을 만든다.
+"""사업계획서 .md를 읽어 목차 순서대로 '작성 가이드'(별도 산출물) 골격을 만든다.
 
-    python3 -B coach_draft.py 사업계획서.md --out 사업계획서_코칭본.md [--review 검토리포트.md]
+    python3 -B guide_draft.py 사업계획서.md --out 작성가이드.md [--review 검토리포트.md]
 
-상자마다 미리 채우는 칸:
-  - 작성법 기준: PSST 작성법(docs/psst.md)의 그 절 항목과 있음(✓)·없음(✗) 자동 판정 — 단어로 짐작한 것이라 본문을 읽고 고친다
-  - 심사 관점: judge-insights·case-insights 요지
-  - 지금 초안: 그 절의 [작성 필요]·[산정 예정]·[공고 확인 필요]·(팀 가설)·(계획안) 표기
-  - 점수 영향: --review의 하위 항목 판정(△·X)을 O로 바꾸면 오르는 점수
-  - 있으면 넣어 주세요: 그 절을 강하게 만들 사용자 자산 목록
-비워 두는 칸(디벨롭 방법·초안 문장·말로 할 것·근거 확보)은 모델이 이 초안을 읽고 채운다.
-기준 문서: bizplan/references/coaching.md (항목을 바꾸면 아래 CHECKS도 같이 바꾼다).
+사업계획서에 아무것도 끼워 넣지 않는다. 목차(소제목)마다 아래 묶음을 따로 쓴다.
+  - 지금 상태: PSST 작성법(docs/psst.md) 항목의 있음(✓)·없음(✗) 자동 판정, 그 절의 빈칸·가설 표기, 점수 영향
+  - 고려해야 할 점: 심사 관점(judge-insights·case-insights) + 모델이 이 초안을 읽고 더한다
+  - 꼭 적어야 할 것: 없는 작성법 항목·빈칸 표기를 "~해야 한다" 체크리스트로
+  - 이렇게 써 보세요 · 발표에서는 · 근거 확보: 모델이 채운다(✍)
+  - 있으면 넣어 주세요: 그 절을 강하게 만들 사용자 자산
+맨 앞에 '한눈에'(점수·행동 3개·모아 주실 자료), 맨 끝에 '제출 전 체크리스트'.
+자동 판정은 단어로 짐작한 것이라 본문을 읽고 고친다. 기준 문서: bizplan/references/coaching.md
+(항목을 바꾸면 아래 CHECKS도 같이 바꾼다).
 """
 import argparse
 import re
@@ -61,7 +62,7 @@ CHECKS = [
         ("니즈·트렌드", r"니즈|트렌드")],
      "세분화가 측정·접근·구매력·니즈 동질성 기준으로 타당한가(review 체크포인트 9)",
      "고객 설문 응답 분포, 페르소나 근거 인터뷰", r"문제 정의"),
-    ("실행 증거", r"실행 증거|현황|준비 정도|증빙 자산|한 일", [
+    ("실행 증거", r"실행 증거|준비 정도|증빙 자산|한 일|^[\d\-. ]*현황$", [
         ("시제품·MVP·데모(링크·사진)", r"MVP|시제품|데모|https?://|운영 중|출시"),
         ("사용자·매출 지표(기간·수치)", r"\d+\s*(명|건|원|%)|가입|리텐션|매출"),
         ("LOI·MOU·PoC(상대·상태)", r"LOI|MOU|PoC|의향|협약"),
@@ -175,32 +176,60 @@ def pick(title):
     return None
 
 
-def box(title, body, check, items):
+def josa(word, pair=("을", "를")):
+    """받침에 맞춰 을/를(또는 이/가)을 붙인다."""
+    w = re.sub(r"\(.*?\)|\*", "", word).strip()
+    ch = w[-1:] if w else ""
+    if "가" <= ch <= "힣":
+        return word + (pair[0] if (ord(ch) - 0xAC00) % 28 else pair[1])
+    return word + f"{pair[0]}({pair[1]})"
+
+
+def todo(mark):
+    """빈칸 표기 하나를 '~해야 한다' 할 일로."""
+    m = re.match(r"\[(작성 필요|산정 예정|공고 확인 필요|미확보)[:：]?\s*([^\]]*)\]", mark)
+    if m:
+        kind, what = m.group(1), m.group(2).strip() or "이 칸"
+        verb = {"작성 필요": "채워야 한다", "산정 예정": "산정해 넣어야 한다", "공고 확인 필요": "공고로 확인해야 한다",
+                "미확보": "확보해야 한다"}[kind]
+        return f"{josa(what)} {verb}"
+    if "가설" in mark:
+        return "'팀 가설'을 인터뷰·관찰 같은 직접 근거로 바꿔야 한다"
+    if "계획안" in mark or "가정" in mark:
+        return f"{mark.strip('()')} — 팀이 확정해야 한다"
+    return "'팀 판단'의 근거(공개 자료·인터뷰)를 밝혀야 한다"
+
+
+def section_block(title, body, check, items):
     text = "\n".join(body)
     marks = sorted(set(m.group(0) for m in MARK.finditer(text)))
-    lines = [f"> **디벨롭 가이드 — {title}** *(제출 전 삭제)*", ">"]
-    if check:
-        plain = MARK.sub(" ", re.sub(r"\*\*\[[^\]]*\]\*\*", " ", text))   # 빈칸 표기 속 낱말('[작성 필요: 경력]')은 있음으로 세지 않는다
-        got = [f"{'✓' if re.search(rx, plain) else '✗'} {label}" for label, rx in check[2]]
-        lines.append(f"> - **작성법 기준**(자동 판정 — 확인 필요): {' / '.join(got)}")
-        lines.append(f"> - **심사 관점**: {check[3]}")
-    else:
-        lines.append("> - **작성법 기준**: (해당 체크리스트 없음 — coaching.md 3절에서 가까운 항목을 고른다)")
-    lines.append(f"> - **지금 초안**: {'채울 칸 ' + str(len(marks)) + '곳 — ' + ' · '.join(marks) if marks else '미확보·가설 표기 없음'}"
-                 f" / {FILL}")
-    lines.append(f"> - **디벨롭 방법**: {FILL}")
-    lines.append(f"> - **초안 문장** *(사실 확인 후 ○○를 채워 쓴다)*: {FILL}")
-    lines.append(f"> - **말로 할 것** *(발표·질의응답)*: {FILL}")
+    plain = MARK.sub(" ", re.sub(r"\*\*\[[^\]]*\]\*\*", " ", text))   # 빈칸 표기 속 낱말('[작성 필요: 경력]')은 있음으로 세지 않는다
+    got = [(bool(re.search(rx, plain)), label) for label, rx in check[2]] if check else []
     gains = []
     if check and items:
-        for sec, name, mark, got, mx in items:
+        for sec, name, mark, g, mx in items:
             if mark != "O" and re.search(check[5], name):
-                gains.append(f"{sec} '{name}' {mark}→O +{mx - got:g}점")
-    lines.append(f"> - **점수 영향**: {' · '.join(gains) if gains else ('—' if items else '검토 후 계산')}")
-    lines.append(f"> - **근거 확보**: {FILL}")
+                gains.append(f"{sec} '{name}' {mark}→O +{mx - g:g}점")
+    state = " · ".join(f"{'✓' if ok else '✗'} {label}" for ok, label in got) or "(해당 체크리스트 없음 — coaching.md 3절에서 고른다)"
+    out = [f"### {title}", "",
+           f"**지금 상태** *(자동 판정 — 확인 필요)*: 작성법 {state}"
+           + (f" / 빈칸 {len(marks)}곳" if marks else "")
+           + (f" / 점수 영향 {' · '.join(gains)}" if gains else (" / 점수 영향 검토 후 계산" if not items else "")), "",
+           "**고려해야 할 점**", ""]
     if check:
-        lines.append(f"> - **있으면 넣어 주세요**: {check[4]}")
-    return lines, marks, gains
+        out.append(f"- {check[3]}")
+    out += [f"- {FILL}", "", "**꼭 적어야 할 것**", ""]
+    for ok, label in got:
+        if not ok:
+            short = label.split("(")[0].strip()
+            out.append(f"- [ ] {josa(short)} 적어야 한다" + (f" (작성법: {label})" if short != label else " (작성법)"))
+    for t in dict.fromkeys(todo(m) for m in marks):      # 같은 할 일은 한 번만
+        out.append(f"- [ ] {t}")
+    out += [f"- [ ] {FILL}", "", "**이렇게 써 보세요** *(사실을 확인한 뒤 ○○를 채운다)*", "", f"> {FILL}", "",
+            "**발표에서는**", "", f"- {FILL}", "", "**근거 확보** *(무엇을 · 어떻게 · 언제)*", "", f"- {FILL}", ""]
+    if check:
+        out += ["**있으면 넣어 주세요**", ""] + [f"- {a_.strip()}" for a_ in re.split(r",\s*(?![^()]*\))", check[4])] + [""]
+    return out, marks, gains
 
 
 def main():
@@ -210,59 +239,61 @@ def main():
     ap.add_argument("--review")
     a = ap.parse_args()
     lines = open(a.doc, encoding="utf-8").read().splitlines()
+    doc_title = next((l[2:].strip() for l in lines if l.startswith("# ")), "사업계획서")
     items, score = review_items(a.review) if a.review else ([], None)
     secs = sections(lines)
-    inserts, all_marks, all_gains, assets = {}, [], [], []
+    body_out, all_marks, all_gains, assets, last_parent, n_blocks = [], [], [], [], None, 0
     for k, (i, lvl, title) in enumerate(secs):
         nxt = secs[k + 1][0] if k + 1 < len(secs) else len(lines)
-        has_child = k + 1 < len(secs) and secs[k + 1][1] > lvl and secs[k + 1][0] < nxt + 1
-        parent = next((t for j, (_, l2, t) in reversed(list(enumerate(secs[:k]))) if l2 < lvl), "")
-        if any(s in title or s in parent for s in SKIP):
+        has_child = k + 1 < len(secs) and secs[k + 1][1] > lvl
+        parent = next((t for _, l2, t in reversed(secs[:k]) if l2 < lvl), "")
+        if any(s_ in title or s_ in parent for s_ in SKIP):
             continue
         body = lines[i + 1:nxt]
         if has_child and not any(l.strip() for l in body):
             continue
+        if parent and parent != last_parent:
+            body_out += [f"## {parent}", ""]
+            last_parent = parent
+        elif not parent:
+            last_parent = None
         check = pick(title) or pick(parent)
-        b, marks, gains = box(title, body, check, items)
-        end = nxt
-        while end > i + 1 and not lines[end - 1].strip():
-            end -= 1
-        inserts[end] = [""] + b
+        blk, marks, gains = section_block(title, body, check, items)
+        body_out += blk
+        n_blocks += 1
         all_marks += marks
         all_gains += [(float(g.rsplit("+", 1)[1].rstrip("점")), g, title) for g in gains]
         if check:
             assets.append((title, check[4]))
-    out = []
-    for n, l in enumerate(lines):
-        if n in inserts:
-            out += inserts[n]
-            out.append("")
-        out.append(l)
-    if len(lines) in inserts:
-        out += inserts[len(lines)]
     seen, top = set(), []
     for pts, g, t in sorted(all_gains, reverse=True):
-        key = g.split(" ", 2)[1] if " " in g else g
+        key = g.split("'")[1] if "'" in g else g
         if key not in seen:
             seen.add(key)
             top.append(f"{len(top) + 1}. ✍ (행동) — (기한) — {g} — {t}")
         if len(top) == 3:
             break
-    head = ["# 코칭본 — 제출본이 아니다", "",
-            "> 초안 사본에 소제목마다 **디벨롭 가이드** 상자를 넣었다. 제출본은 `사업계획서.md`다. "
-            "기준: PSST 작성법(docs/psst.md) · 심사 성향(judge-insights) · 사례 체크포인트(case-insights) — 형식은 bizplan/references/coaching.md.",
-            "", "## 한눈에 — 제출 수준까지 남은 것", "",
+    head = [f"# 작성 가이드 — {doc_title}", "",
+            "> 사업계획서와 **따로 보는** 가이드다. 사업계획서 목차 순서대로 그 부분에서 고려해야 할 점과 적어야 할 것을 정리했다. "
+            "기준: PSST 작성법 · 심사 성향 · 사례 체크포인트(bizplan/references/coaching.md).", "",
+            "## 한눈에", "",
             "| 지금 | 목표 | 가장 큰 공백 |", "|------|------|--------------|",
-            f"| {f'{score}점(검토 리포트) · ' if score is not None else ''}채울 칸 {len(all_marks)}곳 | ✍ (과락선·목표 점수) | ✍ |", "",
+            f"| {f'{score}점(검토 리포트) · ' if score is not None else ''}빈칸 {len(all_marks)}곳 | ✍ (과락선·목표 점수) | ✍ |", "",
             "**점수가 가장 많이 오르는 행동 3개**", ""] + (top or ["1. ✍ (검토 리포트를 주면 점수 영향순으로 뽑는다)"]) + [
-            "", "**모아 주실 자료**(있는 것만 — 받으면 반영할 절)", ""] + \
-           [f"- [ ] {asset} → {t}" for t, asset in assets] + [
-            "", "**제출 전 지울 것**: 디벨롭 가이드 상자 전부, 작성 기준 인용 블록, 섹션별 심화 안내, 보강 제안, "
-            "[작성 필요] 표기(0개가 될 때까지)", "", "---", ""]
-    open(a.out, "w", encoding="utf-8").write("\n".join(head + out) + "\n")
-    print(f"코칭본 골격: {a.out} — 상자 {len(inserts)}개, 채울 칸 {len(all_marks)}곳, "
+            "", "**모아 주실 자료** *(있는 것만 — 받으면 반영할 목차)*", ""] + \
+           [f"- [ ] {asset} → {t}" for t, asset in assets] + ["", "## 목차별 가이드", ""]
+    tail = ["## 제출 전 체크리스트", "",
+            f"- [ ] 사업계획서의 [작성 필요]·[산정 예정]·[공고 확인 필요] 표기가 0개인가(지금 {len(all_marks)}곳)",
+            "- [ ] 출처를 원문과 대조했는가(검색 색인·기사 요약만으로 쓴 수치가 남아 있지 않은가)",
+            "- [ ] 표 합계·비율·곱셈식을 검산했는가(`check_tables.py`)",
+            "- [ ] 공고 양식의 목차·항목 번호·분량을 지켰고 양식 안내 문구를 지웠는가",
+            "- [ ] 블라인드 — 성명·학교·직장명·소재지 등 유추 가능한 정보를 가렸는가",
+            "- [ ] 협력·실적 표현이 증빙 단계(접촉 < 협의 < LOI < MOU < 실적) 안에 있는가",
+            "- [ ] 문제-솔루션 대응표의 '미해결·추가 검증 필요' 표기가 본문과 일치하는가", ""]
+    open(a.out, "w", encoding="utf-8").write("\n".join(head + body_out + tail) + "\n")
+    print(f"작성 가이드 골격: {a.out} — 목차 {n_blocks}개, 빈칸 {len(all_marks)}곳, "
           f"점수 영향 {len(all_gains)}건{'' if a.review else '(검토 리포트 없음)'}")
-    print(f"남은 빈칸(✍): {sum(1 for l in head + out if '✍' in l)}줄 — 이 초안을 읽고 채운다")
+    print(f"남은 빈칸(✍): {sum(1 for l in head + body_out if '✍' in l)}줄 — 이 초안을 읽고 채운다")
 
 
 if __name__ == "__main__":

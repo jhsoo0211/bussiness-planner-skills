@@ -127,7 +127,7 @@ python scripts/check_installation.py
 | `bizplan/scripts/check_tables.py` | 합계·비율 100%·곱셈식 검산, `=SUM` 수식 검산표 .xlsx | openpyxl(.xlsx) |
 | `bizplan/scripts/md_to_docx.py` | .md → A4·맑은 고딕·표 테두리 .docx (`--gov-bullets`로 □○-·) | python-docx, pandoc(선택) |
 | `bizplan/scripts/md_to_hwpx.py` | .md → 한글 .hwpx/.hwp (개조식·표·그림) + 구조 검증 | python-hwpx |
-| `bizplan/scripts/coach_draft.py` | 초안 사본에 소제목마다 '디벨롭 가이드' 상자를 넣은 코칭본 골격(PSST 작성법 항목 판정·미확보 표기·검토 점수 영향·넣어 줄 자산) | — |
+| `bizplan/scripts/guide_draft.py` | 사업계획서 목차 순서대로 '작성 가이드'(별도 산출물) 골격 — PSST 작성법 항목 판정·적어야 할 것·미확보 표기·검토 점수 영향·넣어 줄 자산 | — |
 | `bizplan-visual/scripts/chart_templates.py` | 시장 추이·비교·TAM/SAM/SOM·포지셔닝맵·간트 차트(200dpi, 출처 캡션) | matplotlib, 한글 폰트 |
 | `bizplan-slides/scripts/pptx_inspect.py` | 발표 템플릿의 레이아웃·자리표시자·샘플 슬라이드·테마 분석 | python-pptx |
 | `bizplan-slides/scripts/pptx_build.py` | 템플릿 디자인을 유지한 채 스펙(JSON)대로 PPTX 생성 | python-pptx, Pillow |
@@ -144,10 +144,10 @@ python scripts/check_installation.py
 초안만 주지 않고 "여기서 무엇을 고려하고 무엇을 더 적어야 하는지"를 함께 준다(기준: [작성 코칭](skills/bizplan/references/coaching.md)).
 
 - **채팅 작성 팁**: 섹션마다 3~4줄로 준다. 내용은 PSST 작성법의 그 절 기준, 이 초안에서 디벨롭할 곳, 다음 행동이다.
-- **코칭본** `사업계획서_코칭본.md`: 초안 사본에 소제목마다 디벨롭 가이드 상자를 넣는다.
-  - 상자 칸: 작성법 기준 ✓·△·✗, 심사 관점, 디벨롭 방법, 사실 확인 후 쓸 초안 문장, 발표에서 말로 할 것, 점수 영향, **있으면 넣어 주세요**(인터뷰 메모·견적서·LOI 같은 자산)
-  - 맨 앞 '한눈에': 점수가 가장 많이 오르는 행동 3개와 모아 주실 자료
-  - 제출본은 상자 없는 `사업계획서.md`다.
+- **작성 가이드** `작성가이드.md`: 사업계획서와 **따로 보는 산출물**이다. 사업계획서 목차 순서대로 "그 부분은 ~를 고려해야 한다 / ~를 적어야 한다"를 정리한다.
+  - 목차마다: 지금 상태(작성법 ✓·△·✗) · 고려해야 할 점 · 꼭 적어야 할 것(체크 항목) · 이렇게 써 보세요(사실 확인 후 쓸 문장) · 발표에서는 · 근거 확보 · **있으면 넣어 주세요**(인터뷰 메모·견적서·LOI 같은 자산)
+  - 맨 앞 '한눈에': 점수가 가장 많이 오르는 행동 3개와 모아 주실 자료 / 맨 끝: 제출 전 체크리스트
+  - 사업계획서 본문에는 아무것도 끼우지 않는다. 제출본은 `사업계획서.md`다.
 
 ## 정보를 어떤 구조로 보여줄지 (파싱 기준)
 
