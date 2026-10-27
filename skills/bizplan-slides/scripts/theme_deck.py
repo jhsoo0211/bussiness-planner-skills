@@ -1655,8 +1655,9 @@ class Deck:
                 self.picture(slide, it["photo"], mid - D / 2, y + 16, D, D, mode="cover", geom="ellipse", name="사진")
             else:
                 self.box(slide, mid - D / 2, y + 16, D, D, fill="soft", shape="oval", name="사진 자리")
-                ini = strip_md(it["name"])[:1]
-                if ini.isalpha() and ini not in "○●◯":
+                nm = strip_md(it["name"])
+                ini = nm[:1]
+                if re.fullmatch(r"[가-힣]{2,4}|[A-Za-z][A-Za-z .'-]{1,30}", nm):   # 사람 이름일 때만 이니셜
                     self.text(slide, (mid - D / 2, y + 16, D, D), ini, 28, "primary", bold=True, align="c", anchor="m",
                               fit=False, name="이니셜")
                     self.texts[self.no].pop()
@@ -1693,6 +1694,17 @@ class Deck:
         self.text(slide, (midx + 8, my0 - 4, 160, 16), ya[1], 11, "muted", bold=True, fit=False, name="축 높음")
         self.text(slide, (midx + 8, my0 + mh_ - 14, 160, 16), ya[0], 11, "muted", fit=False, name="축 낮음")
         scale = 100.0 if any(float(it["x"]) > 1 or float(it["y"]) > 1 for it in s["items"]) else 1.0
+        taken = []          # 이미 놓은 원·이름표 영역 — 이름표가 겹치지 않게 아래 → 위 → 오른쪽 → 왼쪽 순으로 자리를 찾는다
+
+        def free(r):
+            return all(r[0] + r[2] <= q[0] or q[0] + q[2] <= r[0] or r[1] + r[3] <= q[1] or q[1] + q[3] <= r[1]
+                       for q in taken)
+
+        for it in s["items"]:
+            px = mx0 + 16 + float(it["x"]) / scale * (mw_ - 32)
+            py = my0 + mh_ - 16 - float(it["y"]) / scale * (mh_ - 32)
+            d = max(62.0, (em(strip_md(it["name"])) * 12 * 1.03 / 0.96 + 8) / 0.7 + 4) if it.get("ours") else 22.0
+            taken.append((px - d / 2, py - d / 2, d, d))
         for it in s["items"]:
             px = mx0 + 16 + float(it["x"]) / scale * (mw_ - 32)
             py = my0 + mh_ - 16 - float(it["y"]) / scale * (mh_ - 32)
@@ -1703,8 +1715,12 @@ class Deck:
                 d = 22.0
                 self.box(slide, px - d / 2, py - d / 2, d, d, fill=mix(self.c("neutral"), "FFFFFF", 0.35), shape="oval",
                          name="경쟁사")
-                self.text(slide, (px - 60, py + d / 2 + 2, 120, 16), it["name"], 11, "text", align="c", fit=False,
-                          name="경쟁사 이름")
+                lw = em(strip_md(it["name"])) * 11 + 8
+                spots = [(px - lw / 2, py + d / 2 + 2, "c"), (px - lw / 2, py - d / 2 - 18, "c"),
+                         (px + d / 2 + 4, py - 8, "l"), (px - d / 2 - 4 - lw, py - 8, "r")]
+                lx, ly, al = next(((x_, y_, a_) for x_, y_, a_ in spots if free((x_, y_, lw, 16))), spots[0])
+                taken.append((lx, ly, lw, 16))
+                self.text(slide, (lx, ly, lw, 16), it["name"], 11, "text", align=al, fit=False, name="경쟁사 이름")
         if pts:
             self.text(slide, (x + mw + 20, y + 10, w - mw - 20, h - 10), pts, 14, "text", bullet=True, ls=1.18,
                       space=0.7, min_size=12, name="요점")

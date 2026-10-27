@@ -77,7 +77,8 @@ def _fmt_val(v):
     return f"{v:,.0f}" if float(v).is_integer() else f"{v:,.1f}"
 
 
-def _source(fig, text, prefix="출처: ", y=0.01):
+def _source(fig, text, prefix="출처: ", y=-0.02):
+    """출처 캡션. 기본은 그림 아래 바깥(y<0) — 축 이름과 겹치지 않게 저장 때 캔버스가 늘어난다."""
     if text:
         fig.text(0.99, y, f"{prefix}{text}", ha="right", va="top" if y < 0 else "bottom",
                  fontsize=_fs(8), color="#64748b")
@@ -175,7 +176,7 @@ def tam_sam_som(tam, sam, som, unit="억 원", out="tam_sam_som.png", labels=("T
         fig.text(0.02, y, "\n".join(f"{l}: {b}" for l, b in zip(labels, bases)),
                  ha="left", va="top", fontsize=_fs(9), color="#334155", linespacing=1.5)
         y -= 0.045 * len(bases) + 0.01
-    _source(fig, source, y=y if bases else 0.01)
+    _source(fig, source, y=y if bases else -0.02)
     return _save(fig, out)
 
 

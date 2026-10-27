@@ -24,7 +24,8 @@ SKIP_NAMES = ("쪽번호", "단계 번호", "번호", "간지 번호", "범례",
 CHROME = ("출처", "단위", "브랜드", "태그라인", "머리말", "날짜", "연락처", "Footer", "Date")
 UNIT = r"(%|퍼센트|조\s*원|억\s*원|만\s*원|천\s*원|조|억|만|천|원|달러|명|건|개사|개|배|점|회|곳|종|대|개월|년|월|일|시간|분|초|MPa|kg|t|㎡)"
 NUM = re.compile(r"(?<![A-Za-z\d.])(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*" + UNIT + "?")
-DATE = re.compile(r"(?<!\d)((?:19|20)\d{2})\s*[.\-/년]\s*(\d{1,2})(?:\s*[.\-/월]\s*(\d{1,2}))?")
+# 2026.03 · 2026-3 · 2026년 3월 — "2021년 239개"처럼 연도 뒤 숫자를 달로 읽지 않게 월은 1~12, 뒤에 숫자가 없어야 한다
+DATE = re.compile(r"(?<!\d)((?:19|20)\d{2})(?:\s*[.\-/]\s*(1[0-2]|0?[1-9])(?!\d)|년\s*(1[0-2]|0?[1-9])\s*월)")
 MARK = re.compile(r"\[(작성 필요|산정 예정|미확보)")
 
 
@@ -53,7 +54,7 @@ def tokens(text):
     """(값, 단위) 목록. 날짜는 ('날짜', 'YYYY-M') 로 따로 센다."""
     out = []
     for m in DATE.finditer(text):
-        out.append(("날짜", f"{m.group(1)}-{int(m.group(2))}"))
+        out.append(("날짜", f"{m.group(1)}-{int(m.group(2) or m.group(3))}"))
     text = DATE.sub(" ", text)
     for m in NUM.finditer(text):
         v = m.group(1).replace(",", "")

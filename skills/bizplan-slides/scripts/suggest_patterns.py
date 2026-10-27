@@ -18,7 +18,8 @@ import os
 import re
 import sys
 
-SKIP_HEADINGS = ("보강 제안", "요청 자료", "조사용 프롬프트", "자체 일관성", "심화 안내", "작성 기준", "있으면 좋을")
+SKIP_HEADINGS = ("보강 제안", "요청 자료", "조사용 프롬프트", "자체 일관성", "심화 안내", "작성 기준", "있으면 좋을",
+                 "참고 자료", "참고문헌")
 DATE = r"(\d{4}[.\-/]\d{1,2}|\d{1,2}월|M\d+|\d+Q|[1-4]분기|\d{4}년)"
 NUM_UNIT = r"[+\-~약]?\s*\d[\d,.]*\s*(%|조|억|만|천|원|명|건|개|배|점|회|곳|종|대|년|개월|시간|분|초|p|pt|MPa|t|kg)"
 MARKER = re.compile(r"^\s*(?:[-*+]|\d+[.)]|[□○◦·▪■●◆①-⑳])\s+")
@@ -69,10 +70,9 @@ def parse_md(path):
             flush()
             level, text = len(h.group(1)), clean(h.group(2))
             path_ = path_[:level - 1] + [text]
-            if skip_level is not None and level <= skip_level:
-                skip_level = None
-            if any(k in text for k in SKIP_HEADINGS):
-                skip_level = level
+            if skip_level is not None and level > skip_level:
+                continue          # 건너뛰는 절의 하위 제목
+            skip_level = level if any(k in text for k in SKIP_HEADINGS) else None
             continue
         s = raw.rstrip()
         if not s.strip():
@@ -225,16 +225,18 @@ def classify(u, doc_dir="."):
         if re.search(r"강점|약점|기회|위협|SWOT", hs + " ".join(first)):
             return ("R18", "swot", "SWOT 표", "table", dict(base, type="table", header=header, rows=rows))
         if any(re.match(r"(TAM|SAM|SOM)", f) for f in first):
-            items = [{"value": (r[1] if len(r) > 1 else ""), "desc": " / ".join(r[2:]) or None} for r in rows[:3]]
+            vc = next((j for j, h in enumerate(header) if re.search(r"규모|금액|값|크기", h)), len(header) - 1)
+            items = [{"value": (r[vc] if vc < len(r) else ""),
+                      "desc": " / ".join(c for j, c in enumerate(r) if j not in (0, vc) and c) or None} for r in rows[:3]]
             items = [{k: v for k, v in it.items() if v} for it in items]
             return ("R9", "tam", "첫 열 TAM·SAM·SOM", "table", dict(base, type="tam", items=items))
         g = gantt_from(header, rows) if re.search(r"기간|일정|시기|월|분기", hs) else None
         if g:
             return ("R15", "gantt", f"기간 열 + 행 {len(rows)}개가 기간으로 읽힘", "table",
                     dict(base, type="gantt", periods=g["periods"], rows=g["rows"]))
-        if re.search(r"성명|이름", hs) and re.search(r"역할|직위|담당|직책", hs):
-            nc = next(j for j, h in enumerate(header) if re.search(r"성명|이름", h))
-            rc = next(j for j, h in enumerate(header) if re.search(r"역할|직위|담당|직책", h))
+        if re.search(r"성명|이름|직책", hs) and re.search(r"역할|직위|담당", hs):
+            nc = next(j for j, h in enumerate(header) if re.search(r"성명|이름|직책", h))
+            rc = next(j for j, h in enumerate(header) if j != nc and re.search(r"역할|직위|담당|직책", h))
             items = []
             for r in rows[:4]:
                 career = [f"{header[j]}: {r[j]}" for j in range(ncol) if j not in (nc, rc) and j < len(r) and r[j]]
@@ -367,8 +369,19 @@ VISUAL_HINTS = [
 ]
 
 
+CODE_PATTERN = {"R1": "statement", "R2": "cards", "R3": "cards", "R4": "radial", "R5": "kpi", "R6": "chart",
+                "R7": "chart", "R8": "chart", "R9": "tam", "R10": "compare", "R11": "before_after", "R12": "positioning",
+                "R13": "process", "R14": "timeline", "R15": "gantt", "R16": "table", "R17": "table", "R18": "swot",
+                "R19": "rows", "R20": "pillars", "R21": "team", "R22": "image", "R23": "section"}
+
+
 def tokens(t):
     return set(re.findall(r"[가-힣A-Za-z0-9]{2,}", t))
+
+
+def words(t):
+    """제목 대조용 — 한 글자 낱말('팀')도 살리고 조사·기호는 버린다."""
+    return {w for w in re.findall(r"[가-힣A-Za-z0-9]+", t) if w not in ("및", "의", "와", "과", "vs")}
 
 
 def outline_map(path, units):
@@ -391,14 +404,22 @@ def outline_map(path, units):
             kind = "cover"
         elif re.search(r"클로징|마무리|Q&A", ttl):
             kind = "closing"
+        elif re.search(r"\bR(\d{1,2})\b", vis) and f"R{re.search(r'R(\d{1,2})', vis).group(1)}" in CODE_PATTERN:
+            kind = CODE_PATTERN[f"R{re.search(r'R(\d{1,2})', vis).group(1)}"]    # 구성안에 적힌 관계 유형이 우선
         else:       # 시각자료 칸에서 가장 먼저 나온 형식이 주인공이다
             hits = [(m.start(), k) for pat, k in VISUAL_HINTS for m in [re.search(pat, vis)] if m]
             kind = min(hits)[1] if hits else "bullets"
-        tk = tokens(" ".join(r[j] for j in (ct, cm, cv) if j is not None))
+        code = re.search(r"\bR(\d{1,2})\b", vis)
+        text = " ".join(r[j] for j in (ct, cm, cv) if j is not None)
+        tk, hk = tokens(text), words(r[ct] if ct is not None else "")
         scored = []
         for u in units:
             body = u["where"] + " " + " ".join(u["lines"])
-            s = len(tk & tokens(body))
+            s = 3 * len(hk & words(u["where"])) + len(tk & tokens(body))
+            if code and u.get("code") == f"R{code.group(1)}":
+                s += 2
+            if u.get("pattern") == kind:
+                s += 2
             if s:
                 scored.append((s, u["id"]))
         scored.sort(reverse=True)

@@ -131,11 +131,12 @@ def postprocess(path, font):
                 for p in cell.paragraphs:
                     for r in p.runs:
                         r.bold = True
-    # 그림이 본문 폭(170mm)을 넘지 않게
+    # 그림이 본문 폭(170mm)을 넘지 않게, 정사각형 도식이 한 쪽을 다 차지하지 않게 높이는 120mm까지
     for shape in doc.inline_shapes:
-        if shape.width > Mm(170):
-            ratio = Mm(170) / shape.width
-            shape.width, shape.height = Mm(170), int(shape.height * ratio)
+        for limit, side in ((Mm(170), "width"), (Mm(120), "height")):
+            if getattr(shape, side) > limit:
+                ratio = limit / getattr(shape, side)
+                shape.width, shape.height = int(shape.width * ratio), int(shape.height * ratio)
     doc.save(path)
 
 
