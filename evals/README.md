@@ -74,7 +74,7 @@ Record evidence integrity, PSST/form adherence, problem-solution consistency, us
 
 ## Current evidence boundary
 
-The repository includes deterministic installation checks, 34 routing test cases, and illustrative Korean plan/review examples. These fixtures are not evidence that all live routing cases passed.
+The repository includes deterministic installation checks, 36 routing test cases, and illustrative Korean plan/review examples. These fixtures are not evidence that all live routing cases passed.
 
 The earlier 2026-09-04 U300 DOCX exercise used Codex with one baseline draft and one skill-enabled draft, followed by the same clarification request for both. The observed business-plan skill reads were `bizplan/SKILL.md`, `bizplan-quick/SKILL.md`, and `bizplan/references/common-rules.md`. It did not observe separate reads of the problem, solution, growth, team, or review skills, or review's `references/case-insights.md`. It therefore records one automatic quick-path drafting case, not validation of all section guidance, complete author-insight application, or a Claude performance comparison.
 

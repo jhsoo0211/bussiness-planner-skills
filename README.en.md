@@ -37,7 +37,7 @@ The intended context includes 예비창업패키지, 초기창업패키지, 창�
 | `bizplan-visual` | Evidence visuals, charts, positioning maps, and image prompts |
 | `bizplan-review` | Reviewing a draft against the rubric, checking claims, and anticipating questions |
 | `bizplan-pitch` | Presentation flow, storytelling, scripts, and Q&A |
-| `bizplan-slides` | Producing PPTX and PDF decks that keep a supplied template's design (or a built-in template / HTML), then checking renders |
+| `bizplan-slides` | Parsing the plan into information units and choosing a visual structure per unit (cards, KPIs, TAM, comparison, Gantt, and so on), then producing PPTX and PDF decks. Supplied .pptx templates are filled in place; PDF/image-only templates (or no template) are redrawn as editable PPTX with a theme. Finally it checks for dropped text, overflow, and numbers that do not match the source |
 | `bizplan-export` | Export-voucher plans and target-market analysis |
 | `bizplan-analyze` | Comparing completed plans and extracting reusable writing patterns |
 
@@ -149,8 +149,21 @@ This repository is **public**. Commit only material that may be redistributed.
 | --- | --- | --- |
 | Redistributable presentation templates (.pptx/.potx) | `skills/bizplan-slides/assets/templates/` with a same-name `.md` note | Yes |
 | School/agency-mandated, paid, or branded templates | `skills/bizplan-slides/assets/templates/local/` | No (gitignored; used by local installs) |
+| Image-only templates (PDF/PNG) | `skills/bizplan-slides/assets/templates/local/` plus a same-name `.md` structure note; extracted colors go to `assets/themes/local/` (or `assets/themes/` if redistributable) | No (public themes only) |
 | Original winning plans (PDF/HWP) | `자료/` or a private repository | No (gitignored) |
 | Anonymized writing patterns / review lessons | `skills/bizplan/references/award-patterns.md`, `skills/bizplan-review/references/cases/` | Yes |
+
+## Information types and deck blueprints
+
+Content is mapped to a visual form by the **relationship between pieces of information**, not by topic. There are 23 relationship types; examples include parallel items, items converging on a conclusion, key numbers, trends, market nesting, criteria comparison, steps, milestones, task × period, and label → content pairs.
+
+- `skills/bizplan-visual/references/info-patterns.md` gives, for each type, the source-text signals, a decision order, the slide pattern and document form, capacity limits, and common mistakes. It is shared by document visuals and slides.
+- `skills/bizplan-slides/references/blueprints.md` breaks down three supplied templates page by page into information, format, and pattern: a 30-page proposal, a 20-page annual plan, and a 15-page basics deck. It also lists ten shared format rules and a PSST pitch mapping.
+- Slide tools:
+  - `suggest_patterns.py` parses a plan into units with a suggested pattern each.
+  - `theme_deck.py` renders a spec into an editable PPTX in one of three themes (`report-blue`, `mono-line`, `basic-navy`).
+  - `deck_check.py` compares every number in a deck, chart values included, against the source.
+  - `theme_from_pdf.py` extracts colors from an image-only template.
 
 ## Program rubrics
 
@@ -158,7 +171,7 @@ This repository is **public**. Commit only material that may be redistributed.
 
 ## Tools and verification
 
-The core package contains Markdown instructions and optional Python scripts (form reading, table checks, DOCX/HWPX export, charts, PPTX template filling, PDF export). It does not include an API key, install external services, or grant tool access. Use the capabilities and permissions available in your agent environment:
+The core package contains Markdown instructions and optional Python scripts (form reading, table checks, DOCX/HWPX export, charts, PPTX template filling, theme rendering, content parsing, deck number checks, PDF export). It does not include an API key, install external services, or grant tool access. Use the capabilities and permissions available in your agent environment:
 
 - Web research requires browsing access or supplied source materials.
 - Python charts require Python, relevant libraries, and a Korean font.

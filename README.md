@@ -28,7 +28,7 @@
 | `bizplan-visual`   | 시각자료 모드            | 사업계획서에 넣을 그래프·도식·표 구성안 제안 및 제작 지원(matplotlib 그래프, 냅킨AI 인포그래픽 텍스트, 이미지 생성 AI용 영문 프롬프트, 포지셔닝맵·BM구성도 스케치) |
 | `bizplan-review`   | ⑧ 심사위원 검토         | 초안 완성 후 점수·강약점·예상 질문, 데이터 신뢰도 검증                                                                              |
 | `bizplan-pitch`    | 발표(피칭) 준비          | 발표 슬라이드 구성안, 스토리텔링, 예상 질문·모범 답변                                                                                |
-| `bizplan-slides`   | 발표 슬라이드 제작       | 받은 PPT 템플릿 디자인 그대로 PPTX·PDF 생성(없으면 기본 템플릿 또는 HTML) + 렌더 검증                                                |
+| `bizplan-slides`   | 발표 슬라이드 제작       | 내용을 정보 유형별 구조(카드·KPI·TAM·비교·간트 등)로 파싱해 배치 → PPT 템플릿은 디자인 그대로 채우고, PDF·이미지 템플릿이나 템플릿이 없으면 테마로 편집 가능한 PPTX를 새로 그림(PDF 함께) + 누락·넘침·원문 수치 대조 검증 |
 | `bizplan-export`   | 수출바우처               | 수출바우처 종합 구성, 목표시장 분석                                                                                                   |
 | `bizplan-analyze`  | 벤치마킹 분석            | 남의 계획서·합격 사례 비교 분석, 작성 공식 도출                                                                                      |
 
@@ -133,6 +133,17 @@ python scripts/check_installation.py
 | `bizplan-slides/scripts/export_pdf.py` | PPTX/DOCX → PDF(LibreOffice), HTML 슬라이드 → PDF(Playwright) | LibreOffice / Node+Playwright |
 | `bizplan-slides/scripts/preview.py` | PDF를 장별 PNG·모아보기로 렌더 | pdftoppm, Pillow |
 | `bizplan-slides/scripts/make_basic_template.py` | 기본 16:9 한국어 템플릿 재생성 | python-pptx |
+| `bizplan-slides/scripts/suggest_patterns.py` | 사업계획서 .md → 정보 단위·관계 유형·추천 패턴·스펙 초안(파싱표), 발표 구성안 장과 짝짓기 | — |
+| `bizplan-slides/scripts/theme_deck.py` | 내용 스펙(JSON) → 테마 디자인의 편집 가능한 PPTX(패턴 23종·네이티브 차트), 스펙 검사·누락 대조 | python-pptx, Pillow |
+| `bizplan-slides/scripts/deck_check.py` | 발표 PPTX의 수치·날짜(차트 값 포함)를 원문과 대조, 미확보 표기·작은 글자 집계 | python-pptx |
+| `bizplan-slides/scripts/theme_from_pdf.py` | 그림 템플릿(PDF·PNG)에서 쪽 이미지·모아보기·색 후보·시작용 테마 JSON 추출 | pdftoppm, Pillow |
+
+## 정보를 어떤 구조로 보여줄지 (파싱 기준)
+
+사업계획서 내용을 표·그림·슬라이드로 옮길 때는 주제가 아니라 **정보 사이의 관계**로 형식을 고른다. 23개 유형이 있다(병렬·병렬→결론·중심-주변·핵심 수치·추이·구성비·시장 포함·기준별 대조·전→후·2축 위치·단계·이정표·과업×기간·예산 표·SWOT·라벨-내용 쌍·체계·팀 등).
+
+- [정보 유형 → 시각화 구조](skills/bizplan-visual/references/info-patterns.md): 원문 신호, 결정 순서, 슬라이드 패턴·문서 표현, 수용량, 흔한 실수. 문서(`bizplan-visual`)와 발표(`bizplan-slides`)가 같이 쓴다.
+- [발표 구성 청사진](skills/bizplan-slides/references/blueprints.md): 사용자 제공 템플릿 3종(필수 구성 제안서 30장 · 연간 사업계획 20장 · 기본 15장)을 장마다 '전달하는 정보 → 형식 → 패턴'으로 분석했다. 공통 형식 문법 10가지와 PSST 발표 대응표가 들어 있다.
 
 ## 자료 넣는 법 (템플릿 · 사업계획서 자료)
 
@@ -142,11 +153,14 @@ python scripts/check_installation.py
 |------|---------|------|
 | 재배포해도 되는 발표 템플릿(.pptx/.potx) | `skills/bizplan-slides/assets/templates/` + 같은 이름의 `.md` 설명 | 예 |
 | 학교·기관 지정 양식, 유료 템플릿, 로고·실명이 든 템플릿 | `skills/bizplan-slides/assets/templates/local/` | 아니오(gitignore, 로컬 설치본에서만 사용) |
+| 그림만 든 템플릿(PDF·PNG) 원본 | `skills/bizplan-slides/assets/templates/local/` + 같은 이름 `.md`(구조 메모) | 아니오 |
+| 그림 템플릿에서 뽑은 테마(색·형식) | 공개 가능하면 `skills/bizplan-slides/assets/themes/`, 아니면 `assets/themes/local/` | 공개분만 |
 | 합격·수상 사업계획서 원문(PDF·HWP) | `자료/` 또는 비공개 저장소 | 아니오(gitignore) |
 | 원문에서 뽑은 작성 패턴 | `skills/bizplan/references/award-patterns.md` | 예(익명화) |
 | 원문에서 뽑은 검토 교훈 | `skills/bizplan-review/references/cases/<분야>.md` | 예(익명화) |
 
 - 템플릿을 넣으면 `python3 -B skills/bizplan-slides/scripts/pptx_inspect.py <파일>`로 경고(4:3 잔재·레이아웃 없음·한글 글꼴)를 먼저 확인한다. 자세한 규칙은 [템플릿 폴더 안내](skills/bizplan-slides/assets/templates/README.md).
+- PDF·이미지 템플릿은 글상자가 없어 그대로 채울 수 없다. `theme_from_pdf.py`로 색을 뽑아 테마를 만들고, 장 구성은 [발표 구성 청사진](skills/bizplan-slides/references/blueprints.md) 형식으로 적는다. 들어 있는 테마 3종과 미리보기는 [테마 안내](skills/bizplan-slides/assets/themes/README.md)에 있다.
 - 사업계획서 원문은 `bizplan-analyze`로 분석하면 패턴·교훈을 위 파일들에 익명으로 옮기는 추가안을 만들어 준다.
 - `.pptx`·`.pdf`·`.hwp` 같은 바이너리는 `.gitattributes`가 줄바꿈 변환에서 보호한다.
 
@@ -185,7 +199,11 @@ python scripts/check_installation.py
 
 > 학교 템플릿(첨부한 pptx)에 넣어서 PPT랑 PDF로 뽑아줘.
 
-`bizplan-slides`가 템플릿을 분석해 레이아웃 매핑표를 보여주고, 템플릿 디자인(마스터·색·바닥글)을 유지한 채 내용을 채운 `발표.pptx`와 `발표.pdf`, 장별 미리보기를 만든다.
+`bizplan-slides`는 먼저 사업계획서를 정보 단위로 파싱해 장마다 형식(카드·수치·시장 규모·비교·간트 등)을 정한 매핑표를 보여준다. 그다음 템플릿 디자인(마스터·색·바닥글)을 유지한 채 내용을 채워 `발표.pptx`·`발표.pdf`와 장별 미리보기를 만들고, 슬라이드 숫자를 원문과 대조한다.
+
+> 이 PDF 템플릿 느낌으로 만들어줘. (또는) 템플릿 없이 깔끔하게.
+
+PDF·이미지 템플릿이나 템플릿이 없으면 테마(`report-blue`·`mono-line`·`basic-navy` 또는 템플릿에서 뽑은 색)로 편집 가능한 PPTX를 새로 그린다.
 
 ## 한 줄 사용 예시
 

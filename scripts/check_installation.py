@@ -3,6 +3,7 @@
 
 import hashlib
 from pathlib import Path
+import json
 import subprocess
 import sys
 import tempfile
@@ -55,6 +56,24 @@ def main():
     result = run("codex", ROOT / "skills")
     assert result.returncode != 0 and "overlap" in result.stderr
     print("PASS source overlap guard")
+
+    themes = ROOT / "skills/bizplan-slides/assets/themes"
+    keys = {"name", "fonts", "colors", "chrome", "layout", "sizes", "styles"}
+    for path in sorted(themes.glob("*.json")):
+        if path.name.startswith("sample"):
+            continue
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert keys <= set(data), f"{path.name}: missing {keys - set(data)}"
+    print("PASS theme files")
+    try:
+        import pptx  # noqa: F401
+    except ImportError:
+        print("SKIP sample deck spec check (python-pptx not installed)")
+    else:
+        result = subprocess.run([sys.executable, "-B", str(ROOT / "skills/bizplan-slides/scripts/theme_deck.py"),
+                                 "--check", "--sample"], capture_output=True, text=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        print("PASS sample deck spec check")
     print("Static installation checks only; agent discovery and output quality are separate tests.")
 
 
