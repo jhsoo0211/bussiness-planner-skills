@@ -2,7 +2,16 @@
 
 `bizplan-reel.mp4`(한국어) · `bizplan-reel-en.mp4`(영어) — 1920×1080, 30fps, 50초, AAC 스테레오. 마지막 프레임이 첫 프레임으로 이어지는 루프.
 
-저장소 README 상단에는 소리 없는 미리보기(`bizplan-reel-preview.webp`, `bizplan-reel-en-preview.webp`, 960px · 12fps 애니메이션 WebP)를 두고, 누르면 원본 mp4로 이동한다.
+저장소 README 상단에는 소리 없는 미리보기(`bizplan-reel-preview.webp`, `bizplan-reel-en-preview.webp`, 960px · 12fps 애니메이션 WebP)를 두고, 누르면 웹용 영상(`bizplan-reel-web.mp4`, `bizplan-reel-en-web.mp4`, 720p · 약 9MB)이 jsDelivr CDN을 통해 브라우저에서 재생된다. GitHub 파일 화면은 큰 mp4를 보여주지 못하고("can't show files that are this big") raw 주소는 내려받기로 처리되기 때문이다.
+
+### README에 바로 재생되는 플레이어를 넣으려면
+
+GitHub는 웹에서 직접 올린 영상만 README 안에서 재생한다(무료 계정 기준 10MB 이하 — 웹용 파일이 이 크기에 맞춰져 있다).
+
+1. GitHub에서 `README.md` 편집(연필 아이콘)을 연다.
+2. `bizplan-reel-web.mp4`를 언어 링크 아래 줄에 끌어다 놓는다. 업로드가 끝나면 `https://github.com/user-attachments/assets/…` 주소가 한 줄로 들어간다.
+3. 그 주소 줄만 남기고 기존 미리보기 블록(`<p align="center">…</p>` 두 개)을 지운 뒤 커밋한다.
+4. `README.en.md`도 `bizplan-reel-en-web.mp4`로 똑같이 한다.
 
 ## 연출 원칙
 
