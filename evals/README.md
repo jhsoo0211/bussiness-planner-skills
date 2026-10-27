@@ -16,11 +16,34 @@ python scripts/check_installation.py
 
 This is a deterministic installation check, not a live agent or model benchmark.
 
-## 2. Live discovery and routing
+## 2. Discovery, explicit invocation, and full workflow
 
-Use a fresh session for each query in [trigger-evals.json](trigger-evals.json). Record which skill the host actually selected, the expected skill, any references opened, and pass/fail. Include negative cases where no bizplan skill should activate. Do not insert `$bizplan` or `/bizplan` in an **implicit-routing** test: that would test explicit invocation instead.
+Keep these evaluation tracks separate. Start each independent case in a fresh session; preserve the same session only for the stages of a full-workflow case.
 
-Before the full set, explicitly invoke `bizplan` and `bizplan-review` once in each host to check discovery and access to `bizplan/references/common-rules.md`. Record host version, skill commit, model, reasoning setting where applicable, and available tools. Missing discovery is an installation/runtime failure, not a writing-quality score.
+| Track | Request | What it establishes |
+| --- | --- | --- |
+| Automatic selection | Natural-language cases in [trigger-evals.json](trigger-evals.json), without skill names or invocation syntax | Whether the host selects the expected skill; include negative cases where no bizplan skill should activate |
+| Explicit section invocation | Directly invoke `bizplan-problem`, `bizplan-solution`, `bizplan-growth`, `bizplan-team`, and `bizplan-review` in separate cases; test `bizplan-quick` separately | Whether each named skill is discoverable, reads its required references, and applies its section criteria |
+| Full workflow | Explicitly request the detailed workflow and carry the same evidence packet through its required stages | Whether the stages preserve user insights, constraints, evidence, and the supplied form through a completed file and review |
+
+Use the host's actual invocation syntax. In Codex CLI/IDE, use `$bizplan-problem` or `$bizplan-growth`; `/skills` opens the selector. In a Claude Code local skill installation, use `/bizplan-problem` or `/bizplan-growth`. This repository's plugin name is `bizplan`, so a Claude Code plugin installation uses `/bizplan:bizplan-problem` or `/bizplan:bizplan-growth`. Both hosts also support automatic selection. Sources: [OpenAI skills](https://learn.chatgpt.com/docs/build-skills) and [Claude Code skills](https://code.claude.com/docs/en/skills).
+
+Name the tested product precisely. Claude.ai chat uses enabled account skills and supports naming the desired skill in a natural-language request; do not label that as a tested Claude Code slash invocation. Microsoft 365 add-ins have their own `/` picker. A common skill format does not establish equivalent host features, permissions, or behavior. See [Claude.ai skill help](https://support.claude.com/en/articles/12512180-use-skills-in-claude).
+
+Record host and version, installation type, skill commit, model, reasoning setting where applicable, available tools, the exact prompt, and the observed invocation. Missing discovery is an installation/runtime failure. A wrong automatically selected skill is a routing failure. Neither should be silently replaced with a successful explicit invocation in the same reported result.
+
+### Reference access is not content application
+
+The section skills and quick mode must read the author-insight references linked as required by their SKILL.md before drafting. Check these evidence layers separately:
+
+| Evidence layer | Required record |
+| --- | --- |
+| File access | Actual read/load events for the selected SKILL.md, common rules, and required author-insight references; record failed or truncated reads |
+| Guidance application | For each relevant author insight or section criterion, identify the resulting draft passage or revision and explain how it applies the guidance |
+| User evidence preservation | Map each important source note, problem priority, and technical/cost/safety constraint to its form section and draft passage; mark omissions and unjustified changes |
+| Completed document | Reopen the generated file, check the original form structure, render every page, and inspect clipping, overflow, and readability |
+
+A file-read event does not prove that its advice influenced the draft. A model's statement that it used a skill is not a substitute for access evidence. Conversely, a plausible draft passage alone does not prove which reference caused it. Record unavailable evidence as unknown. Lessons from repository cases must not become invented facts about the current team. Reading quick mode alone does not establish that the individual section skills ran.
 
 ## 3. Controlled writing pilot — criteria to agree first
 
@@ -45,10 +68,14 @@ Candidate Korean prompts (use identical content across conditions):
 
 Do not score an unattached draft or rubric: assemble and freeze those fixtures before running the review/adaptation cases.
 
-For a small pilot, agree the conditions first (for example, one specified Codex model with/without the skill, or specified Codex and Claude configurations using the same skill). Use the same input packet, tool access, output length limit, and skill commit. Run each selected case at least three times in fresh sessions, randomize anonymous outputs for human review, and report the small sample size.
+For a small pilot, agree the conditions first (for example, one specified Codex model with/without the skill, or specified Codex and Claude configurations using the same skill). Use the same input packet, including the user's insights, tool access, output length limit, and skill commit. Compare the same invocation track and requested stages; do not compare a quick automatic route on one host with an explicitly invoked detailed workflow on the other as if only the host changed. If models differ, report a host-and-model comparison rather than attributing the difference solely to the skill. Run each selected case at least three times in fresh sessions, randomize anonymous outputs for human review, and report the small sample size.
 
 Record evidence integrity, PSST/form adherence, problem-solution consistency, usefulness of revisions, and Korean readability separately. Record latency and tokens only when reported by the host; missing usage is **unknown**, not zero. Do not equate tokens across providers with monetary cost or claim a winner from a single example. Save prompts, outputs, failures, judge notes, and the exact configuration with any published result.
 
 ## Current evidence boundary
 
-The repository includes deterministic installation checks, 26 routing test cases, and illustrative Korean plan/review examples. A controlled Codex-versus-Claude writing-quality result is not included. Publish that result only after the interview criteria are agreed and the recorded runs are complete.
+The repository includes deterministic installation checks, 26 routing test cases, and illustrative Korean plan/review examples. These fixtures are not evidence that all live routing cases passed.
+
+The earlier 2026-09-04 U300 DOCX exercise used Codex with one baseline draft and one skill-enabled draft, followed by the same clarification request for both. The observed business-plan skill reads were `bizplan/SKILL.md`, `bizplan-quick/SKILL.md`, and `bizplan/references/common-rules.md`. It did not observe separate reads of the problem, solution, growth, team, or review skills, or review's `references/case-insights.md`. It therefore records one automatic quick-path drafting case, not validation of all section guidance, complete author-insight application, or a Claude performance comparison.
+
+The limited before/after checks of the new required-reference behavior are documented with [synthetic cases and results](author-insights/README.md). They cover two explicitly named multi-skill writing paths and quick mode, not the separate single-skill cases or full workflow described above. A controlled Codex-versus-Claude writing-quality result is not included. Keep reference access, content application, and document-render evidence separate, and leave incomplete checks explicitly unverified.

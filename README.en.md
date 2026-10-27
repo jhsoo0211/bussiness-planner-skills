@@ -66,10 +66,12 @@ Start a new turn/session and select `bizplan`, or request it by name. In Codex C
 
 ```text
 $bizplan 예비창업패키지 사업계획서를 쓰고 싶어. 공고문을 먼저 확인해줘.
+$bizplan-problem 제공한 메모의 문제 우선순위를 유지해 문제 인식 파트를 써줘.
+$bizplan-growth 제공한 근거와 제약을 반영해 성장 전략 파트를 써줘.
 $bizplan-review 이 초안을 제공한 배점표로 검토해줘.
 ```
 
-The first prompt asks to start an application and review its announcement; the second asks to review a draft against a supplied rubric. The examples intentionally use Korean.
+These Korean prompts start an application, draft the problem or growth section from supplied notes, and review a draft against a supplied rubric. If you know the section you need, invoke its skill directly without going through the router. With a natural-language request that names no skill, Codex selects one by its description. **Test explicit invocation and automatic selection separately**: invoking a skill does not establish that every section or reference was applied.
 
 Check that `bizplan/references/common-rules.md` is present after installation. The other skills refer to this shared document, so install the full set together. Codex uses the same source instructions as Claude Code; there is no separate prompt copy or permanent Codex fork to keep synchronized.
 
@@ -81,7 +83,14 @@ From the cloned repository:
 python scripts/install_skills.py --agent claude
 ```
 
-This installs into `~/.claude/skills/`. Restart Claude Code, then use `/bizplan` or a natural-language request.
+This installs into `~/.claude/skills/`. Use `/bizplan` or a natural-language request. For a specific section in this local installation, invoke it directly:
+
+```text
+/bizplan-problem 제공한 메모의 문제 우선순위를 유지해 문제 인식 파트를 써줘.
+/bizplan-growth 제공한 근거와 제약을 반영해 성장 전략 파트를 써줘.
+```
+
+Restart Claude Code if the skills do not appear.
 
 The existing Claude Code marketplace installation is also available:
 
@@ -90,7 +99,17 @@ The existing Claude Code marketplace installation is also available:
 /plugin install bizplan@business-planner-skills
 ```
 
+The plugin's name is `bizplan`, so use namespaced commands such as `/bizplan:bizplan-problem`, `/bizplan:bizplan-growth`, and `/bizplan:bizplan-review` for a plugin installation. Claude Code supports both direct invocation and automatic selection. See the [official Claude Code skill documentation](https://code.claude.com/docs/en/skills).
+
 These `/plugin` commands are **for Claude Code**. Use the local installation above for Codex. For a Claude marketplace installation, use `/plugin marketplace update` to update the marketplace.
+
+**Claude.ai chat is a separate environment.** Its official help describes enabling skills under Customize → Skills and naming the desired skill in the request. This does not make this repository's Claude Code installation steps or slash commands applicable to chat. See the [official Claude.ai skill help](https://support.claude.com/en/articles/12512180-use-skills-in-claude).
+
+## Author insights and section writing
+
+Each section skill and `bizplan-quick` must **read the original references linked in the [section-specific author-insight map](skills/bizplan/references/author-insights.md) before drafting** and apply them to that section's writing criteria. Do not defer this to review or substitute reading the common rules alone. Map the user's problem priorities and technical, cost, and safety constraints to the relevant form sections. Distinguish lessons from past cases from verified facts about the current team.
+
+Evaluation must separately record **evidence that a reference was read** and **evidence that the draft applies its guidance**. Adding required-reference links is not completed validation. The earlier U300 run was one Codex drafting case that automatically selected the quick path; it was not a Claude performance comparison. See the [synthetic cases and results](evals/author-insights/README.md) for the limited explicit-invocation checks after this change. Full-workflow, Claude, and original-document page validation remain separate. See the [evaluation procedure and evidence boundary](evals/README.md).
 
 ## A typical workflow
 
