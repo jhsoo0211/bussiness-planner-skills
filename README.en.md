@@ -46,6 +46,24 @@ The intended context includes 예비창업패키지, 청년창업사관학교, U
 | `bizplan-export` | Export-voucher plans and target-market analysis |
 | `bizplan-analyze` | Comparing completed plans and extracting reusable writing patterns |
 
+## Easiest: install from chat
+
+Paste the repository link into a Claude Code or Codex chat and ask the agent to install it. The agent clones the repository and runs the installer described below for you.
+
+```text
+https://github.com/jhsoo0211/bussiness-planner-skills — install this skill
+```
+
+To be explicit about how to install it:
+
+```text
+Clone https://github.com/jhsoo0211/bussiness-planner-skills and install the bizplan skills with scripts/install_skills.py
+```
+
+- Install locations: `~/.claude/skills/` for Claude Code, `~/.agents/skills/` for Codex. Review and approve the commands when the agent asks.
+- When it finishes, start a new session (or restart) and begin with `/bizplan` (Claude Code) or `$bizplan` (Codex).
+- If the agent cannot install it or picks a different location, run the terminal commands below yourself.
+
 ## Install for Codex
 
 Prerequisites: Git, Python 3, and a working Codex environment. On Windows, use `py` instead of `python` if that is your Python launcher.
