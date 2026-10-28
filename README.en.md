@@ -9,7 +9,7 @@
 </p>
 <p align="center"><sub>▶ <b>Intro video (50 s)</b> — click the preview to play it with sound in your browser · <a href="https://github.com/jhsoo0211/bussiness-planner-skills/raw/main/docs/motion-graphic/reel/bizplan-reel-en.mp4">download the 1080p original</a></sub></p>
 
-17 skills for drafting, reviewing, and presenting business plans for **Korean government startup-support programs**. Claude Code and Codex use the same `skills/` source.
+18 skills for drafting, reviewing, and presenting business plans for **Korean government startup-support programs**. Claude Code and Codex use the same `skills/` source.
 
 ## Scope: designed for Korean PSST applications
 
@@ -33,6 +33,7 @@ The intended context includes 예비창업패키지, 초기창업패키지, 창�
 | `bizplan` | Choosing the right workflow and gathering application requirements |
 | `bizplan-interview` | An up-front, block-by-block interview that fixes every fact, gap, and constraint in `브리프.md`; later modes read this brief instead of relying on a long chat |
 | `bizplan-quick` | A full PSST draft from five inputs: industry, target, features, differentiation, weaknesses |
+| `bizplan-document` | A submission-ready plan: deep research, the overview form table through the team chapter at full length in a narrative document style, as many visuals as the data supports, and .docx, .hwpx, and .pdf with page previews in one build (page count is reported against the call limit, not cut) |
 | `bizplan-item` | Refining an idea, customer, problem, and value proposition |
 | `bizplan-outline` | Fixing the outline before drafting: headings, one-line summaries, evidence slots, and page allocation |
 | `bizplan-problem` | Framing the problem and need with SPIN |
@@ -76,7 +77,7 @@ cd bussiness-planner-skills
 python scripts/install_skills.py --agent codex
 ```
 
-This copies all 17 skill folders, including their references and scripts, into `~/.agents/skills/`. It **stops before copying if any target skill already exists**. To update an installation, back up any local edits and move the old target skill folders out of the installation location before running the installer again. Avoid duplicate installations in multiple skill locations.
+This copies all 18 skill folders, including their references and scripts, into `~/.agents/skills/`. It **stops before copying if any target skill already exists**. To update an installation, back up any local edits and move the old target skill folders out of the installation location before running the installer again. Avoid duplicate installations in multiple skill locations.
 
 For a project-only installation, specify that project's skills directory:
 
@@ -152,7 +153,7 @@ Evaluation must separately record **evidence that a reference was read** and **e
 ## A typical workflow
 
 1. Provide your idea and, when available, the official announcement, application form, and scoring rubric.
-2. `bizplan` checks the target program, working mode, and output format. Choose a quick draft, a step-by-step workflow with research, or a specific section. Existing answers are reused.
+2. `bizplan` checks the target program, working mode, and output format. Choose a quick draft, a step-by-step workflow with research, a complete document (full-length plan with visuals, built to .docx, .hwpx, and .pdf), or a specific section. Existing answers are reused.
 3. Draft the plan. `bizplan-quick` asks for five core inputs and produces a PSST outline with a problem-to-solution consistency check. Illustrative data must remain labeled as unverified.
 4. Use `bizplan-review` to identify weak claims, missing evidence, inconsistencies, and likely reviewer questions. Its scores are feedback, not an official assessment or funding prediction.
 5. If presentation review is required, use `bizplan-pitch` for the narrative and Q&A, then `bizplan-slides` to fill your presentation template (or a built-in one) and export PPTX and PDF.
@@ -255,7 +256,7 @@ Run the offline installation smoke test:
 python scripts/check_installation.py
 ```
 
-It checks all 17 skill folders, exact resource copying, existing-installation protection, and source/destination overlap protection in temporary directories. It does **not** run either model, measure skill discovery, or establish output quality, speed, or cost. The [evaluation guide](evals/README.md) separates installation checks, trigger tests, and controlled quality comparisons.
+It checks all 18 skill folders, exact resource copying, existing-installation protection, and source/destination overlap protection in temporary directories. It does **not** run either model, measure skill discovery, or establish output quality, speed, or cost. The [evaluation guide](evals/README.md) separates installation checks, trigger tests, and controlled quality comparisons.
 
 The ZIP files named `dist/*v0.4.0.zip` are earlier distribution artifacts. Install from the current checkout to use the Codex documentation and changes described here.
 

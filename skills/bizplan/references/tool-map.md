@@ -39,6 +39,7 @@ bizplan 스킬이 작업 중에 **다른 스킬·도구를 부를 때 보는 단
 | 규제 · 인허가 확인 | solution | `legal:compliance-check`, `legal:legal-risk-assessment` | 기능 · 데이터 · 업종 | 해당 규제 · 필요 승인 · 위험 등급 | 라우터 분야표의 게이트 + "법률 확인 필요" |
 | MOU · NDA 검토 | team | `legal:review-contract`, `legal:triage-nda` | 문서 | 위험 조항 | 사람 검토 요청 |
 | 양식 파일 편집 · 읽기 | 산출 전반 | `docx`, `pdf`, `xlsx` | 양식 파일 · 본문 | 채운 파일 · 추출 텍스트 | `md_to_docx.py` · `md_to_hwpx.py` · `read_form.py` · `check_tables.py --xlsx` |
+| 완성본 한 번에 빌드 | document | — | `사업계획서.md` · `시각자료/spec.json` | .docx · .pdf · .hwpx · 쪽 미리보기 · 쪽 수·그림·남은 자리 보고 | `build_document.py`(검산 → 그림 `--print` → docx·pdf·미리보기·hwpx, `--style form`) |
 | 공유 문서 | 산출 전반 | `docs`, `google-workspace` | 본문 | 공유 링크 | 파일 전달 |
 | 발표 파일 편집 | slides | `pptx` | 템플릿 · 스펙 | 편집한 PPTX | `pptx_build.py` · `theme_deck.py` |
 | 시각 검토 | review, slides | `design:design-critique`, `design:accessibility-review` | 미리보기 PNG | 문제 목록 | `bizplan-slides` 점검표 |

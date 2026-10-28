@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 """누적한 사업계획서 .md를 제출 서식에 가까운 .docx로 바꾼다.
 
-    python3 -B md_to_docx.py 사업계획서.md 사업계획서.docx [--gov-bullets] [--font "맑은 고딕"]
+    python3 -B md_to_docx.py 사업계획서.md 사업계획서.docx [--gov-bullets | --style form] [--font "맑은 고딕"]
                              [--resource-path 그림폴더] [--engine auto|pandoc|python] [--captions]
 서식: A4·여백 20mm, 한글 글꼴(기본 맑은 고딕)·ko-KR, 검정 제목, 표 격자 테두리·머리행 굵게·열 너비 내용 비례,
 그림은 본문 폭에 맞추고 앞 문단(헤드라인)과 같은 쪽에 묶는다(alt 캡션은 --captions일 때만). --gov-bullets는 불릿 계층을 공문서 개조식(□ → ○ → - → ·)으로 바꾼다.
+--style form은 완성 문서 서식이다: 회색 상자 제목(#), 장 띠(## 1. …), □ 절(## □ …), 절(###), 소절·주제구(#### ○ … 밑줄),
+소주제(##### → '- 소주제'), 불릿 '-'·'·', 연노랑 머리행 표, 사진 격자 캡션, ```개요``` 양식 표, 쪽 번호 '- n -'
+(표기는 bizplan-document/references/document-format.md).
 pandoc이 있으면 기준 서식(reference.docx)을 만들어 쓰고, 없으면 python-docx로 직접 변환한다.
 """
 import argparse
@@ -17,12 +20,23 @@ import sys
 import tempfile
 
 from docx import Document
-from docx.enum.text import WD_BREAK
+from docx.enum.table import WD_ALIGN_VERTICAL
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Mm, Pt, RGBColor
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from form_style import MARK_RE, OVERVIEW_MM, form_bullets, heading_kind, label_text, layout, split_forms  # noqa: E402
+
 GOV = ["□", "○", "-", "·"]
+FORM_FILL, HEAD_FILL, NOTE_INK = "D9D9D9", "FFF2CC", RGBColor(0x55, 0x55, 0x55)
+SIZES = {"title": 18, "square": 14, "chapter": 14, "section": 15, "sub": 12.5, "topic": 13, "subtopic": 11}
+PPR_ORDER = ("pStyle keepNext keepLines pageBreakBefore framePr widowControl numPr suppressLineNumbers pBdr shd tabs "
+             "suppressAutoHyphens kinsoku wordWrap overflowPunct topLinePunct autoSpaceDE autoSpaceDN bidi adjustRightInd "
+             "snapToGrid spacing ind contextualSpacing mirrorIndents suppressOverlap jc textDirection textAlignment "
+             "textboxTightWrap outlineLvl divId cnfStyle rPr sectPr pPrChange").split()
+TCPR_ORDER = "cnfStyle tcW gridSpan hMerge vMerge tcBorders shd noWrap tcMar textDirection tcFitText vAlign hideMark".split()
 
 
 # ---------------------------------------------------------------- 전처리
@@ -214,10 +228,239 @@ def _keep_with_next(doc):
             prev = None
 
 
-def postprocess(path, font):
+# ---------------------------------------------------------------- 완성 문서 서식(--style form)
+
+def _put(parent, el, order):
+    """스키마 순서(order)를 지키며 parent에 el을 넣는다(같은 태그가 있으면 바꾼다)."""
+    name = el.tag.rsplit("}", 1)[-1]
+    old = parent.find(qn(f"w:{name}"))
+    if old is not None:
+        parent.remove(old)
+    rank = order.index(name)
+    for child in parent.iterchildren():
+        cname = child.tag.rsplit("}", 1)[-1]
+        if cname in order and order.index(cname) > rank:
+            child.addprevious(el)
+            return
+    parent.append(el)
+
+
+def _shd(fill):
+    shd = OxmlElement("w:shd")
+    for k, v in (("w:val", "clear"), ("w:color", "auto"), ("w:fill", fill)):
+        shd.set(qn(k), v)
+    return shd
+
+
+def _cell_fill(cell, fill):
+    _put(cell._tc.get_or_add_tcPr(), _shd(fill), TCPR_ORDER)
+
+
+def _box(p, fill=None, sz="8"):
+    """문단 네 변 테두리(+ 바탕) — 제목 상자·장 띠."""
+    pPr = p._p.get_or_add_pPr()
+    bdr = OxmlElement("w:pBdr")
+    for side in ("top", "left", "bottom", "right"):
+        e = OxmlElement(f"w:{side}")
+        for k, v in (("w:val", "single"), ("w:sz", sz), ("w:space", "4"), ("w:color", "000000")):
+            e.set(qn(k), v)
+        bdr.append(e)
+    _put(pPr, bdr, PPR_ORDER)
+    if fill:
+        _put(pPr, _shd(fill), PPR_ORDER)
+
+
+def _form_styles(doc):
+    for name, size, spacing in (("Normal", 11, 1.3), ("Body Text", 11, 1.3), ("First Paragraph", 11, 1.3),
+                                ("Compact", 10.5, 1.15)):
+        try:
+            st = doc.styles[name]
+        except KeyError:
+            continue
+        st.font.size = Pt(size)
+        st.paragraph_format.line_spacing = spacing
+        if name != "Compact":
+            st.paragraph_format.space_after = Pt(4)
+
+
+def _form_paragraphs(doc):
+    """제목 종류별 모양(상자·띠·밑줄·'- ' 소주제), 본문 양쪽 정렬, ※ 주석·출처 줄은 작게."""
+    for p in doc.paragraphs:
+        text = p.text.strip()
+        m = re.match(r"Heading (\d)", p.style.name)
+        if m and text:
+            kind = heading_kind(int(m.group(1)), text)
+            for r in p.runs:
+                r.font.size = Pt(SIZES[kind])
+                r.font.bold = kind != "square"
+                r.font.italic = False                      # pandoc 기준 서식의 제목 4·5는 기울임이다
+                r.font.color.rgb = RGBColor(0, 0, 0)
+                if kind == "topic":
+                    r.font.underline = True
+            fmt = p.paragraph_format
+            if kind == "title":
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                _box(p, fill=FORM_FILL)
+                fmt.space_after = Pt(14)
+            elif kind == "chapter":                    # 글 길이만큼만 테두리가 둘러지게 오른쪽을 들인다
+                _box(p, sz="12")
+                fmt.right_indent = Mm(max(0.0, 170 - (_em(text) * SIZES[kind] * 0.3528 + 14)))
+                fmt.space_before = Pt(16)
+            elif kind == "section":
+                fmt.space_before = Pt(10)
+            elif kind == "sub":
+                fmt.left_indent = Mm(2)
+            elif kind == "topic":
+                fmt.space_before = Pt(8)
+            elif kind == "subtopic" and p.runs and not text.startswith("-"):
+                p.runs[0].text = "- " + p.runs[0].text
+            continue
+        if text.startswith("※") or text.startswith("(출처") or text.startswith("(확인"):
+            for r in p.runs:
+                r.font.size = Pt(9)
+                r.font.color.rgb = NOTE_INK
+            if text.startswith("("):
+                p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        elif text and p.alignment is None and p.style.name in ("Normal", "Body Text", "First Paragraph"):
+            p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+
+def _form_tables(doc):
+    """내용 표: 머리행 연노랑·가운데, 짧은 칸 가운데. 사진 격자: 캡션 줄 굵게·가운데."""
+    for tbl in doc.tables:
+        if tbl._tbl.xpath(".//w:drawing"):
+            for row in tbl.rows:
+                caption = not row._tr.xpath(".//w:drawing")
+                for cell in row.cells:
+                    for par in cell.paragraphs:
+                        par.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        for r in par.runs:
+                            r.font.bold = r.font.bold or caption
+            continue
+        for k, row in enumerate(tbl.rows):
+            for cell in row.cells:
+                if k == 0:
+                    _cell_fill(cell, HEAD_FILL)
+                cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+                if k == 0 or len(cell.text.strip()) <= 16:
+                    for par in cell.paragraphs:
+                        par.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+
+def _form_label(cell, key):
+    cell.text = ""
+    par = cell.paragraphs[0]
+    par.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = par.add_run(label_text(key))
+    r.font.bold, r.font.size = True, Pt(11)
+    cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    _cell_fill(cell, FORM_FILL)
+
+
+def _form_values(cell, vals):
+    """칸 글: '○' 줄은 굵은 헤드라인, '-' 줄은 작은 사실 줄. 두 번째 '○'부터 위를 띄운다."""
+    cell.text = ""
+    first, heads = True, 0
+    for line in vals:
+        par = cell.paragraphs[0] if first else cell.add_paragraph()
+        first = False
+        _runs(par, line)
+        head = line.startswith("○")
+        for r in par.runs:
+            r.font.size = Pt(11 if head else 10)
+            if head:
+                r.font.bold = True
+        fmt = par.paragraph_format
+        fmt.space_after, fmt.line_spacing = Pt(1), 1.15
+        if head:
+            fmt.space_before = Pt(6 if heads else 0)
+            heads += 1
+
+
+def _form_picture(cell, path, res, width_mm, max_h=Mm(55)):
+    full = path if os.path.isabs(path) else os.path.join(res or ".", path)
+    cell.text = ""
+    par = cell.paragraphs[0]
+    par.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    if not os.path.exists(full):
+        par.add_run(f"[그림 없음: {path}]")
+        return
+    shape = par.add_run().add_picture(full, width=Mm(width_mm - 4))
+    if shape.height > max_h:
+        ratio = max_h / shape.height
+        shape.width, shape.height = int(shape.width * ratio), int(shape.height * ratio)
+
+
+def _render_forms(doc, forms, res):
+    """표지 문단(@@FORM-n@@)을 양식 표로 바꾼다: 이름표 열 회색, 명칭|범주 한 줄, 나머지 값은 세 칸을 합친다."""
+    for p in list(doc.paragraphs):
+        m = MARK_RE.match(p.text.strip())
+        if not m or int(m.group(1)) >= len(forms):
+            continue
+        rows = layout(forms[int(m.group(1))])
+        if not rows:
+            p._p.getparent().remove(p._p)
+            continue
+        t = doc.add_table(rows=len(rows), cols=4)
+        p._p.addprevious(t._tbl)
+        p._p.getparent().remove(p._p)
+        _borders(t)
+        _grid(t, [Mm(x) for x in OVERVIEW_MM])
+        pics = [k for k, r in enumerate(rows) if r[0] in ("img", "cap")]
+        if pics:
+            _form_label(t.cell(pics[0], 0).merge(t.cell(pics[-1], 0)), "이미지")
+        for k, row in enumerate(rows):
+            if row[0] == "pair":
+                (k1, v1), (k2, v2) = row[1], row[2]
+                _form_label(t.cell(k, 0), k1)
+                _form_values(t.cell(k, 1), v1)
+                _form_label(t.cell(k, 2), k2)
+                _form_values(t.cell(k, 3), v2)
+            elif row[0] == "full":
+                _form_label(t.cell(k, 0), row[1])
+                _form_values(t.cell(k, 1).merge(t.cell(k, 3)), row[2])
+            else:
+                items = row[1]
+                cells = ([t.cell(k, 1), t.cell(k, 2).merge(t.cell(k, 3))] if len(items) == 2
+                         else [t.cell(k, 1).merge(t.cell(k, 3))])
+                widths = ([OVERVIEW_MM[1], OVERVIEW_MM[2] + OVERVIEW_MM[3]] if len(items) == 2
+                          else [sum(OVERVIEW_MM[1:])])
+                for cell, (path, cap), w in zip(cells, items, widths):
+                    if row[0] == "img":
+                        _form_picture(cell, path, res, w)
+                    else:
+                        cell.text = ""
+                        par = cell.paragraphs[0]
+                        par.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        _runs(par, cap)
+                        for r in par.runs:
+                            r.font.size = Pt(10)
+
+
+def _page_number(doc):
+    """바닥글 가운데에 '- 쪽 번호 -'."""
+    for s in doc.sections:
+        par = s.footer.paragraphs[0] if s.footer.paragraphs else s.footer.add_paragraph()
+        par.text = ""
+        par.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        par.add_run("- ")
+        fld = OxmlElement("w:fldSimple")
+        fld.set(qn("w:instr"), "PAGE")
+        run = OxmlElement("w:r")
+        t = OxmlElement("w:t")
+        t.text = "1"
+        run.append(t)
+        fld.append(run)
+        par._p.append(fld)
+        par.add_run(" -")
+
+
+def postprocess(path, font, style="plain", forms=None, resource_path=None):
     doc = Document(path)
     _page(doc)
     _set_fonts(doc, font)
+    if style == "form":
+        _form_styles(doc)
     paras = doc.paragraphs
     for i, p in enumerate(paras):
         if p.style.name == "Block Text":
@@ -245,6 +488,11 @@ def postprocess(path, font):
                 for p in cell.paragraphs:
                     for r in p.runs:
                         r.bold = True
+    if style == "form":
+        _form_tables(doc)
+        _render_forms(doc, forms or [], resource_path)
+        _form_paragraphs(doc)
+        _page_number(doc)
     _keep_with_next(doc)
     # 그림이 본문 폭(170mm)을 넘지 않게, 정사각형 도식이 한 쪽을 다 차지하지 않게 높이는 120mm까지
     for shape in doc.inline_shapes:
@@ -336,7 +584,7 @@ def via_python(md_text, out, resource_path, captions=False):
             continue
         m = re.match(r"^(#{1,6})\s+(.*)$", s)
         if m:
-            doc.add_heading(m.group(2).replace("**", ""), level=min(len(m.group(1)), 4))
+            doc.add_heading(m.group(2).replace("**", ""), level=min(len(m.group(1)), 6))
             i += 1
             continue
         if s.startswith("|") and i + 1 < len(lines) and re.match(r"^\|?\s*:?-{2,}", lines[i + 1].strip()):
@@ -394,7 +642,7 @@ def via_python(md_text, out, resource_path, captions=False):
         while i < len(lines) and lines[i].strip() and not re.match(r"^(#|\||!\[|```|>|( *)([-*+]|\d+[.)])\s)", lines[i].strip()):
             buf.append(lines[i].strip())
             i += 1
-        _runs(doc.add_paragraph(), " ".join(buf))
+        _runs(doc.add_paragraph(), re.sub(r"^(　*)\\-", r"\1-", " ".join(buf)))   # 서식 불릿의 '\-'를 되돌린다
     doc.save(out)
     return warnings
 
@@ -404,6 +652,8 @@ def main():
     ap.add_argument("md")
     ap.add_argument("out")
     ap.add_argument("--gov-bullets", action="store_true")
+    ap.add_argument("--style", choices=("plain", "form"), default="plain",
+                    help="form = 완성 문서 서식(제목 상자·장 띠·주제구 밑줄·개요 양식 표·연노랑 머리행·쪽 번호). --gov-bullets 대신 '- ·' 불릿")
     ap.add_argument("--font", default="맑은 고딕")
     ap.add_argument("--resource-path", help="그림 상대 경로의 기준(기본: .md가 있는 폴더)")
     ap.add_argument("--engine", choices=("auto", "pandoc", "python"), default="auto")
@@ -411,7 +661,11 @@ def main():
     args = ap.parse_args()
     with open(args.md, encoding="utf-8") as f:
         md = f.read()
-    if args.gov_bullets:
+    forms = []
+    if args.style == "form":
+        md, forms = split_forms(md)
+        md = form_bullets(md)
+    elif args.gov_bullets:
         md = gov_bullets(md)
     res = args.resource_path or os.path.dirname(os.path.abspath(args.md))
     engine = args.engine
@@ -419,7 +673,7 @@ def main():
         engine = "pandoc" if shutil.which("pandoc") else "python"
     warnings = (via_pandoc(md, args.out, args.font, res, args.captions) if engine == "pandoc"
                 else via_python(md, args.out, res, args.captions))
-    postprocess(args.out, args.font)
+    postprocess(args.out, args.font, args.style, forms, res)
     doc = Document(args.out)
     print(f"저장: {args.out} (엔진: {engine}, 표 {len(doc.tables)}개, 그림 {len(doc.inline_shapes)}개)")
     for w in warnings:
