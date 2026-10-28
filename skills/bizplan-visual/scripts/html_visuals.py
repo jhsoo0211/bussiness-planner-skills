@@ -461,8 +461,8 @@ def _clip(p, d, c, hw, hh):
     return max(0.0, min(ts)) if ts else 0.0
 
 
-BM_SLOTS = {"left": (150, 0), "center": (512, 0), "right": (874, 0), "top": (512, -1), "bottom": (512, 1),
-            "top-left": (150, -1), "top-right": (874, -1), "bottom-left": (150, 1), "bottom-right": (874, 1)}
+BM_SLOTS = {"left": (96, 0), "center": (512, 0), "right": (928, 0), "top": (512, -1), "bottom": (512, 1),
+            "top-left": (96, -1), "top-right": (928, -1), "bottom-left": (96, 1), "bottom-right": (928, 1)}
 BM_FILL = ["left", "right", "bottom", "top", "bottom-left", "bottom-right", "top-left", "top-right"]
 
 
@@ -485,10 +485,12 @@ def _formula(f):
 
 
 def v_bm(v, A):
-    """BM 구조도. actors: [{name, role, ours, pos}] — pos를 생략하면 3개 이하는 한 줄(chain), 4개 이상은 우리를 가운데 둔 허브.
+    """BM 구조도 — 누가 누구와 무엇을 주고받는가(사용료·구독료·수수료 ↔ 서비스·SW·데이터·장비). 금액은 쓰지 않는다.
+    actors: [{name, role, ours, payer, pos}] — pos를 생략하면 3개 이하는 한 줄(chain), 4개 이상은 우리를 가운데 둔 허브.
     pos: left · center · right · top · bottom · top-left · top-right · bottom-left · bottom-right.
-    flows: [{from, to(번호나 이름), kind:'money'|'value'|'goods', label}] — 돈은 실선·금액 칩, 가치는 점선, 물건은 가는 실선.
-    formula: 매출 산식 {title, terms: [{label, value}, '×', …], result: {label, value}} 또는 문자열.
+    flows: [{from, to(번호나 이름), kind:'money'|'value'|'goods', label(무엇), detail(언제·어떻게, 선택)}]
+      — 돈(사용료 등)은 실선, 서비스·가치는 점선, 물건·데이터는 가는 실선.
+    formula: (선택) 매출 산식 띠 {title, terms: [{label, value}, '×', …], result: {label, value}} 또는 문자열.
     streams: 수익원 [{name, how, share}]. partner: (예전 형식) 아래쪽 파트너 한 곳."""
     acts = [dict(a) for a in v["actors"]]
     flows = list(v.get("flows", []))
@@ -515,7 +517,7 @@ def v_bm(v, A):
     geo = []
     for a in acts:
         x, r = BM_SLOTS[a["pos"]]
-        w, h = (224, 96) if a.get("ours") else (196, 80)
+        w, h = (208, 96) if a.get("ours") else (172, 80)     # 좌우 상자 사이에 '무엇 · 언제' 칩이 들어갈 간격
         geo.append(((x, ys[r]), w / 2, h / 2))
     names = {a["name"]: i for i, a in enumerate(acts)}
     idx = lambda k: names.get(k, k) if not isinstance(k, int) else k
@@ -552,18 +554,20 @@ def v_bm(v, A):
             kind, (value_c, 1.8, ' stroke-dasharray="6 5"', "av"))
         lines.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{color}" stroke-width="{width}"{dash} '
                      f'marker-end="url(#{mid})"/>')
-        label = f.get("label", "")
+        label, detail = f.get("label", ""), f.get("detail", "")
         if label:
-            cw = tw(label, 13) + 18
+            cw = tw(label, 13.5) + (tw(" · " + detail, 12) if detail else 0) + 20
             mx, my = (x1 + x2) / 2, (y1 + y2) / 2
             if abs(dy) > abs(dx) * 0.6:              # 세로에 가까운 선: 칩을 그 선이 비켜 선 쪽 바깥으로
                 side = 1 if nx * off >= 0 else -1
                 mx += side * (cw / 2 + 8)
             money = kind == "money"
-            chips.append(f'<rect x="{mx - cw / 2:.1f}" y="{my - 11:.1f}" width="{cw:.1f}" height="22" rx="11" '
+            # 칩은 '무엇을 주고받는가'를 같은 무게로 보인다 — 돈 칩만 옅은 강조색 바탕으로 구분
+            sub = f'<tspan font-size="12" font-weight="500" fill="{MUTED}"> · {html.escape(detail)}</tspan>' if detail else ""
+            chips.append(f'<rect x="{mx - cw / 2:.1f}" y="{my - 12:.1f}" width="{cw:.1f}" height="24" rx="12" '
                          f'fill="{mix(A, 0.12) if money else "#fff"}" stroke="{mix(A, 0.35) if money else GRAY_FILL}"/>'
-                         f'<text x="{mx:.1f}" y="{my + 4.5:.1f}" text-anchor="middle" font-size="13" '
-                         f'font-weight="{700 if money else 500}" fill="{INK if money else INK2}">{html.escape(label)}</text>')
+                         f'<text x="{mx:.1f}" y="{my + 5:.1f}" text-anchor="middle" font-size="13.5" '
+                         f'font-weight="600" fill="{INK}">{html.escape(label)}{sub}</text>')
     boxes = []
     for a, ((x, y), hw, hh) in zip(acts, geo):
         ours = a.get("ours")
@@ -582,8 +586,8 @@ def v_bm(v, A):
                          f'fill-opacity="{0.92 if ours else 1}">{html.escape(a["role"])}</text>')
     s += lines + boxes + chips
     kinds = {f.get("kind", "value") for f in flows}
-    leg = ['<span><i class="ln" style="background:var(--accent-ink)"></i>돈(금액)</span>'] if "money" in kinds else []
-    leg += ['<span><i class="ln dash"></i>가치·서비스</span>'] if "value" in kinds else []
+    leg = ['<span><i class="ln" style="background:var(--accent-ink)"></i>돈(사용료·구독료·수수료)</span>'] if "money" in kinds else []
+    leg += ['<span><i class="ln dash"></i>서비스·가치</span>'] if "value" in kinds else []
     leg += [f'<span><i class="ln" style="background:{goods_c};height:2px"></i>물건·데이터</span>'] if "goods" in kinds else []
     out = f'<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">{"".join(s)}</svg><div class="legend">{"".join(leg)}</div>'
     if v.get("formula"):
@@ -1494,6 +1498,15 @@ def warn(spec):
             missing = [x.get("src") for x in v.get("screens", v.get("items", [])) if x.get("src") and not img_src(x.get("src"))]
             if missing:
                 out.append(f"{v['id']}: 이미지 파일을 찾지 못했다 — {', '.join(missing)}")
+        if v.get("type") == "bm":
+            priced = [f.get("label", "") for f in v.get("flows", [])
+                      if re.search(r"(\d[\d,.]*|○+)\s*(만|억|천|백)?\s*(원|달러|%)", f.get("label", "") + " " + f.get("detail", ""))]
+            if priced:
+                out.append(f"{v['id']}: BM 화살표는 금액보다 주고받는 것(사용료·서비스 등)을 쓴다 — "
+                           f"{', '.join(priced)} → 금액은 매출 산식·채널별 매출(revenue_mix)로")
+            unnamed = [f for f in v.get("flows", []) if not f.get("label")]
+            if unnamed:
+                out.append(f"{v['id']}: 이름 없는 화살표 {len(unnamed)}개 — 무엇이 오가는지 적는다")
         if v.get("type") == "pnl":
             prof = v.get("profit")
             if prof and any(abs((r - c) - p) > 0.5 for r, c, p in zip(v["revenue"], v["cost"], prof)):
