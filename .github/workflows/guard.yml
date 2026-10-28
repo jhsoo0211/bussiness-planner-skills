@@ -33,6 +33,8 @@ jobs:
           PY
       - name: Installation smoke test
         run: python scripts/check_installation.py
+      - name: Design classification regression
+        run: python -B scripts/check_design_advisor.py
 
   confidential-guard:
     name: confidential-guard

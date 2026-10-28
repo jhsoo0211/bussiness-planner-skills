@@ -1,0 +1,58 @@
+{
+  "name": "plum-soft",
+  "label": "소프트 플럼",
+  "summary": "흰 바탕·차분한 보라·연한 라일락 구획. 친근함과 전문성을 함께 표현할 때의 후보.",
+  "derived_from": "독자 작성 테마. 미리캔버스 모아보기에서 관찰한 구획·대비·카드 문법만 참고했으며 원본 파일·문구·이미지·정확한 색상값을 복제하지 않았다.",
+  "fonts": {
+    "head": "Pretendard",
+    "body": "Pretendard",
+    "accent": "Pretendard"
+  },
+  "colors": {
+    "bg": "FAF8FC",
+    "surface": "FFFFFF",
+    "text": "2B2233",
+    "muted": "685C72",
+    "faint": "B4A8BF",
+    "line": "E5DFEB",
+    "soft": "F1EBF7",
+    "primary": "70458C",
+    "neutral": "97899F",
+    "series": [
+      "70458C",
+      "A587BA",
+      "3E394B",
+      "D0C4DC",
+      "A38E9E"
+    ]
+  },
+  "chrome": {
+    "header": "split"
+  },
+  "layout": {
+    "x": 64,
+    "title_y": 66,
+    "bottom": 506,
+    "gap": 24
+  },
+  "sizes": {
+    "title": 24,
+    "lead": 12,
+    "eyebrow": 10,
+    "body": 16,
+    "small": 12.5
+  },
+  "styles": {
+    "cover": "dots",
+    "section": "number",
+    "toc": "grid",
+    "card": "pill",
+    "kpi": "box",
+    "process": "pill-line",
+    "callout": "soft",
+    "table": "soft",
+    "closing": "center",
+    "bullet": "•",
+    "radius": 8
+  }
+}

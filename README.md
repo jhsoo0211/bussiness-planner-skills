@@ -167,6 +167,7 @@ python scripts/check_installation.py
 | `bizplan-slides/scripts/theme_deck.py` | 내용 스펙(JSON) → 테마 디자인의 편집 가능한 PPTX(패턴 23종·네이티브 차트), 스펙 검사·누락 대조 | python-pptx, Pillow |
 | `bizplan-slides/scripts/deck_check.py` | 발표 PPTX의 수치·날짜(차트 값 포함)를 원문과 대조, 미확보 표기·작은 글자 집계 | python-pptx |
 | `bizplan-slides/scripts/theme_from_pdf.py` | 그림 템플릿(PDF·PNG)에서 쪽 이미지·모아보기·색 후보·시작용 테마 JSON 추출 | pdftoppm, Pillow |
+| `bizplan-slides/scripts/design_advisor.py` | 기존 파싱 결과 재사용 또는 원문 자동 파싱 → 아이템·고객·톤·브랜드에 맞는 테마·단위별 표현 추천. 원문·관계·패턴·덱 보존 | Python 표준 라이브러리 |
 
 ## 섹션 설계도 · 조사노트 · 도구 지도
 
@@ -196,6 +197,12 @@ python scripts/check_installation.py
 - [정보 유형 → 시각화 구조](skills/bizplan-visual/references/info-patterns.md): 원문 신호, 결정 순서, 슬라이드 패턴·문서 표현, 수용량, 흔한 실수. 문서(`bizplan-visual`)와 발표(`bizplan-slides`)가 같이 쓴다.
 - [발표 구성 청사진](skills/bizplan-slides/references/blueprints.md): 사용자 제공 템플릿 3종(필수 구성 제안서 30장 · 연간 사업계획 20장 · 기본 15장)을 장마다 '전달하는 정보 → 형식 → 패턴'으로 분석했다. 공통 형식 문법 10가지와 PSST 발표 대응표가 들어 있다.
 
+### 파싱 결과에 어떤 디자인을 적용할지
+
+Claude Code와 Codex 모두 자연어 요청이나 명시 호출에서 같은 [자동 준비 절차](skills/bizplan-visual/references/design-selection.md)를 따른다. 에이전트가 원문·브리프를 읽고 기존 파싱이 있으면 재사용하며, 없으면 기존 파서를 호출해 디자인 선택까지 이어간다. 사용자가 JSON이나 스킬 경로를 준비할 필요는 없다. 기존 PSST 논리·관계·패턴·수치는 유지한다.
+
+내장 디자인 패턴과 7개 테마에서 아이템·고객·브랜드에 맞는 색·구획·여백·강조만 고른다. 지정 양식과 사용자 브랜드가 우선이며 업종별 색상은 고정하지 않는다. 출처·조사 식별자는 내부 작업 기록으로 남기고 기본 결과물에는 적용 디자인을 설명한다. 원본 디자인 파일·사진·문구·로고는 복제하지 않는다.
+
 ## 자료 넣는 법 (템플릿 · 사업계획서 자료)
 
 이 저장소는 **공개**다. 공개해도 되는 것만 커밋하고, 나머지는 비공개 위치에 둔다.
@@ -211,7 +218,7 @@ python scripts/check_installation.py
 | 원문에서 뽑은 검토 교훈 | `skills/bizplan-review/references/cases/<분야>.md` | 예(익명화) |
 
 - 템플릿을 넣으면 `python3 -B skills/bizplan-slides/scripts/pptx_inspect.py <파일>`로 경고(4:3 잔재·레이아웃 없음·한글 글꼴)를 먼저 확인한다. 자세한 규칙은 [템플릿 폴더 안내](skills/bizplan-slides/assets/templates/README.md).
-- PDF·이미지 템플릿은 글상자가 없어 그대로 채울 수 없다. `theme_from_pdf.py`로 색을 뽑아 테마를 만들고, 장 구성은 [발표 구성 청사진](skills/bizplan-slides/references/blueprints.md) 형식으로 적는다. 들어 있는 테마 3종과 미리보기는 [테마 안내](skills/bizplan-slides/assets/themes/README.md)에 있다.
+- PDF·이미지 템플릿은 글상자가 없어 그대로 채울 수 없다. `theme_from_pdf.py`로 색을 뽑아 테마를 만들고, 장 구성은 [발표 구성 청사진](skills/bizplan-slides/references/blueprints.md) 형식으로 적는다. 들어 있는 테마 7종과 생성 방법은 [테마 안내](skills/bizplan-slides/assets/themes/README.md)에 있다.
 - 사업계획서 원문은 `bizplan-analyze`로 분석하면 패턴·교훈을 위 파일들에 익명으로 옮기는 추가안을 만들어 준다.
 - `.pptx`·`.pdf`·`.hwp` 같은 바이너리는 `.gitattributes`가 줄바꿈 변환에서 보호한다.
 
@@ -221,7 +228,7 @@ main 브랜치는 PR로만 바꾸고, PR마다 자동 검사 두 개가 통과�
 
 | 검사 | 하는 일 |
 |------|---------|
-| `install-check` | 스크립트 문법, JSON 파싱, `scripts/check_installation.py` |
+| `install-check` | 스크립트 문법, JSON 파싱, `scripts/check_installation.py`, 디자인 분류 회귀 검사 `scripts/check_design_advisor.py` |
 | `confidential-guard` | `scripts/check_confidential.py` — 비공개 폴더(`자료/`·`분석/`·`templates/local/`·`themes/local/`), 원문 형식(.pdf·.hwp·.hwpx·.doc·.docx·.xlsx·.ppt), `dist/` 밖 zip, 비공개 용어 |
 
 처음 한 번 설정한다.
@@ -279,7 +286,7 @@ python3 scripts/check_confidential.py [--terms 용어파일]
 
 > 이 PDF 템플릿 느낌으로 만들어줘. (또는) 템플릿 없이 깔끔하게.
 
-PDF·이미지 템플릿이나 템플릿이 없으면 테마(`report-blue`·`mono-line`·`basic-navy` 또는 템플릿에서 뽑은 색)로 편집 가능한 PPTX를 새로 그린다.
+PDF·이미지 템플릿이나 템플릿이 없으면 아이템·고객·브랜드에 맞는 [테마](skills/bizplan-slides/assets/themes/README.md)로 편집 가능한 PPTX를 새로 그린다. 기존 구조는 유지하고 디자인 적용만 별도로 분류한다.
 
 ## 한 줄 사용 예시
 

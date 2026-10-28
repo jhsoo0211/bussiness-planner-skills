@@ -1,0 +1,58 @@
+{
+  "name": "warm-sand",
+  "label": "웜 샌드",
+  "summary": "크림 바탕·테라코타 강조·얇은 구획. 제품·로컬·생활 장면에 따뜻한 인상이 필요할 때의 후보.",
+  "derived_from": "독자 작성 테마. 미리캔버스 모아보기에서 관찰한 구획·대비·카드 문법만 참고했으며 원본 파일·문구·이미지·정확한 색상값을 복제하지 않았다.",
+  "fonts": {
+    "head": "Pretendard",
+    "body": "Pretendard",
+    "accent": "Pretendard"
+  },
+  "colors": {
+    "bg": "FCF9F3",
+    "surface": "FFFFFF",
+    "text": "302921",
+    "muted": "6B5F50",
+    "faint": "B8AB98",
+    "line": "E6DED0",
+    "soft": "F5EBDD",
+    "primary": "A44824",
+    "neutral": "A39480",
+    "series": [
+      "A44824",
+      "B48B58",
+      "454D36",
+      "D6C9B5",
+      "8D8A77"
+    ]
+  },
+  "chrome": {
+    "header": "plain"
+  },
+  "layout": {
+    "x": 64,
+    "title_y": 66,
+    "bottom": 506,
+    "gap": 24
+  },
+  "sizes": {
+    "title": 24,
+    "lead": 12,
+    "eyebrow": 10,
+    "body": 16,
+    "small": 12.5
+  },
+  "styles": {
+    "cover": "center",
+    "section": "number",
+    "toc": "grid",
+    "card": "head",
+    "kpi": "box",
+    "process": "chevron",
+    "callout": "soft",
+    "table": "soft",
+    "closing": "center",
+    "bullet": "•",
+    "radius": 3
+  }
+}
