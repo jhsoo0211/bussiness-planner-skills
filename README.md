@@ -129,7 +129,7 @@ python scripts/check_installation.py
 | `bizplan/scripts/md_to_hwpx.py` | .md → 한글 .hwpx/.hwp (개조식·표·그림) + 구조 검증 | python-hwpx |
 | `bizplan/scripts/guide_draft.py` | 사업계획서 목차 순서대로 '작성 가이드'(별도 산출물) 골격 — 작성법·섹션 설계도 항목 판정, 주장형 헤드라인·시각자료 수, 숫자 등록부(`--brief`), 미확보 표기·검토 점수 영향·넣어 줄 자산 | — |
 | `bizplan/scripts/find_tools.py` | 이 환경에 설치된 스킬을 읽어 도구 지도(`tool-map.md`)의 작업별로 지금 쓸 수 있는 스킬과 대안을 보여 준다 | — |
-| `bizplan-visual/scripts/html_visuals.py` | 시각자료 spec(JSON) → HTML(인라인 SVG) + PNG. 결론 제목 · 그래서 한 줄 · 출처 틀로 TAM/SAM/SOM·포지셔닝맵·SWOT·비교표·막대·전후·추이·퍼널·손익·BM·3지표·간트·로드맵·문제→해결 14종, 발표용 16:9(`--slide`)·테마 색(`--theme`), 성장률·손익 불일치 경고 | Node + Playwright(PNG), 한글 글꼴 |
+| `bizplan-visual/scripts/html_visuals.py` | 시각자료 spec(JSON) → HTML(인라인 SVG) + PNG. 결론 제목 · 그래서 한 줄 · 출처 틀로 사업계획서 목차별 33종(TAM·세분 시장·페르소나·설문·인용·구성비·추이·문제→해결·사진 격자·화면 ①②③·흐름도·비교표·포지셔닝·벤·막대·전후·BM 구조도·BMC·단위 경제성·채널별 매출·사업비·손익·월별 매출·3지표·퍼널·간트·로드맵·계단·연혁·SWOT·팀·협력 단계·표), 발표용 16:9(`--slide`, 넘치면 맞춤)·테마 색(`--theme`), 합계·성장률·손익 불일치 경고 | Node + Playwright(PNG), 한글 글꼴 |
 | `bizplan-visual/scripts/chart_templates.py` | (대체 경로) matplotlib 차트 — 시장 추이·비교·TAM/SAM/SOM·포지셔닝맵·간트·퍼널·손익 콤보(200dpi, 출처 캡션) | matplotlib, 한글 폰트 |
 | `bizplan-slides/scripts/pptx_inspect.py` | 발표 템플릿의 레이아웃·자리표시자·샘플 슬라이드·테마 분석 | python-pptx |
 | `bizplan-slides/scripts/pptx_build.py` | 템플릿 디자인을 유지한 채 스펙(JSON)대로 PPTX 생성 | python-pptx, Pillow |
@@ -149,7 +149,7 @@ python scripts/check_installation.py
   - 근거 수준 라벨(확인·산출·관찰·가정), 보수 추정(의향·전환율은 조사값의 절반), 검산 상자.
   - 양식 매핑: 같은 블록을 예비창업패키지(최근형·세분형)·U300+·온라인 문항형(모두의 창업 등) 목차에 배치한다. 문체도 양식별로 자동이다(문서형은 헤드라인 + 개조식, 문항형은 ◆ 소제목 + 짧은 서술).
 - **조사노트** `조사노트.md`(`bizplan-research`): 하위 질문 → 출처 표(근거 수준·판정·확인 경로) → 1차 고객 수 산식 → 인터뷰 종합 → 경쟁 비교·요약 카드 → 숫자 등록부 후보 → 블록별 문장 초안 → 빈칸 계획.
-- **[HTML 시각자료](skills/bizplan-visual/references/visual-html.md)**: 그림마다 결론 제목(무엇을 말하는가) → 그림 → 그래서 한 줄 → 출처 · 시점 · 표본. 우리만 강조색, 나머지는 회색, 축은 하나, 미확보 값은 `○○` 점선으로 보인다. `html_visuals.py --sample 예시.json`으로 14종 예시를 만든다.
+- **[HTML 시각자료](skills/bizplan-visual/references/visual-html.md)**: 그림마다 결론 제목(무엇을 말하는가) → 그림 → 그래서 한 줄 → 출처 · 시점 · 표본. 우리만 강조색, 나머지는 회색, 축은 하나, 미확보 값은 `○○` 점선으로 보인다. [목차별 시각자료 지도](skills/bizplan-visual/references/visual-html.md)가 절마다 쓸 그림을 정하고, BM 구조도는 허브 배치 · 결제자 표시 · 매출 산식 띠까지 그린다. `html_visuals.py --sample 예시.json`으로 목차순 예시 34개를 만든다.
 - **[도구 지도](skills/bizplan/references/tool-map.md)**: 웹 조사·인터뷰 종합·데이터 검증·차트·재무 표·규제 확인·문서 편집 같은 작업마다 '환경에 있으면 부를 스킬 / 넘길 것 / 받을 것 / 없으면 내장 절차'를 한 표에 둔다. 모든 스킬이 이 한 곳만 본다. `find_tools.py`로 지금 쓸 수 있는 것을 확인한다.
 
 ## 초안과 함께 받는 코칭

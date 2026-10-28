@@ -13,6 +13,7 @@ const path = require('path');
   const page = await browser.newPage({ viewport: { width: 1800, height: 1200 }, deviceScaleFactor: Number(scale) });
   await page.goto('file://' + path.resolve(src), { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => window.__fit && window.__fit());   // 발표 장 맞춤(있을 때)
   const ids = await page.$$eval('section.viz[id]', (els) => els.map((e) => e.id));
   for (const id of ids) {
     const el = await page.$(`section.viz[id="${id}"]`);

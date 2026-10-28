@@ -72,7 +72,8 @@ def main():
             result = subprocess.run([sys.executable, "-B", str(script), *args], capture_output=True, text=True)
             assert result.returncode == 0, result.stdout + result.stderr
         html = (Path(temporary) / "visuals.html").read_text(encoding="utf-8")
-        assert html.count('<section class="viz"') == len(json.loads(sample.read_text(encoding="utf-8"))["visuals"])
+        visuals = [v for v in json.loads(sample.read_text(encoding="utf-8"))["visuals"] if v.get("type") != "chapter"]
+        assert html.count('<section class="viz"') == len(visuals)
     print("PASS HTML visual sample build")
     try:
         import pptx  # noqa: F401

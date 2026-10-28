@@ -7,12 +7,17 @@
 입력(JSON): {"visuals": [{"id": "tam", "type": "tam", "headline": "결론 문장", ...}, ...]}
 - 모든 시각자료에 공통: id · type · headline(필수 — 무엇을 보여주는지가 아니라 무엇을 말하는지)
   · kicker(어느 절의 그림인지, 예: "1-3 · 목표 고객") · sub(읽는 법 한 줄) · takeaway(그래서 무엇인가 한 줄) · note(출처 · 시점 · 표본)
-- type: tam · positioning · swot · bar · before_after · trend · funnel · pnl · compare · bm · kpi · roadmap · gantt · ps_map
-  (필드는 아래 각 함수 설명과 SAMPLE 참고. `python3 -B html_visuals.py --sample 예시.json`으로 예시 spec을 만든다)
+- type 33종(사업계획서 목차순 쓰임새는 references/visual-html.md):
+  시장·고객 tam · segments · persona · survey · quotes · donut / 문제·해결 trend · ps_map · photos · screens · flow
+  차별 compare · positioning · venn · bar · before_after / 돈 bm · bmc · waterfall · revenue_mix · budget · pnl · columns · kpi
+  실행 funnel · gantt · roadmap · stairs · timeline · swot · team · partners · table
+  {"type": "chapter", "title": "1. 문제 인식"}은 미리보기 쪽의 장 구분(그림 아님)
+  (필드는 각 함수 설명과 assets/html-visuals-sample.json 참고. `--sample 예시.json`으로 목차순 예시 spec을 복사한다)
 출력: <out>/visuals.html(모두 한 장에) + <out>/<id>.png(2배 해상도, Node + Playwright가 있을 때).
 '○○'(미확보 값)은 점선 밑줄로 표시돼 빈칸이 보인다. 강조는 우리(ours) 하나에만 쓰고 나머지는 회색으로 둔다.
 """
 import argparse
+import base64
 import html
 import json
 import math
@@ -23,6 +28,7 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.getcwd()          # 이미지 경로의 기준(spec 파일 폴더) — main에서 바꾼다
 FONT = "Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif"
 INK, INK2, MUTED, GRID, BASE = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7"
 GRAY, GRAY_FILL, SECOND = "#a3a19a", "#d9d7d0", "#eb6834"
@@ -441,60 +447,152 @@ def v_compare(v, A):
     return f'<table class="cmp"><thead><tr><th></th>{head}</tr></thead><tbody>{"".join(body)}</tbody></table>{legend}'
 
 
+def _clip(p, d, c, hw, hh):
+    """사각형(중심 c, 반폭 hw·반높이 hh) 안의 점 p에서 방향 d로 나가 경계에 닿는 거리."""
+    ts = []
+    if d[0] > 1e-9:
+        ts.append((c[0] + hw - p[0]) / d[0])
+    if d[0] < -1e-9:
+        ts.append((c[0] - hw - p[0]) / d[0])
+    if d[1] > 1e-9:
+        ts.append((c[1] + hh - p[1]) / d[1])
+    if d[1] < -1e-9:
+        ts.append((c[1] - hh - p[1]) / d[1])
+    return max(0.0, min(ts)) if ts else 0.0
+
+
+BM_SLOTS = {"left": (150, 0), "center": (512, 0), "right": (874, 0), "top": (512, -1), "bottom": (512, 1),
+            "top-left": (150, -1), "top-right": (874, -1), "bottom-left": (150, 1), "bottom-right": (874, 1)}
+BM_FILL = ["left", "right", "bottom", "top", "bottom-left", "bottom-right", "top-left", "top-right"]
+
+
+def _formula(f):
+    """매출 산식 띠: terms(항·연산자 목록) = result. 문자열이면 그대로 한 줄."""
+    if isinstance(f, str):
+        return f'<div class="fx"><span class="fx-text">{esc(f)}</span></div>'
+    parts = []
+    for t in f.get("terms", []):
+        if isinstance(t, str):
+            parts.append(f'<span class="fx-op">{esc(t)}</span>')
+        else:
+            parts.append(f'<span class="fx-term"><small>{esc(t.get("label", ""))}</small><b>{esc(t.get("value", ""))}</b></span>')
+    r = f.get("result")
+    if r:
+        parts.append('<span class="fx-op">=</span>')
+        parts.append(f'<span class="fx-term res"><small>{esc(r.get("label", ""))}</small><b>{esc(r.get("value", ""))}</b></span>')
+    lead = f'<span class="fx-lead">{esc(f["title"])}</span>' if f.get("title") else ""
+    return f'<div class="fx">{lead}{"".join(parts)}</div>'
+
+
 def v_bm(v, A):
-    """actors: [{name, role, ours}] 왼쪽→오른쪽 3개, flows: [{from, to, kind:'money'|'value', label}], partner: {name, role}."""
-    acts = v["actors"][:3]
-    cy, bw, bh = 66, 230, 104
-    W, H = 1024, cy + bh / 2 + (156 if v.get("partner") else 40)
-    cxs = {1: [512], 2: [300, 724], 3: [160, 512, 864]}[len(acts)]
+    """BM 구조도. actors: [{name, role, ours, pos}] — pos를 생략하면 3개 이하는 한 줄(chain), 4개 이상은 우리를 가운데 둔 허브.
+    pos: left · center · right · top · bottom · top-left · top-right · bottom-left · bottom-right.
+    flows: [{from, to(번호나 이름), kind:'money'|'value'|'goods', label}] — 돈은 실선·금액 칩, 가치는 점선, 물건은 가는 실선.
+    formula: 매출 산식 {title, terms: [{label, value}, '×', …], result: {label, value}} 또는 문자열.
+    streams: 수익원 [{name, how, share}]. partner: (예전 형식) 아래쪽 파트너 한 곳."""
+    acts = [dict(a) for a in v["actors"]]
+    flows = list(v.get("flows", []))
+    if v.get("partner"):
+        acts.append({**v["partner"], "pos": "bottom", "_partner": True})
+        if v["partner"].get("label"):                      # 예전 형식: 파트너 → 우리 한 줄
+            hub = next((k for k, a in enumerate(acts) if a.get("ours")), 0)
+            flows.append({"from": len(acts) - 1, "to": hub, "kind": "goods", "label": v["partner"]["label"]})
+    if not any(a.get("pos") for a in acts if not a.get("_partner")):
+        main_ = [a for a in acts if not a.get("_partner")]
+        if len(main_) <= 3 and v.get("layout") != "hub":
+            for a, slot in zip(main_, {1: ["center"], 2: ["left", "right"], 3: ["left", "center", "right"]}[len(main_)]):
+                a["pos"] = slot
+        else:
+            ours = next((a for a in main_ if a.get("ours")), main_[0])
+            ours["pos"] = "center"
+            free = iter(s for s in BM_FILL if s not in {a.get("pos") for a in acts})
+            for a in main_:
+                if not a.get("pos"):
+                    a["pos"] = next(free)
+    rows = sorted({BM_SLOTS[a["pos"]][1] for a in acts})
+    ys = {r: 62 + 168 * k for k, r in enumerate(rows)}
+    W, H = 1024, 62 + 168 * (len(rows) - 1) + 70
+    geo = []
+    for a in acts:
+        x, r = BM_SLOTS[a["pos"]]
+        w, h = (224, 96) if a.get("ours") else (196, 80)
+        geo.append(((x, ys[r]), w / 2, h / 2))
+    names = {a["name"]: i for i, a in enumerate(acts)}
+    idx = lambda k: names.get(k, k) if not isinstance(k, int) else k
     mk = lambda mid, color: (f'<marker id="{mid}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" '
                              f'markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="{color}"/></marker>')
-    s = [f'<defs>{mk("am", darker(A, 0.8))}{mk("av", MUTED)}</defs>']
-    for x, a in zip(cxs, acts):
-        ours = a.get("ours")
-        s.append(f'<rect x="{x - bw / 2}" y="{cy - bh / 2}" width="{bw}" height="{bh}" rx="14" '
-                 f'fill="{A if ours else "#fff"}" stroke="{A if ours else GRAY_FILL}" stroke-width="{0 if ours else 1.5}"/>')
-        s.append(f'<text x="{x}" y="{cy - 4}" text-anchor="middle" font-size="19" font-weight="700" '
-                 f'fill="{"#fff" if ours else INK}">{html.escape(a["name"])}</text>')
-        s.append(f'<text x="{x}" y="{cy + 22}" text-anchor="middle" font-size="13" '
-                 f'fill="{"#fff" if ours else MUTED}" fill-opacity="{0.9 if ours else 1}">{html.escape(a.get("role", ""))}</text>')
-    pair_count = {}
-    for f in v.get("flows", []):
-        i, j = f["from"], f["to"]
-        if max(i, j) >= len(acts):
+    money_c, value_c, goods_c = darker(A, 0.8), MUTED, INK2
+    s = [f'<defs>{mk("am", money_c)}{mk("av", value_c)}{mk("ag", goods_c)}</defs>']
+    lines, chips = [], []
+    pair_n = {}
+    for f in flows:
+        i, j = idx(f["from"]), idx(f["to"])
+        if not (isinstance(i, int) and isinstance(j, int)) or max(i, j) >= len(acts) or i == j:
             continue
-        key = tuple(sorted((i, j)))
-        k = pair_count.get(key, 0)
-        pair_count[key] = k + 1
-        off = [-30, 30, -10, 10][k % 4]
-        y = cy + off
-        x1 = cxs[i] + (bw / 2 + 6) * (1 if j > i else -1)
-        x2 = cxs[j] - (bw / 2 + 10) * (1 if j > i else -1)
-        money = f.get("kind") == "money"
-        color = darker(A, 0.8) if money else MUTED
-        dash = "" if money else ' stroke-dasharray="6 5"'
-        s.append(f'<line x1="{x1}" y1="{y}" x2="{x2}" y2="{y}" stroke="{color}" stroke-width="{2.5 if money else 1.8}"{dash} '
-                 f'marker-end="url(#{"am" if money else "av"})"/>')
-        lx, label = (x1 + x2) / 2, f.get("label", "")
-        lw = tw(label, 13) + 16
-        ly = y - 22 if off < 0 else y + 8
-        s.append(f'<rect x="{lx - lw / 2}" y="{ly}" width="{lw}" height="20" rx="10" '
-                 f'fill="{mix(A, 0.12) if money else "#fff"}" stroke="{mix(A, 0.35) if money else GRAY_FILL}"/>')
-        s.append(f'<text x="{lx}" y="{ly + 14.5}" text-anchor="middle" font-size="13" font-weight="{700 if money else 500}" '
-                 f'fill="{INK if money else INK2}">{html.escape(label)}</text>')
-    p = v.get("partner")
-    if p and len(acts) >= 2:
-        px, py = cxs[len(cxs) // 2], cy + bh / 2 + 116
-        s.append(f'<rect x="{px - 110}" y="{py - 30}" width="220" height="60" rx="12" fill="#fff" stroke="{GRAY_FILL}" stroke-width="1.5"/>')
-        s.append(f'<text x="{px}" y="{py - 4}" text-anchor="middle" font-size="16" font-weight="700" fill="{INK}">{html.escape(p["name"])}</text>')
-        s.append(f'<text x="{px}" y="{py + 16}" text-anchor="middle" font-size="12" fill="{MUTED}">{html.escape(p.get("role", ""))}</text>')
-        s.append(f'<line x1="{px}" y1="{cy + bh / 2 + 4}" x2="{px}" y2="{py - 34}" stroke="{MUTED}" stroke-width="1.8" '
-                 f'stroke-dasharray="6 5" marker-end="url(#av)"/>')
-        if p.get("label"):
-            s.append(f'<text x="{px + 12}" y="{(cy + bh / 2 + py - 30) / 2 + 4}" font-size="13" fill="{INK2}">{html.escape(p["label"])}</text>')
-    legend = ('<div class="legend"><span><i class="ln" style="background:var(--accent-ink)"></i>돈의 흐름(금액)</span>'
-              f'<span><i class="ln dash"></i>가치의 흐름</span></div>')
-    return f'<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">{"".join(s)}</svg>{legend}'
+        a, b = sorted((i, j))
+        k = pair_n.get((a, b), 0)
+        pair_n[(a, b)] = k + 1
+        (ca, hwa, hha), (cb, hwb, hhb) = geo[a], geo[b]
+        dx, dy = cb[0] - ca[0], cb[1] - ca[1]
+        L = math.hypot(dx, dy) or 1
+        nx, ny = -dy / L, dx / L                         # 짝마다 같은 법선 — 오가는 화살표가 양쪽으로 갈린다
+        off = [-15, 15, -40, 40][k % 4]
+        ci, cj = (geo[i][0], geo[j][0])
+        pi = (ci[0] + nx * off, ci[1] + ny * off)
+        pj = (cj[0] + nx * off, cj[1] + ny * off)
+        ex, ey = pj[0] - pi[0], pj[1] - pi[1]
+        el = math.hypot(ex, ey) or 1
+        d = (ex / el, ey / el)
+        t0 = _clip(pi, d, ci, geo[i][1] + 5, geo[i][2] + 5)
+        t1 = _clip(pj, (-d[0], -d[1]), cj, geo[j][1] + 9, geo[j][2] + 9)
+        x1, y1 = pi[0] + d[0] * t0, pi[1] + d[1] * t0
+        x2, y2 = pj[0] - d[0] * t1, pj[1] - d[1] * t1
+        kind = f.get("kind", "value")
+        color, width, dash, mid = {"money": (money_c, 2.6, "", "am"), "goods": (goods_c, 1.6, "", "ag")}.get(
+            kind, (value_c, 1.8, ' stroke-dasharray="6 5"', "av"))
+        lines.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{color}" stroke-width="{width}"{dash} '
+                     f'marker-end="url(#{mid})"/>')
+        label = f.get("label", "")
+        if label:
+            cw = tw(label, 13) + 18
+            mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+            if abs(dy) > abs(dx) * 0.6:              # 세로에 가까운 선: 칩을 그 선이 비켜 선 쪽 바깥으로
+                side = 1 if nx * off >= 0 else -1
+                mx += side * (cw / 2 + 8)
+            money = kind == "money"
+            chips.append(f'<rect x="{mx - cw / 2:.1f}" y="{my - 11:.1f}" width="{cw:.1f}" height="22" rx="11" '
+                         f'fill="{mix(A, 0.12) if money else "#fff"}" stroke="{mix(A, 0.35) if money else GRAY_FILL}"/>'
+                         f'<text x="{mx:.1f}" y="{my + 4.5:.1f}" text-anchor="middle" font-size="13" '
+                         f'font-weight="{700 if money else 500}" fill="{INK if money else INK2}">{html.escape(label)}</text>')
+    boxes = []
+    for a, ((x, y), hw, hh) in zip(acts, geo):
+        ours = a.get("ours")
+        boxes.append(f'<rect x="{x - hw}" y="{y - hh}" width="{2 * hw}" height="{2 * hh}" rx="14" '
+                     f'fill="{A if ours else "#fff"}" stroke="{A if ours else GRAY_FILL}" stroke-width="{0 if ours else 1.5}"/>')
+        tag = a.get("tag") or ("결제자" if a.get("payer") else "")
+        if tag:
+            tw_ = tw(tag, 11.5) + 14
+            boxes.append(f'<rect x="{x - tw_ / 2}" y="{y - hh - 11}" width="{tw_}" height="20" rx="10" fill="{INK}"/>'
+                         f'<text x="{x}" y="{y - hh + 3}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fff">'
+                         f'{html.escape(tag)}</text>')
+        boxes.append(f'<text x="{x}" y="{y - 3}" text-anchor="middle" font-size="{19 if ours else 17}" font-weight="700" '
+                     f'fill="{"#fff" if ours else INK}">{html.escape(a["name"])}</text>')
+        if a.get("role"):
+            boxes.append(f'<text x="{x}" y="{y + 20}" text-anchor="middle" font-size="13" fill="{"#fff" if ours else MUTED}" '
+                         f'fill-opacity="{0.92 if ours else 1}">{html.escape(a["role"])}</text>')
+    s += lines + boxes + chips
+    kinds = {f.get("kind", "value") for f in flows}
+    leg = ['<span><i class="ln" style="background:var(--accent-ink)"></i>돈(금액)</span>'] if "money" in kinds else []
+    leg += ['<span><i class="ln dash"></i>가치·서비스</span>'] if "value" in kinds else []
+    leg += [f'<span><i class="ln" style="background:{goods_c};height:2px"></i>물건·데이터</span>'] if "goods" in kinds else []
+    out = f'<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">{"".join(s)}</svg><div class="legend">{"".join(leg)}</div>'
+    if v.get("formula"):
+        out += _formula(v["formula"])
+    if v.get("streams"):
+        out += '<div class="streams">' + "".join(
+            f'<div class="strm"><b>{esc(x["name"])}</b><span>{esc(x.get("how", ""))}</span>'
+            f'{chip(x["share"], "st") if x.get("share") else ""}</div>' for x in v["streams"]) + "</div>"
+    return out
 
 
 def v_kpi(v, A):
@@ -567,9 +665,457 @@ def v_gantt(v, A):
     return "".join(out) + legend
 
 
+def img_src(path):
+    """spec 폴더 기준 이미지 경로 → data URI(한 파일로 들고 다니게). 없으면 None."""
+    if not path:
+        return None
+    p = path if os.path.isabs(path) else os.path.join(BASE_DIR, path)
+    if not os.path.isfile(p):
+        return None
+    ext = os.path.splitext(p)[1].lower().lstrip(".")
+    mime = {"jpg": "jpeg", "jpeg": "jpeg", "png": "png", "gif": "gif", "webp": "webp", "svg": "svg+xml"}.get(ext, "png")
+    with open(p, "rb") as f:
+        return f"data:image/{mime};base64," + base64.b64encode(f.read()).decode()
+
+
+def _slot(what, kind="사진"):
+    """자료가 아직 없을 때의 자리 — 무엇을 넣을지 보이게."""
+    return f'<div class="slot"><span>{esc(kind)} 자리</span><b>{esc(what)}</b></div>'
+
+
+def v_flow(v, A):
+    """steps: [{title, sub, who, ours}] 왼쪽→오른쪽 3~6단계(서비스 구조·공정·사용 흐름).
+    loop: true면 마지막 → 처음 되돌이(선순환), loop_label. 단계 번호는 자동."""
+    st = v["steps"]
+    cards = []
+    for i, s in enumerate(st, 1):
+        who = f'<div class="fw-who">{esc(s["who"])}</div>' if s.get("who") else ""
+        sub = f'<small>{esc(s["sub"])}</small>' if s.get("sub") else ""
+        cards.append(f'<div class="fw{" ours" if s.get("ours") else ""}">{who}<span class="fw-n">{i}</span>'
+                     f'<b>{esc(s["title"])}</b>{sub}</div>')
+    out = f'<div class="flow" style="grid-template-columns:repeat({len(st)},1fr)">{"".join(cards)}</div>'
+    if v.get("loop"):
+        edge = 50 / len(st)
+        out += (f'<div class="loopbar" style="margin:0 {edge}%"><span>{esc(v.get("loop_label", "다시 처음으로"))}</span></div>')
+    return out
+
+
+def v_screens(v, A):
+    """screens: [{no, title, desc, src | ui: {title, rows[], highlight(번호), button}}] 3~4개.
+    화면 캡처가 없으면 ui로 간단한 화면 틀을 그린다(문제 n ↔ 솔루션 n ↔ 화면 n 번호를 맞춘다)."""
+    out = []
+    circled = {chr(0x2460 + i): str(i + 1) for i in range(20)}
+    for i, sc in enumerate(v["screens"], 1):
+        no = circled.get(str(sc.get("no", "")).strip(), str(sc.get("no", "")).strip() or str(i))
+        src = img_src(sc.get("src"))
+        if src:
+            inner = f'<img src="{src}" alt="">'
+        elif sc.get("ui"):
+            ui = sc["ui"]
+            rows = "".join(f'<div class="ui-row{" on" if k == ui.get("highlight") else ""}">{esc(r)}</div>'
+                           for k, r in enumerate(ui.get("rows", []), 1))
+            btn = f'<div class="ui-btn">{esc(ui["button"])}</div>' if ui.get("button") else ""
+            inner = f'<div class="ui"><div class="ui-top">{esc(ui.get("title", ""))}</div>{rows}{btn}</div>'
+        else:
+            inner = _slot(sc.get("what", sc.get("title", "")), "화면")
+        out.append(f'<div class="scr"><div class="phone">{inner}</div><div class="scr-cap"><span class="no">{esc(no)}</span>'
+                   f'<b>{esc(sc.get("title", ""))}</b><small>{esc(sc.get("desc", ""))}</small></div></div>')
+    return f'<div class="screens" style="grid-template-columns:repeat({len(out)},1fr)">{"".join(out)}</div>'
+
+
+def v_photos(v, A):
+    """items: [{src | what, caption, date, place, badge}], cols(기본 3). 사진이 없으면 무엇을 찍을지 적힌 점선 자리.
+    캡션은 '무엇인지 + 언제 · 어디서 · 몇 명'(섹션 설계도 3-3)."""
+    cols = v.get("cols") or min(4, max(2, len(v["items"])))
+    out = []
+    for it in v["items"]:
+        src = img_src(it.get("src"))
+        frame = f'<img src="{src}" alt="">' if src else _slot(it.get("what", it.get("caption", "")))
+        meta = " · ".join(x for x in (it.get("date"), it.get("place")) if x)
+        badge = f'<span class="ph-badge">{esc(it["badge"])}</span>' if it.get("badge") else ""
+        out.append(f'<figure class="pho">{badge}<div class="ph-frame">{frame}</div><figcaption><b>{esc(it.get("caption", ""))}</b>'
+                   f'{f"<small>{esc(meta)}</small>" if meta else ""}</figcaption></figure>')
+    return f'<div class="photos" style="grid-template-columns:repeat({cols},1fr)">{"".join(out)}</div>'
+
+
+def v_persona(v, A):
+    """cards: [{name, def, tags[], scene, pains: [{text, hypothesis}], verified: 'n/N', size}] 1~2장.
+    불편 장면은 심리 → 기회비용 → 금전 순. 실제 발언만 따옴표, 인터뷰 전이면 hypothesis: true(가설)."""
+    out = []
+    labels = ["심리", "기회비용", "금전"]
+    for c in v["cards"]:
+        tags = "".join(f'<span class="pt">#{esc(t)}</span>' for t in c.get("tags", []))
+        pains = []
+        for k, p in enumerate(c.get("pains", [])):
+            hyp = p.get("hypothesis")
+            txt = esc(p["text"]) if hyp else f'“{esc(p["text"])}”'
+            pains.append(f'<div class="pp"><span class="pk">{labels[k] if k < 3 else ""}</span><p>{txt}'
+                         f'{chip("가설", "lv-assume") if hyp else ""}</p></div>')
+        ver = c.get("verified")
+        foot = (f'<div class="pv">검증 <b>{esc(ver)}</b></div>' if ver else '<div class="pv off">검증 전 — 인터뷰 후 n/N 기록</div>')
+        size = f'<div class="psize">{esc(c["size"])}</div>' if c.get("size") else ""
+        out.append(f'<div class="persona"><div class="pl"><div class="pname">{esc(c["name"])}</div>{size}'
+                   f'<div class="pdef">{esc(c.get("def", ""))}</div><div class="ptags">{tags}</div>'
+                   f'<div class="pscene">{esc(c.get("scene", ""))}</div>{foot}</div>'
+                   f'<div class="pr"><div class="pr-h">불편 장면</div>{"".join(pains)}</div></div>')
+    return f'<div class="personas">{"".join(out)}</div>'
+
+
+def v_quotes(v, A):
+    """items: [{text, who, source, date, pending}] — 실제 발언·글만(인터뷰 메모·리뷰·커뮤니티 글). 3~4개.
+    아직 듣지 않은 장면은 pending: true(또는 '['로 시작) — 따옴표 없이 점선으로 보인다."""
+    out = "".join(f'<blockquote class="qt{" pend" if q.get("pending") or str(q["text"]).startswith("[") else ""}"><p>{esc(q["text"])}</p><footer><b>{esc(q.get("who", ""))}</b>'
+                  f'<span>{esc(" · ".join(x for x in (q.get("source"), q.get("date")) if x))}</span></footer></blockquote>'
+                  for q in v["items"])
+    return f'<div class="quotes" style="grid-template-columns:repeat({min(len(v["items"]), 3)},1fr)">{out}</div>'
+
+
+def v_survey(v, A):
+    """question, n(응답 수), options: [{label, value(%)}], highlight(라벨, 생략 시 가장 큰 값), keep_order.
+    값이 비율이 아니라 명 수면 unit: '명'으로 주고 %를 자동 계산한다."""
+    opts = list(v["options"])
+    if not v.get("keep_order"):
+        opts.sort(key=lambda o: -o["value"])
+    unit = v.get("unit", "%")
+    total = sum(o["value"] for o in opts) if unit != "%" else None
+    top = v.get("highlight") or opts[0]["label"]
+    mx = max(o["value"] for o in opts) or 1
+    rows = []
+    for o in opts:
+        on = o["label"] == top
+        val = f'{o["value"]:g}%' if unit == "%" else f'{pct(o["value"], total)} ({fmt(o["value"])}{esc(unit)})'
+        rows.append(f'<div class="br"><div class="bl{" b" if on else ""}">{esc(o["label"])}</div><div class="bt">'
+                    f'<div class="bb" style="width:{o["value"] / mx * 82:.1f}%;background:{"var(--accent)" if on else GRAY_FILL}"></div>'
+                    f'<span class="bv{" b" if on else ""}">{val}</span></div></div>')
+    n = f' <span>(n={esc(v["n"])})</span>' if v.get("n") else ""
+    q = f'<div class="sq">Q. {esc(v["question"])}{n}</div>' if v.get("question") else ""
+    return f'{q}<div class="bars">{"".join(rows)}</div>'
+
+
+def v_donut(v, A):
+    """parts: [{label, value}] 5조각 이하, unit, highlight(라벨, 생략 시 가장 큰 조각), center: {value, label}."""
+    parts = v["parts"]
+    tot = sum(p["value"] for p in parts) or 1
+    hi = v.get("highlight") or max(parts, key=lambda p: p["value"])["label"]
+    grays = ["#c9c7c0", "#dad8d1", "#b3b1aa", "#e6e4de", "#a3a19a"]
+    cx = cy = 130
+    r, w = 104, 36
+    s, ang, legend, g = [], -90.0, [], 0
+    for p in parts:
+        sweep = p["value"] / tot * 360
+        color = A if p["label"] == hi else grays[g % len(grays)]
+        if p["label"] != hi:
+            g += 1
+        a0, a1 = math.radians(ang + 0.8), math.radians(ang + sweep - 0.8)     # 조각 사이 흰 틈
+        large = 1 if sweep - 1.6 > 180 else 0
+        x0, y0, x1, y1 = cx + r * math.cos(a0), cy + r * math.sin(a0), cx + r * math.cos(a1), cy + r * math.sin(a1)
+        s.append(f'<path d="M{x0:.1f},{y0:.1f} A{r},{r} 0 {large} 1 {x1:.1f},{y1:.1f}" fill="none" stroke="{color}" '
+                 f'stroke-width="{w}"/>')
+        ang += sweep
+        legend.append(f'<div class="dl{" b" if p["label"] == hi else ""}"><i style="background:{color}"></i><span>{esc(p["label"])}</span>'
+                      f'<b>{pct(p["value"], tot)}</b>'
+                      + ("" if v.get("unit", "") == "%" else f'<small>{fmt(p["value"])}{esc(v.get("unit", ""))}</small>') + '</div>')
+    c = v.get("center") or {"value": pct(next(p["value"] for p in parts if p["label"] == hi), tot), "label": hi}
+    s.append(f'<text x="{cx}" y="{cy + 2}" text-anchor="middle" font-size="30" font-weight="800" fill="{INK}">{html.escape(str(c["value"]))}</text>'
+             f'<text x="{cx}" y="{cy + 26}" text-anchor="middle" font-size="13" fill="{INK2}">{html.escape(str(c.get("label", "")))}</text>')
+    return (f'<div class="donut"><svg width="260" height="260" viewBox="0 0 260 260">{"".join(s)}</svg>'
+            f'<div class="dleg">{"".join(legend)}</div></div>')
+
+
+def v_venn(v, A):
+    """sets: [{label, items[]}] 2~3개, center(교집합 = 우리 자리), center_note."""
+    sets = v["sets"][:3]
+    W, H = 1024, 380
+    if len(sets) == 2:
+        cs, R = [(400, 190), (624, 190)], 160
+    else:
+        cs, R = [(420, 150), (604, 150), (512, 290)], 135
+    vid = re.sub(r"\W", "", str(v.get("id", "v")))
+    s = [f'<defs>' + "".join(f'<clipPath id="vc{vid}{k}"><circle cx="{x}" cy="{y}" r="{R}"/></clipPath>' for k, (x, y) in enumerate(cs)) + '</defs>']
+    for (x, y), st in zip(cs, sets):
+        s.append(f'<circle cx="{x}" cy="{y}" r="{R}" fill="{GRAY}" fill-opacity="0.1" stroke="{GRAY}" stroke-width="1.5"/>')
+    # 모두가 겹치는 칸(우리 자리)만 강조색으로 칠한다
+    inner = f'<circle cx="{cs[-1][0]}" cy="{cs[-1][1]}" r="{R}" fill="{mix(A, 0.28)}"/>'
+    for k in range(len(cs) - 1):
+        inner = f'<g clip-path="url(#vc{vid}{k})">{inner}</g>'
+    s.append(inner)
+    pos = ([(cs[0][0] - R * 0.45, cs[0][1]), (cs[1][0] + R * 0.45, cs[1][1])] if len(sets) == 2 else
+           [(cs[0][0] - R * 0.42, cs[0][1] - R * 0.3), (cs[1][0] + R * 0.42, cs[1][1] - R * 0.3), (cs[2][0], cs[2][1] + R * 0.5)])
+    for (x, y), st in zip(pos, sets):
+        anchor = "middle"
+        s.append(f'<text x="{x:.0f}" y="{y - 10:.0f}" text-anchor="{anchor}" font-size="16" font-weight="700" fill="{INK}">'
+                 f'{html.escape(st["label"])}</text>')
+        for k, it in enumerate(st.get("items", [])[:3]):
+            s.append(f'<text x="{x:.0f}" y="{y + 14 + k * 19:.0f}" text-anchor="{anchor}" font-size="13" fill="{INK2}">'
+                     f'{html.escape(it)}</text>')
+    mx = sum(x for x, _ in cs) / len(cs)
+    my = sum(y for _, y in cs) / len(cs) + (0 if len(sets) == 2 else -6)
+    label = v.get("center", "우리")
+    cw = tw(label, 17) + 36
+    s.append(f'<rect x="{mx - cw / 2:.0f}" y="{my - 18:.0f}" width="{cw:.0f}" height="36" rx="18" fill="{A}"/>'
+             f'<text x="{mx:.0f}" y="{my + 6:.0f}" text-anchor="middle" font-size="17" font-weight="800" fill="#fff">{html.escape(label)}</text>')
+    if v.get("center_note"):
+        s.append(f'<text x="{mx:.0f}" y="{my + 40:.0f}" text-anchor="middle" font-size="12.5" font-weight="600" fill="{INK}" {HALO}>'
+                 f'{html.escape(v["center_note"])}</text>')
+    return f'<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">{"".join(s)}</svg>'
+
+
+def v_segments(v, A):
+    """rows: [{name, size(숫자), size_label, growth('+12%'), note, chosen}], unit — 세분 시장 중 고른 곳을 보여 준다."""
+    rows = v["rows"]
+    mx = max((r.get("size") or 0) for r in rows) or 1
+    out = ['<div class="seg seg-h"><span>세분 시장</span><span>규모</span><span>성장</span><span>특징</span></div>']
+    for r in rows:
+        on = r.get("chosen")
+        g = str(r.get("growth", ""))
+        gcls = "up" if g.startswith("+") else "down" if g.startswith(("-", "−")) else ""
+        size = r.get("size_label") or (f'{fmt(r["size"])}{v.get("unit", "")}' if r.get("size") is not None else "○○")
+        bar = (f'<div class="segbar"><i style="width:{(r.get("size") or 0) / mx * 100:.1f}%;'
+               f'background:{"var(--accent)" if on else GRAY_FILL}"></i></div>')
+        out.append(f'<div class="seg{" on" if on else ""}"><b>{esc(r["name"])}{" <em>선택</em>" if on else ""}</b>'
+                   f'<div class="segsz">{bar}<span>{esc(size)}</span></div><span class="gr {gcls}">{esc(g)}</span>'
+                   f'<small>{esc(r.get("note", ""))}</small></div>')
+    return "".join(out)
+
+
+def _sum_line(total, target, unit, word="목표"):
+    if target is None:
+        return f'<div class="sumline">합계 <b>{fmt(total)}{esc(unit)}</b></div>'
+    ok = abs(total - target) <= max(abs(target) * 0.005, 0.5)
+    return (f'<div class="sumline{"" if ok else " bad"}">합계 <b>{fmt(total)}{esc(unit)}</b> '
+            f'{"=" if ok else "≠"} {word} <b>{fmt(target)}{esc(unit)}</b>{"" if ok else " — 숫자를 맞춘다"}</div>')
+
+
+def v_revenue_mix(v, A):
+    """channels: [{name, formula('○○개 × ○○원'), amount(숫자, 없으면 생략)}], unit, target — 채널 합이 목표와 같은지 보인다."""
+    ch = v["channels"]
+    known = [c["amount"] for c in ch if isinstance(c.get("amount"), (int, float))]
+    mx = max(known) if known else 1
+    rows = []
+    for c in ch:
+        amt = c.get("amount")
+        has = isinstance(amt, (int, float))
+        bar = (f'<i style="width:{amt / mx * 100:.1f}%"></i>' if has else '<i class="none"></i>')
+        rows.append(f'<div class="rv"><b>{esc(c["name"])}</b><small>{esc(c.get("formula", ""))}</small>'
+                    f'<div class="rvbar">{bar}</div><span>{fmt(amt) + esc(v.get("unit", "")) if has else esc(amt or "○○")}</span></div>')
+    tail = _sum_line(sum(known), v.get("target"), v.get("unit", "")) if known and len(known) == len(ch) else (
+        '<div class="sumline">합계 — 미확보 채널이 있어 아직 계산하지 않는다</div>')
+    return f'<div class="rvs">{"".join(rows)}</div>{tail}'
+
+
+def v_budget(v, A):
+    """items: [{name, basis(산출 근거), amount}], unit, cap(상한) — 비목 구성 막대 + 산출 근거 표 + 상한 검산."""
+    items = v["items"]
+    known = [i["amount"] for i in items if isinstance(i.get("amount"), (int, float))]
+    tot = sum(known) or 1
+    shades = [1, 0.72, 0.5, 0.34, 0.22, 0.14]
+    seg, rows = [], []
+    for k, it in enumerate(items):
+        amt = it.get("amount")
+        has = isinstance(amt, (int, float))
+        col = mix(A, shades[k % len(shades)])
+        fg = "#fff" if shades[k % len(shades)] >= 0.5 else INK
+        if has and amt / tot >= 0.06:
+            seg.append(f'<div class="bgs" style="flex:{amt};background:{col};color:{fg}">{esc(it["name"])} {pct(amt, tot)}</div>')
+        elif has:
+            seg.append(f'<div class="bgs" style="flex:{amt};background:{col}"></div>')
+        rows.append(f'<tr><td><i class="sw" style="background:{col}"></i>{esc(it["name"])}</td><td>{esc(it.get("basis", ""))}</td>'
+                    f'<td class="num">{fmt(amt) if has else esc(amt or "○○")}</td><td class="num">{pct(amt, tot) if has else "—"}</td></tr>')
+    bar = f'<div class="bgbar">{"".join(seg)}</div>' if known else ""
+    unit = v.get("unit", "")
+    table = (f'<table class="tb"><thead><tr><th>비목</th><th>산출 근거</th><th class="num">금액({esc(unit)})</th>'
+             f'<th class="num">비율</th></tr></thead><tbody>{"".join(rows)}</tbody></table>')
+    tail = _sum_line(sum(known), v.get("cap"), unit, "상한") if len(known) == len(items) else (
+        '<div class="sumline">합계 — ○○ 칸이 있어 상한 검산은 금액 확정 후</div>')
+    return bar + table + tail
+
+
+def v_waterfall(v, A):
+    """start: {label, value}(판매가·객단가), steps: [{label, value(음수 = 빼는 원가)}], end_label('마진'), unit — 단위 경제성."""
+    start, steps = v["start"], v["steps"]
+    vals = [start["value"]] + [s["value"] for s in steps]
+    end = sum(vals)
+    labels = [start["label"]] + [s["label"] for s in steps] + [v.get("end_label", "마진")]
+    W, H, L, R, T, B = 1024, 330, 40, 1000, 34, 290
+    top = max(start["value"], end) * 1.12 or 1
+    py = lambda y: B - (B - T) * y / top
+    n = len(labels)
+    band = (R - L) / n
+    bw = min(64, band * 0.5)
+    s = [f'<line x1="{L}" y1="{B}" x2="{R}" y2="{B}" stroke="{BASE}"/>']
+    run = 0.0
+    for k, lab in enumerate(labels):
+        x = L + band * (k + 0.5)
+        if k == 0:
+            y0, y1, color, val = 0, start["value"], darker(A, 0.85), start["value"]
+            run = start["value"]
+        elif k == n - 1:
+            y0, y1, color, val = 0, end, A, end
+        else:
+            val = steps[k - 1]["value"]
+            y0, y1 = sorted((run, run + val))
+            run += val
+            color = GRAY_FILL if val < 0 else mix(A, 0.4)
+        s.append(f'<rect x="{x - bw / 2:.1f}" y="{py(y1):.1f}" width="{bw:.1f}" height="{max(py(y0) - py(y1), 1):.1f}" rx="3" fill="{color}"/>')
+        if 0 < k < n - 1 and k < n - 1:
+            nx = L + band * (k + 1.5)
+            s.append(f'<line x1="{x + bw / 2:.1f}" y1="{py(run):.1f}" x2="{nx - bw / 2:.1f}" y2="{py(run):.1f}" stroke="{BASE}" stroke-dasharray="3 3"/>')
+        elif k == 0:
+            nx = L + band * 1.5
+            s.append(f'<line x1="{x + bw / 2:.1f}" y1="{py(run):.1f}" x2="{nx - bw / 2:.1f}" y2="{py(run):.1f}" stroke="{BASE}" stroke-dasharray="3 3"/>')
+        sign = "" if k in (0, n - 1) or val < 0 else "+"
+        s.append(f'<text x="{x:.1f}" y="{py(y1) - 8:.1f}" text-anchor="middle" font-size="14" font-weight="700" fill="{INK}">{sign}{fmt(val)}</text>')
+        s.append(f'<text x="{x:.1f}" y="{B + 22}" text-anchor="middle" font-size="13" fill="{INK2}">{html.escape(lab)}</text>')
+    rate = f'<div class="badge" style="left:auto;right:30px">{esc(v.get("end_label", "마진"))}율 <b>{pct(end, start["value"])}</b></div>'
+    unit = f'<div class="unit" style="left:44px;right:auto">단위: {esc(v["unit"])}</div>' if v.get("unit") else ""
+    return f'<div class="rel">{rate}{unit}<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">{"".join(s)}</svg></div>'
+
+
+def v_columns(v, A):
+    """labels(월·분기), values(없는 값은 null), unit, notes: [{at(인덱스), text}] 마일스톤, target: {value, label}, highlight: [인덱스]."""
+    xs, ys = v["labels"], v["values"]
+    known = [y for y in ys if isinstance(y, (int, float))]
+    tg = v.get("target") or {}
+    ticks = nice_ticks(0, max(known + [tg.get("value", 0)]) if known else 1)
+    top = ticks[-1]
+    W, H, L, R, T, B = 1024, 340, 60, 1000, 40, 298
+    py = lambda y: B - (B - T) * y / top
+    n = len(xs)
+    band = (R - L) / n
+    bw = min(46, band * 0.56)
+    hl = set(v.get("highlight", [n - 1]))
+    s = []
+    for t in ticks:
+        s.append(f'<line x1="{L}" y1="{py(t)}" x2="{R}" y2="{py(t)}" stroke="{GRID if t else BASE}"/>'
+                 f'<text x="{L - 10}" y="{py(t) + 4}" text-anchor="end" font-size="12" fill="{MUTED}">{fmt(t)}</text>')
+    for k, (lab, y) in enumerate(zip(xs, ys)):
+        x = L + band * (k + 0.5)
+        if isinstance(y, (int, float)):
+            on = k in hl
+            y1 = py(y)
+            s.append(f'<path d="M{x - bw / 2},{B} L{x - bw / 2},{y1 + 4} Q{x - bw / 2},{y1} {x - bw / 2 + 4},{y1} L{x + bw / 2 - 4},{y1} '
+                     f'Q{x + bw / 2},{y1} {x + bw / 2},{y1 + 4} L{x + bw / 2},{B} Z" fill="{A if on else mix(A, 0.32)}"/>')
+            if on or k == 0:
+                s.append(f'<text x="{x}" y="{y1 - 8}" text-anchor="middle" font-size="14" font-weight="700" fill="{INK}">{fmt(y)}</text>')
+        else:
+            s.append(f'<rect x="{x - bw / 2}" y="{B - 30}" width="{bw}" height="30" rx="3" fill="none" stroke="{GRAY}" stroke-dasharray="4 3"/>'
+                     f'<text x="{x}" y="{B - 38}" text-anchor="middle" font-size="12" fill="{MUTED}">○○</text>')
+        s.append(f'<text x="{x}" y="{B + 22}" text-anchor="middle" font-size="13" fill="{INK2}">{html.escape(str(lab))}</text>')
+    if tg.get("value") is not None:
+        s.append(f'<line x1="{L}" y1="{py(tg["value"])}" x2="{R}" y2="{py(tg["value"])}" stroke="{INK2}" stroke-dasharray="6 5"/>'
+                 f'<text x="{R}" y="{py(tg["value"]) - 8}" text-anchor="end" font-size="12.5" font-weight="700" fill="{INK2}" {HALO}>'
+                 f'{html.escape(tg.get("label", "목표"))} {fmt(tg["value"])}</text>')
+    for nt in v.get("notes", []):
+        k = nt["at"]
+        x = L + band * (k + 0.5)
+        y = ys[k] if isinstance(ys[k], (int, float)) else 0
+        yt = max(T - 22, py(y) - 34)
+        s.append(f'<text x="{x}" y="{yt}" text-anchor="middle" font-size="12.5" font-weight="700" fill="{darker(A, 0.8)}" {HALO}>'
+                 f'★ {html.escape(nt["text"])}</text>')
+    unit = f'<div class="unit">단위: {esc(v["unit"])}</div>' if v.get("unit") else ""
+    return f'<div class="rel">{unit}<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">{"".join(s)}</svg></div>'
+
+
+def v_stairs(v, A):
+    """steps: [{period, title, items[], kpi}] 3~4단 — 단계별 성장(왼쪽 아래 → 오른쪽 위). 마지막 단이 강조."""
+    st = v["steps"]
+    n = len(st)
+    out = []
+    for k, s in enumerate(st):
+        h = 52 + 48 * k / max(n - 1, 1)
+        last = k == n - 1
+        items = "".join(f"<li>{esc(i)}</li>" for i in s.get("items", []))
+        kpi = f'<div class="sk-kpi">{esc(s["kpi"])}</div>' if s.get("kpi") else ""
+        out.append(f'<div class="stp" style="height:{h:.0f}%"><div class="stp-in{" last" if last else ""}" style="background:{A if last else mix(A, 0.1 + 0.22 * k / max(n - 1, 1))}">'
+                   f'<span class="sp">{esc(s.get("period", ""))}</span><b>{esc(s["title"])}</b><ul>{items}</ul>{kpi}</div></div>')
+    return f'<div class="stairs" style="grid-template-columns:repeat({n},1fr)">{"".join(out)}</div>'
+
+
+def v_team(v, A):
+    """members: [{role, name('○○'), duty, skills, status:'확보'|'예정'|'협의 중'}], plan: [{gap, how, when, budget}] 보완 계획."""
+    cls = {"확보": "ok", "예정": "todo", "협의 중": "talk"}
+    cards = []
+    for m in v["members"]:
+        st = m.get("status", "확보")
+        cards.append(f'<div class="tm {cls.get(st, "ok")}"><div class="tm-top"><span class="tm-role">{esc(m["role"])}</span>'
+                     f'<span class="tm-st">{esc(st)}</span></div><b>{esc(m.get("name", "○○"))}</b>'
+                     f'<div class="tm-duty">{esc(m.get("duty", ""))}</div><small>{esc(m.get("skills", ""))}</small></div>')
+    out = f'<div class="team" style="grid-template-columns:repeat({min(len(cards), 4)},1fr)">{"".join(cards)}</div>'
+    if v.get("plan"):
+        rows = "".join(f'<tr><td><b>{esc(p["gap"])}</b></td><td>{esc(p.get("how", ""))}</td><td>{esc(p.get("when", ""))}</td>'
+                       f'<td>{esc(p.get("budget", ""))}</td></tr>' for p in v["plan"])
+        out += (f'<table class="tb plan"><thead><tr><th>보완할 역량</th><th>방법 · 검증</th><th>시기</th><th>예산</th></tr></thead>'
+                f'<tbody>{rows}</tbody></table>')
+    return out
+
+
+STAGES = ["접촉", "협의", "LOI", "MOU", "실적"]
+
+
+def v_partners(v, A):
+    """rows: [{name, ability(보유 역량), role(협력 내용), when(시기 · 조건), stage: 접촉|협의|LOI|MOU|실적}] — 단계 사다리로 격식을 보인다."""
+    out = ['<div class="pt-row pt-h"><span>기관</span><span>보유 역량 · 협력 내용</span><span>시기</span><span>단계</span></div>']
+    for r in v["rows"]:
+        lv = STAGES.index(r["stage"]) if r.get("stage") in STAGES else -1
+        dots = "".join(f'<i class="{"on" if k <= lv else ""}{" cur" if k == lv else ""}" title="{s}"></i>' for k, s in enumerate(STAGES))
+        out.append(f'<div class="pt-row"><b>{esc(r["name"])}</b><div><span>{esc(r.get("ability", ""))}</span>'
+                   f'<small>{esc(r.get("role", ""))}</small></div><span>{esc(r.get("when", ""))}</span>'
+                   f'<div class="ladder"><div class="dots">{dots}</div><em>{esc(r.get("stage", "—"))}</em></div></div>')
+    out.append('<div class="legend small">단계: 접촉 → 협의 → LOI → MOU → 실적 (증빙 범위 안에서 가장 높은 단계)</div>')
+    return "".join(out)
+
+
+def v_timeline(v, A):
+    """events: [{date, title, desc, status:'완료'|'진행'|'예정'}] 3~7개 — 연혁·준비 경과."""
+    ev = v["events"]
+    cls = {"완료": "done", "진행": "doing", "예정": "todo"}
+    items = "".join(f'<div class="tl {cls.get(e.get("status", "완료"), "done")}"><i></i><span class="tl-d">{esc(e["date"])}</span>'
+                    f'<b>{esc(e["title"])}</b><small>{esc(e.get("desc", ""))}</small><em>{esc(e.get("status", ""))}</em></div>'
+                    for e in ev)
+    n = len(ev)
+    last = max((k for k, e in enumerate(ev) if e.get("status", "완료") != "예정"), default=-1)
+    span = f"calc({100 * (n - 1) / n:.2f}% + 8px)"
+    prog = f"calc({100 * last / n:.2f}% + 8px)" if last > 0 else "0px"
+    return (f'<div class="tline" style="grid-template-columns:repeat({n},1fr)">'
+            f'<div class="tl-line" style="width:{span}"></div><div class="tl-prog" style="width:{prog}"></div>{items}</div>')
+
+
+BMC = [("kp", "핵심 파트너"), ("ka", "핵심 활동"), ("kr", "핵심 자원"), ("vp", "가치 제안"), ("cr", "고객 관계"),
+       ("ch", "채널"), ("cs", "고객 세그먼트"), ("cost", "비용 구조"), ("rev", "수익원")]
+
+
+def v_bmc(v, A):
+    """blocks: {kp, ka, kr, vp, cr, ch, cs, cost, rev} 각 항목 목록. highlight: 강조할 칸(기본 vp)."""
+    b = v["blocks"]
+    hl = v.get("highlight", "vp")
+    cell = lambda k, name: (f'<div class="bmc-{k}{" on" if k == hl else ""}"><h4>{name}</h4><ul>'
+                            + "".join(f"<li>{esc(x)}</li>" for x in b.get(k, [])) + "</ul></div>")
+    return '<div class="bmc">' + "".join(cell(k, n) for k, n in BMC) + "</div>"
+
+
+def v_table(v, A):
+    """columns, rows(행 목록), highlight_col(번호), highlight_row(번호), total: true면 마지막 행을 합계로 보고 검산."""
+    cols, rows = v["columns"], v["rows"]
+    hc, hr = v.get("highlight_col"), v.get("highlight_row")
+    isnum = lambda x: isinstance(x, (int, float)) or bool(re.fullmatch(r"[-+]?[\d,.]+\s*[%만억원명곳건개]*", str(x).strip()))
+    head = "".join(f'<th class="{"num " if k and all(isnum(r[k]) for r in rows if k < len(r)) else ""}{"hc" if k == hc else ""}">{esc(c)}</th>'
+                   for k, c in enumerate(cols))
+    body = []
+    for i, r in enumerate(rows):
+        tot = v.get("total") and i == len(rows) - 1
+        tds = "".join(f'<td class="{"num " if k and isnum(x) else ""}{"hc" if k == hc else ""}">{esc(fmt(x) if isinstance(x, (int, float)) else x)}</td>'
+                      for k, x in enumerate(r))
+        body.append(f'<tr class="{"tot" if tot else ""}{" hr" if i == hr else ""}">{tds}</tr>')
+    return f'<table class="tb gen"><thead><tr>{head}</tr></thead><tbody>{"".join(body)}</tbody></table>'
+
+
 RENDER = {"tam": v_tam, "positioning": v_positioning, "swot": v_swot, "bar": v_bar, "before_after": v_before_after,
           "trend": v_trend, "funnel": v_funnel, "pnl": v_pnl, "compare": v_compare, "bm": v_bm, "kpi": v_kpi,
-          "roadmap": v_roadmap, "ps_map": v_ps_map, "gantt": v_gantt}
+          "roadmap": v_roadmap, "ps_map": v_ps_map, "gantt": v_gantt, "flow": v_flow, "screens": v_screens,
+          "photos": v_photos, "persona": v_persona, "quotes": v_quotes, "survey": v_survey, "donut": v_donut,
+          "venn": v_venn, "segments": v_segments, "revenue_mix": v_revenue_mix, "budget": v_budget,
+          "waterfall": v_waterfall, "columns": v_columns, "stairs": v_stairs, "team": v_team, "partners": v_partners,
+          "timeline": v_timeline, "bmc": v_bmc, "table": v_table}
 
 
 # ---------------------------------------------------------------- 페이지
@@ -578,9 +1124,10 @@ def css(A, slide):
     w = "1600px" if slide else "1120px"
     # 발표 장(16:9): 본문이 남는 높이를 채우고, SVG는 폭에 맞춰 키우되 높이를 넘지 않게
     extra = ("section.viz{height:900px;display:flex;flex-direction:column;padding:56px 72px 36px}"
-             "section.viz .body{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}"
+             "section.viz .body{flex:1;min-height:0;position:relative;overflow:hidden}"
+             ".fit{position:absolute;left:0;right:0;top:0;transform-origin:top center}"
              "section.viz .body>svg,section.viz .body>.rel>svg{width:100%;height:auto;max-height:540px}"
-             ".tam,.swot,.strat,.bars,.bas,.funnel,.kpis,.rm,.ps,.gt,table.cmp{zoom:1.25}"
+             ".tam,.swot,.strat,.bars,.bas,.funnel,.kpis,.rm,.ps,.gt,table.cmp,.flow,.screens,.photos,.personas,.quotes,.donut,.seg,.rvs,.bgbar,table.tb,.stairs,.team,.pt-row,.tline,.bmc,.fx,.streams{zoom:1.2}"
              "h2.headline{font-size:38px}.sub{font-size:18px}.takeaway{font-size:20px}.note{font-size:14px}") if slide else ""
     return f"""
 :root{{--accent:{A};--accent-ink:{darker(A, 0.78)};--a50:{mix(A, 0.07)};--a100:{mix(A, 0.14)};--a200:{mix(A, 0.3)}}}
@@ -708,6 +1255,158 @@ tr.vrow td{{font-size:11.5px;color:{MUTED};word-break:break-all}}
 .gm i{{width:12px;height:12px;background:{INK};transform:rotate(45deg);display:inline-block}}
 .legend .gl{{display:inline-block;width:18px;height:10px;border-radius:3px;margin-right:6px}}
 .gl.done{{background:var(--accent-ink)}} .gl.doing{{background:var(--accent)}} .gl.todo{{background:var(--a50);border:1.5px dashed var(--accent)}}
+/* chapter (갤러리 구분) */
+h1.chapter{{font-size:20px;font-weight:800;color:{INK2};margin:18px 0 -8px;letter-spacing:-.01em}}
+.slot{{width:100%;height:100%;min-height:120px;border:1.5px dashed {GRAY};background:#fafaf8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px;text-align:center}}
+.slot span{{font-size:11.5px;font-weight:700;color:{MUTED};letter-spacing:.04em}} .slot b{{font-size:13.5px;font-weight:600;color:{INK2};word-break:keep-all;line-height:1.4}}
+/* BM 산식 띠 · 수익원 */
+.fx{{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px;padding:14px 18px;background:#f6f5f2;border-radius:10px}}
+.fx-lead{{font-size:13px;font-weight:700;color:{MUTED};margin-right:6px}}
+.fx-term{{display:flex;flex-direction:column;align-items:center;background:#fff;border:1px solid {GRAY_FILL};border-radius:8px;padding:6px 14px;min-width:84px}}
+.fx-term small{{font-size:11.5px;color:{MUTED}}} .fx-term b{{font-size:17px;font-weight:800}}
+.fx-term.res{{background:var(--accent);border-color:var(--accent)}} .fx-term.res small{{color:#fff;opacity:.85}} .fx-term.res b{{color:#fff}}
+.fx-op{{font-size:22px;font-weight:700;color:{INK2}}} .fx-text{{font-size:16px;font-weight:700}}
+.streams{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:10px}}
+.strm{{border:1px solid {GRAY_FILL};border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;gap:3px}}
+.strm b{{font-size:14.5px}} .strm>span{{font-size:13px;color:{INK2}}} .strm .chip{{align-self:flex-start;margin:4px 0 0}}
+/* flow */
+.flow{{display:grid;gap:44px;position:relative}}
+.fw{{position:relative;border:1.5px solid {GRAY_FILL};border-radius:12px;padding:16px 16px 14px;background:#fff;min-height:110px;display:flex;flex-direction:column;gap:6px}}
+.fw:not(:last-child)::after{{content:"";position:absolute;right:-34px;top:50%;width:24px;height:2px;background:{GRAY}}}
+.fw:not(:last-child)::before{{content:"";position:absolute;right:-36px;top:calc(50% - 5px);border:6px solid transparent;border-left:8px solid {GRAY};border-right:0}}
+.fw.ours{{border-color:var(--accent);background:var(--a50)}}
+.fw-n{{width:24px;height:24px;border-radius:50%;background:{INK};color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}}
+.fw.ours .fw-n{{background:var(--accent)}}
+.fw b{{font-size:15.5px;line-height:1.35;word-break:keep-all}} .fw small{{font-size:12.5px;color:{INK2};line-height:1.45;word-break:keep-all}}
+.fw-who{{position:absolute;top:-11px;right:12px;font-size:11px;font-weight:700;background:#fff;border:1px solid {GRAY_FILL};border-radius:999px;padding:1px 8px;color:{INK2}}}
+.loopbar{{height:26px;border:2px solid {GRAY};border-top:0;border-radius:0 0 10px 10px;margin-top:10px;position:relative;display:flex;justify-content:center}}
+.loopbar::before{{content:"";position:absolute;left:-7px;top:-6px;border:6px solid transparent;border-bottom:9px solid {GRAY};border-top:0}}
+.loopbar span{{position:absolute;bottom:-11px;background:#fff;padding:0 10px;font-size:13px;font-weight:700;color:{INK2}}}
+/* screens */
+.screens{{display:grid;gap:22px;justify-items:center}}
+.scr{{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}}
+.phone{{width:180px;aspect-ratio:9/16.5;border:7px solid #232323;border-radius:28px;overflow:hidden;background:#fff;position:relative}}
+.phone img{{width:100%;height:100%;object-fit:cover;display:block}}
+.ui{{padding:14px 12px;display:flex;flex-direction:column;gap:8px;height:100%}}
+.ui-top{{font-size:13px;font-weight:800;padding:4px 2px 8px;border-bottom:1px solid {GRID}}}
+.ui-row{{font-size:12px;padding:10px 10px;border-radius:8px;background:#f4f3f0;color:{INK2}}}
+.ui-row.on{{background:var(--a100);color:{INK};font-weight:700;outline:1.5px solid var(--accent)}}
+.ui-btn{{margin-top:auto;font-size:12px;font-weight:700;text-align:center;padding:10px;border-radius:8px;background:var(--accent);color:#fff}}
+.scr-cap{{text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;max-width:240px}}
+.scr-cap b{{font-size:15px}} .scr-cap small{{font-size:12.5px;color:{INK2};line-height:1.45;word-break:keep-all}}
+.scr-cap .no{{background:var(--accent);margin:0}}
+/* photos */
+.photos{{display:grid;gap:12px}}
+.pho{{margin:0;position:relative}} .ph-frame{{aspect-ratio:4/3;overflow:hidden;background:#f4f3f0}}
+.ph-frame img{{width:100%;height:100%;object-fit:cover;display:block}}
+.pho figcaption{{background:#f4f3f0;padding:8px 10px;display:flex;flex-direction:column;gap:2px}}
+.pho figcaption b{{font-size:13.5px;word-break:keep-all}} .pho figcaption small{{font-size:11.5px;color:{MUTED}}}
+.ph-badge{{position:absolute;top:8px;left:8px;z-index:1;font-size:11px;font-weight:700;background:{INK};color:#fff;border-radius:999px;padding:2px 9px}}
+/* persona */
+.personas{{display:grid;gap:14px}}
+.persona{{display:grid;grid-template-columns:1fr 1.25fr;border:1.5px solid {GRAY_FILL};border-radius:14px;overflow:hidden}}
+.pl{{padding:20px 22px;background:var(--a50);display:flex;flex-direction:column;gap:10px}}
+.pname{{font-size:20px;font-weight:800}} .psize{{font-size:13px;font-weight:700;color:var(--accent-ink)}}
+.pdef{{font-size:14.5px;line-height:1.5;word-break:keep-all}}
+.ptags{{display:flex;flex-wrap:wrap;gap:6px}} .pt{{font-size:12px;font-weight:600;background:#fff;border:1px solid var(--a200);color:var(--accent-ink);border-radius:999px;padding:2px 9px}}
+.pscene{{font-size:13.5px;color:{INK2};line-height:1.55;word-break:keep-all}}
+.pv{{margin-top:auto;font-size:12.5px;color:{INK2}}} .pv b{{font-size:15px;color:{INK}}} .pv.off{{color:{MUTED}}}
+.pr{{padding:18px 22px;display:flex;flex-direction:column;gap:10px}}
+.pr-h{{font-size:12.5px;font-weight:700;color:{MUTED}}}
+.pp{{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:start}}
+.pk{{font-size:11.5px;font-weight:700;color:{INK2};background:#f4f3f0;border-radius:6px;text-align:center;padding:4px 0}}
+.pp p{{margin:0;font-size:14.5px;line-height:1.5;word-break:keep-all}}
+/* quotes */
+.quotes{{display:grid;gap:14px}}
+.qt{{margin:0;border-left:4px solid {GRAY_FILL};background:#fafaf8;padding:14px 16px 12px;display:flex;flex-direction:column;gap:10px}}
+.qt p{{margin:0;font-size:15px;line-height:1.55;word-break:keep-all}} .qt p::before{{content:"“";font-weight:800;color:var(--accent);margin-right:2px}}
+.qt p::after{{content:"”";font-weight:800;color:var(--accent);margin-left:2px}}
+.qt.pend{{border-left-style:dashed;background:#fff}} .qt.pend p{{color:{MUTED}}} .qt.pend p::before,.qt.pend p::after{{content:none}}
+.qt footer{{display:flex;flex-direction:column;gap:2px}} .qt footer b{{font-size:12.5px}} .qt footer span{{font-size:11.5px;color:{MUTED}}}
+/* survey */
+.sq{{font-size:15px;font-weight:700;margin-bottom:6px}} .sq span{{font-weight:500;color:{MUTED}}}
+/* donut */
+.donut{{display:flex;align-items:center;gap:40px;justify-content:center}}
+.dleg{{display:flex;flex-direction:column;gap:10px;min-width:320px}}
+.dl{{display:grid;grid-template-columns:14px 1fr auto auto;gap:10px;align-items:center;font-size:14.5px;color:{INK2}}}
+.dl i{{width:14px;height:14px;border-radius:3px}} .dl b{{font-size:16px;color:{INK}}} .dl small{{font-size:12px;color:{MUTED};min-width:70px;text-align:right}}
+.dl.b span{{color:{INK};font-weight:700}}
+/* segments */
+.seg{{display:grid;grid-template-columns:200px 1.3fr 80px 1.4fr;gap:16px;align-items:center;padding:12px 10px;border-bottom:1px solid {GRID}}}
+.seg-h{{font-size:12.5px;font-weight:700;color:{MUTED};border-bottom:2px solid {BASE};padding-top:0}}
+.seg b{{font-size:15px}} .seg b em{{font-style:normal;font-size:11px;font-weight:700;background:var(--accent);color:#fff;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:2px}}
+.seg.on{{background:var(--a50)}}
+.segsz{{display:flex;align-items:center;gap:10px}} .segbar{{flex:1;height:14px;background:#f4f3f0;border-radius:0 4px 4px 0}}
+.segbar i{{display:block;height:100%;border-radius:0 4px 4px 0}} .segsz span{{font-size:13.5px;min-width:76px;color:{INK2}}}
+.gr{{font-size:15px;font-weight:800;color:{INK2}}} .gr.up{{color:var(--accent-ink)}} .gr.down{{color:{MUTED}}}
+.seg small{{font-size:13px;color:{INK2};word-break:keep-all}}
+/* revenue mix · budget · sum */
+.rvs{{display:flex;flex-direction:column}}
+.rv{{display:grid;grid-template-columns:170px 1.2fr 1.4fr 110px;gap:14px;align-items:center;padding:11px 4px;border-bottom:1px solid {GRID}}}
+.rv b{{font-size:15px}} .rv small{{font-size:13px;color:{INK2}}} .rv>span{{font-size:15px;font-weight:700;text-align:right}}
+.rvbar{{height:16px;background:#f4f3f0;border-radius:0 4px 4px 0}} .rvbar i{{display:block;height:100%;background:var(--accent);border-radius:0 4px 4px 0}}
+.rvbar i.none{{width:100%;background:repeating-linear-gradient(90deg,{GRAY_FILL} 0 6px,transparent 6px 11px);height:2px;margin-top:7px}}
+.sumline{{margin-top:10px;text-align:right;font-size:14px;color:{INK2}}} .sumline b{{color:{INK};font-size:16px}}
+.sumline.bad{{color:{SECOND};font-weight:700}} .sumline.bad b{{color:{SECOND}}}
+.bgbar{{display:flex;height:40px;border-radius:8px;overflow:hidden;gap:2px;margin-bottom:14px}}
+.bgs{{display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;padding:0 6px}}
+table.tb{{width:100%;border-collapse:collapse;font-size:14px}}
+table.tb th{{font-size:12.5px;font-weight:700;color:{MUTED};text-align:left;border-bottom:2px solid {BASE};padding:8px 10px}}
+table.tb td{{padding:10px 10px;border-bottom:1px solid {GRID};vertical-align:top;word-break:keep-all}}
+table.tb .num{{text-align:right;font-variant-numeric:tabular-nums}}
+table.tb .sw{{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:8px;vertical-align:-1px}}
+table.tb tr.tot td{{font-weight:800;border-top:2px solid {BASE};background:#fafaf8}}
+table.tb th.hc{{color:var(--accent-ink)}} table.tb td.hc{{background:var(--a50);font-weight:700}}
+table.tb tr.hr td{{background:var(--a50)}}
+table.tb.plan{{margin-top:14px}}
+/* stairs */
+.stairs{{display:grid;gap:10px;align-items:end;height:330px}}
+.stp{{display:flex;flex-direction:column;justify-content:flex-end}}
+.stp-in{{height:100%;border-radius:12px 12px 0 0;padding:16px 16px 14px;display:flex;flex-direction:column;gap:6px}}
+.stp-in.last{{color:#fff}} .stp-in.last .sp{{background:rgba(255,255,255,.2);color:#fff}}
+.sp{{align-self:flex-start;font-size:12px;font-weight:700;background:#fff;border-radius:999px;padding:2px 10px;color:{INK2}}}
+.stp-in b{{font-size:16px;word-break:keep-all}} .stp-in ul{{margin:0;padding-left:16px;font-size:13px;line-height:1.5}}
+.sk-kpi{{margin-top:auto;font-size:13px;font-weight:800;border-top:1px solid rgba(0,0,0,.12);padding-top:8px}}
+.stp-in.last .sk-kpi{{border-color:rgba(255,255,255,.35)}}
+/* team */
+.team{{display:grid;gap:12px}}
+.tm{{border:1.5px solid {GRAY_FILL};border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}}
+.tm-top{{display:flex;justify-content:space-between;align-items:center}}
+.tm-role{{font-size:12.5px;font-weight:700;color:var(--accent-ink)}}
+.tm-st{{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px}}
+.tm.ok .tm-st{{background:var(--accent-ink);color:#fff}} .tm.todo{{border-style:dashed}} .tm.todo .tm-st{{border:1.5px dashed {GRAY};color:{INK2}}}
+.tm.talk .tm-st{{border:1.5px solid {GRAY};color:{INK2}}}
+.tm b{{font-size:17px}} .tm-duty{{font-size:13.5px;font-weight:600;word-break:keep-all}} .tm small{{font-size:12.5px;color:{INK2};line-height:1.45;word-break:keep-all}}
+/* partners */
+.pt-row{{display:grid;grid-template-columns:180px 1.6fr 1fr 170px;gap:14px;align-items:center;padding:12px 6px;border-bottom:1px solid {GRID}}}
+.pt-h{{font-size:12.5px;font-weight:700;color:{MUTED};border-bottom:2px solid {BASE}}}
+.pt-row>b{{font-size:15px}} .pt-row div span{{display:block;font-size:14px}} .pt-row div small{{display:block;font-size:12.5px;color:{INK2};margin-top:2px}}
+.pt-row>span{{font-size:13.5px;color:{INK2}}}
+.ladder{{display:flex;align-items:center;gap:10px}} .dots{{display:flex;align-items:center}}
+.dots i{{width:12px;height:12px;border-radius:50%;border:2px solid {GRAY_FILL};background:#fff;position:relative}}
+.dots i+i{{margin-left:10px}} .dots i+i::before{{content:"";position:absolute;left:-12px;top:3px;width:10px;height:2px;background:{GRAY_FILL}}}
+.dots i.on{{background:var(--accent);border-color:var(--accent)}} .dots i.cur{{box-shadow:0 0 0 3px var(--a200)}}
+.ladder em{{font-style:normal;font-size:13px;font-weight:700}}
+/* timeline */
+.tline{{display:grid;position:relative;padding-top:8px}}
+.tl-line{{position:absolute;left:0;top:15px;height:0;border-top:2px dashed {GRAY_FILL}}}
+.tl-prog{{position:absolute;left:0;top:15px;height:2px;background:var(--accent-ink)}}
+.tl{{position:relative;display:flex;flex-direction:column;gap:4px;padding:0 10px 0 0}}
+.tl i{{width:16px;height:16px;border-radius:50%;position:relative;z-index:1;margin-bottom:8px;border:3px solid #fff}}
+.tl.done i{{background:var(--accent-ink)}} .tl.doing i{{background:var(--accent);box-shadow:0 0 0 3px var(--a200)}}
+.tl.todo i{{background:#fff;border:2px dashed {GRAY}}}
+.tl-d{{font-size:12.5px;font-weight:700;color:{MUTED}}} .tl b{{font-size:15px;word-break:keep-all}}
+.tl small{{font-size:12.5px;color:{INK2};line-height:1.45;word-break:keep-all}} .tl em{{font-style:normal;font-size:11px;font-weight:700;color:{MUTED}}}
+.tl.todo b{{color:{INK2}}}
+/* BMC */
+.bmc{{display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:auto auto auto;gap:4px}}
+.bmc>div{{background:#f6f5f2;padding:12px 12px;min-height:110px}}
+.bmc h4{{margin:0 0 6px;font-size:12.5px;font-weight:800;color:{INK2}}}
+.bmc ul{{margin:0;padding-left:15px;font-size:13px;line-height:1.5;word-break:keep-all}}
+.bmc .on{{background:var(--accent);color:#fff}} .bmc .on h4{{color:#fff}}
+.bmc-kp{{grid-column:1/3;grid-row:1/3}} .bmc-ka{{grid-column:3/5;grid-row:1}} .bmc-kr{{grid-column:3/5;grid-row:2}}
+.bmc-vp{{grid-column:5/7;grid-row:1/3}} .bmc-cr{{grid-column:7/9;grid-row:1}} .bmc-ch{{grid-column:7/9;grid-row:2}}
+.bmc-cs{{grid-column:9/11;grid-row:1/3}} .bmc-cost{{grid-column:1/6;grid-row:3}} .bmc-rev{{grid-column:6/11;grid-row:3}}
 {extra}
 """
 
@@ -724,7 +1423,7 @@ def section(v, A):
     parts.append(f'<h2 class="headline">{esc(v["headline"])}</h2>')
     if v.get("sub"):
         parts.append(f'<p class="sub">{esc(v["sub"])}</p>')
-    parts.append(f'<div class="body">{RENDER[kind](v, A)}</div>')
+    parts.append(f'<div class="body"><div class="fit">{RENDER[kind](v, A)}</div></div>')
     if v.get("takeaway"):
         parts.append(f'<div class="takeaway">{esc(v["takeaway"])}</div>')
     if v.get("note"):
@@ -733,16 +1432,32 @@ def section(v, A):
     return "".join(parts)
 
 
+FIT_JS = """<script>
+// 발표 장: 본문이 남은 높이보다 크면 비율을 유지한 채 줄이고, 작으면 가운데에 둔다
+window.__fit = function () {
+  document.querySelectorAll('section.viz .body').forEach(function (b) {
+    var f = b.firstElementChild; f.style.transform = '';
+    var h = f.scrollHeight, H = b.clientHeight, s = Math.min(1, H / h);
+    f.style.transform = 'translateY(' + Math.max(0, (H - h * s) / 2) + 'px) scale(' + s.toFixed(3) + ')';
+  });
+};
+document.fonts.ready.then(window.__fit);
+</script>"""
+
+
 def build(spec, accent, slide=False):
     A = "#" + accent.lstrip("#")
-    secs = "".join(section(v, A) for v in spec["visuals"])
-    return (f'<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>시각자료</title>'
-            f'<style>{css(A, slide)}</style></head><body><div class="page">{secs}</div></body></html>')
+    secs = "".join(f'<h1 class="chapter">{esc(v.get("title", ""))}</h1>' if v.get("type") == "chapter" else section(v, A)
+                   for v in spec["visuals"])
+    return (f'<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>{esc(spec.get("title", "시각자료"))}</title>'
+            f'<style>{css(A, slide)}</style></head><body><div class="page">{secs}</div>{FIT_JS if slide else ""}</body></html>')
 
 
 def warn(spec):
     out = []
     for v in spec["visuals"]:
+        if v.get("type") == "chapter":
+            continue
         if not v.get("note"):
             out.append(f"{v['id']}: note(출처 · 시점 · 표본)가 없다")
         if v.get("type") in ("bar", "positioning", "compare") and not any(
@@ -756,6 +1471,29 @@ def warn(spec):
             off = [x for x in said if abs(x - calc) > 0.15]
             if off:
                 out.append(f"{v['id']}: 적힌 성장률 {', '.join(f'{x:g}%' for x in off)} ≠ 값으로 계산한 {calc:.1f}% — 기간·값을 맞춘다")
+        num = lambda x: isinstance(x, (int, float))
+        if v.get("type") == "revenue_mix" and v.get("target") is not None and all(num(c.get("amount")) for c in v["channels"]):
+            tot = sum(c["amount"] for c in v["channels"])
+            if abs(tot - v["target"]) > max(abs(v["target"]) * 0.005, 0.5):
+                out.append(f"{v['id']}: 채널 합 {fmt(tot)} ≠ 목표 {fmt(v['target'])} — 채널 금액이나 목표를 맞춘다")
+        if v.get("type") == "budget" and v.get("cap") is not None and all(num(i.get("amount")) for i in v["items"]):
+            tot = sum(i["amount"] for i in v["items"])
+            if abs(tot - v["cap"]) > 0.5:
+                out.append(f"{v['id']}: 비목 합 {fmt(tot)} ≠ 상한 {fmt(v['cap'])}")
+        if v.get("type") == "survey" and v.get("unit", "%") == "%" and not v.get("multi"):
+            tot = sum(o["value"] for o in v["options"])
+            if abs(tot - 100) > 1:
+                out.append(f"{v['id']}: 단일 선택 응답 합이 {tot:g}% — 복수 선택이면 multi: true로 표시한다")
+        if v.get("type") == "table" and v.get("total"):
+            rows = v["rows"]
+            for k in range(1, len(v["columns"])):
+                col = [r[k] for r in rows[:-1] if k < len(r)]
+                if col and all(num(x) for x in col) and num(rows[-1][k]) and abs(sum(col) - rows[-1][k]) > 0.5:
+                    out.append(f"{v['id']}: '{v['columns'][k]}' 열 합 {fmt(sum(col))} ≠ 합계 행 {fmt(rows[-1][k])}")
+        if v.get("type") in ("screens", "photos"):
+            missing = [x.get("src") for x in v.get("screens", v.get("items", [])) if x.get("src") and not img_src(x.get("src"))]
+            if missing:
+                out.append(f"{v['id']}: 이미지 파일을 찾지 못했다 — {', '.join(missing)}")
         if v.get("type") == "pnl":
             prof = v.get("profit")
             if prof and any(abs((r - c) - p) > 0.5 for r, c, p in zip(v["revenue"], v["cost"], prof)):
@@ -785,13 +1523,14 @@ def main():
     ap.add_argument("--sample", metavar="경로", help="예시 spec을 이 경로에 쓰고 끝낸다")
     a = ap.parse_args()
     if a.sample:
-        with open(a.sample, "w", encoding="utf-8") as f:
-            json.dump(SAMPLE, f, ensure_ascii=False, indent=1)
+        shutil.copyfile(SAMPLE, a.sample)
         print(f"예시 spec: {a.sample}")
         return
     if not a.spec:
         ap.error("spec(JSON) 경로가 필요하다")
     spec = json.load(open(a.spec, encoding="utf-8"))
+    global BASE_DIR
+    BASE_DIR = os.path.dirname(os.path.abspath(a.spec))
     accent = a.accent or "2a78d6"
     if a.theme:
         accent = json.load(open(a.theme, encoding="utf-8"))["colors"].get("primary", accent)
@@ -799,7 +1538,7 @@ def main():
     page = os.path.join(a.out, "visuals.html")
     with open(page, "w", encoding="utf-8") as f:
         f.write(build(spec, accent, a.slide))
-    print(f"HTML: {page} ({len(spec['visuals'])}개)")
+    print(f"HTML: {page} ({sum(1 for v in spec['visuals'] if v.get('type') != 'chapter')}개)")
     for w in warn(spec):
         print(f"[확인] {w}")
     if not a.no_png:
@@ -810,90 +1549,7 @@ def main():
             print(f"PNG {len(files)}개: {', '.join(os.path.basename(f) for f in files)}")
 
 
-SAMPLE = {"visuals": [
-    {"id": "tam", "type": "tam", "kicker": "1-3 · 목표 고객", "headline": "첫 고객은 ○○ 지역 행사 운영사 ○○곳이다",
-     "sub": "결제자(행사 운영사·매장) 기준으로 시장을 좁혔다", "takeaway": "전체 시장보다 반복 수요가 있는 좁은 시장부터 들어간다",
-     "note": "출처: OO통계(2026) · 자체 인터뷰(2026.○, n=○○)",
-     "layers": [{"label": "TAM", "value": "9,671만 달러", "name": "세계 포토부스 시장", "formula": "리포트 인용(2024)", "basis": "확인"},
-                {"label": "SAM", "value": "○○억 원", "name": "국내 행사·소형 셀프 사진관 부스 지출", "formula": "운영 단위 ○○ × 연 이용료 ○○만 원", "basis": "산출"},
-                {"label": "SOM", "value": "○○억 원", "name": "3년 안에 닿을 수 있는 지역", "formula": "수도권 행사 운영사 ○○곳 × 연 ○○만 원", "basis": "산출"},
-                {"label": "1차", "value": "○○곳", "name": "첫해 계약 목표", "formula": "모집단 ○○ × 행사 보유율 ○○% × 의향 ○○% × ½", "basis": "가정"}]},
-    {"id": "positioning", "type": "positioning", "kicker": "2-2 · 차별성", "headline": "취향 반영과 현장 연결을 함께 하는 곳은 아직 없다",
-     "sub": "가로는 현장(부스) 연결, 세로는 개인 취향 반영 정도", "takeaway": "앱의 취향을 부스까지 잇는 오른쪽 위 칸을 처음 차지한다",
-     "note": "좌표 근거: 각 서비스 공식 안내·요금표(2026.10 확인)",
-     "x_axis": {"label": "현장 연결", "low": "앱 안에서만", "high": "현장 부스까지"},
-     "y_axis": {"label": "개인 취향 반영", "low": "모두 같은 필터", "high": "내 취향대로"},
-     "quadrant": {"x": "high", "y": "high", "label": "취향 × 현장"},
-     "points": [{"name": "필터픽", "x": 8.4, "y": 8.3, "ours": True}, {"name": "보정 앱 A", "x": 1.8, "y": 6.4},
-                {"name": "보정 앱 B", "x": 2.6, "y": 5.2}, {"name": "셀프 사진관 키오스크", "x": 7.6, "y": 2.0},
-                {"name": "아이패드 부스 앱", "x": 6.4, "y": 3.1}, {"name": "수동 보정", "x": 1.2, "y": 3.0, "kind": "substitute"}]},
-    {"id": "swot", "type": "swot", "kicker": "3-4 · SWOT", "headline": "약점(근거·팀 공백)을 행사 PoC로 먼저 메운다",
-     "takeaway": "핵심 전략은 WO — 기회(매장 차별화 수요)를 이용해 약점(실증 부족)을 메운다", "note": "근거: 조사노트 2026.10",
-     "s": ["앱↔부스 취향 연결", "기기 안 분석(얼굴 서버 전송 없음)", "아이패드 1대 저비용 구성"],
-     "w": ["고객 직접 근거 없음", "팀 ML 역량 공백", "매출 실적 없음"],
-     "o": ["셀프 사진관 과밀 → 차별화 수요", "행사·팝업 증가", "온디바이스 AI 비용 하락"],
-     "t": ["대형 보정 앱의 기능 추가", "키오스크 업체의 가격 인하", "개인정보 규제"],
-     "strategies": {"SO": "행사 부스로 취향 연결을 먼저 보여 준다", "WO": "행사 PoC 3건으로 실증·데이터 확보",
-                    "ST": "부스 설치 네트워크로 따라오기 어렵게", "WT": "얼굴 데이터는 기기 안에서만 처리"}, "focus": "WO"},
-    {"id": "funnel", "type": "funnel", "kicker": "3-2 · 목표시장 진입", "headline": "첫해 유료 운영사 2곳 — 모집단 500곳에서 좁힌다",
-     "takeaway": "접촉 수가 아니라 이미 접촉한 곳(관찰)부터 숫자를 채운다", "note": "모집단: OO통계(2026) · 이후 단계: 자체 접촉 기록",
-     "unit": "곳", "stages": [{"name": "모집단", "count": 500, "level": "확인"}, {"name": "접촉", "count": 50, "level": "관찰"},
-                              {"name": "설명", "count": 18, "level": "관찰"}, {"name": "사전 신청", "count": 7, "level": "관찰"},
-                              {"name": "유료", "count": 2, "level": "가정"}]},
-    {"id": "pnl", "type": "pnl", "kicker": "3-3 · 3년 손익", "headline": "3년 차에 영업이익 60백만 원으로 흑자 전환한다",
-     "takeaway": "흑자 전환 조건: 유료 전환율 ○○%, 운영사 유지율 ○○%", "note": "자체 추정 — 산정 기준은 본문 3년 표",
-     "unit": "백만 원", "periods": ["1년 차", "2년 차", "3년 차"], "revenue": [40, 150, 300], "cost": [160, 210, 240]},
-    {"id": "compare", "type": "compare", "kicker": "2-2 · 경쟁 비교", "headline": "고르는 일까지 대신하는 곳은 필터픽뿐이다 — 가격은 불리하다",
-     "note": "확인: 각 사 공식 안내·요금표(2026.10)",
-     "entities": [{"name": "필터픽", "ours": True}, {"name": "보정 앱 A"}, {"name": "키오스크 B"}, {"name": "수동 보정", "substitute": True}],
-     "rows": [{"label": "필터 고르기 대신", "cells": [["●", "추천 3개"], ["○", "직접 선택"], ["○", "고정 필터"], ["○", ""]]},
-              {"label": "앱↔현장 연결", "cells": [["●", "QR 프로필"], ["○", ""], ["◐", "매장 안에서만"], ["○", ""]]},
-              {"label": "도입 비용", "cells": [["◐", "○○만 원"], ["●", "무료"], ["○", "1,200만 원~"], ["●", "0원"]], "disadvantage": True}],
-     "verify": ["—", "앱 마켓 2026.10", "가맹 안내 2026.10", "—"]},
-    {"id": "bm", "type": "bm", "kicker": "3-1 · 비즈니스 모델", "headline": "운영사가 행사당 ○○만 원을 내고, 촬영자는 무료로 쓴다",
-     "note": "단가 근거: 운영사 지불 의향 중앙값(2026.○, n=○○)",
-     "actors": [{"name": "촬영자", "role": "무료 사용자"}, {"name": "필터픽", "role": "앱 + 아이패드 부스", "ours": True},
-                {"name": "행사 운영사", "role": "결제자"}],
-     "flows": [{"from": 0, "to": 1, "kind": "value", "label": "취향 프로필"}, {"from": 1, "to": 0, "kind": "value", "label": "추천 필터 3개"},
-               {"from": 2, "to": 1, "kind": "money", "label": "행사당 ○○만 원"}, {"from": 1, "to": 2, "kind": "value", "label": "차별화된 결과물"}],
-     "partner": {"name": "장비 렌탈사", "role": "파트너", "label": "부스 장비 공급"}},
-    {"id": "kpi", "type": "kpi", "kicker": "3-3 · 협약 기간 매출·투자·고용", "headline": "협약 기간 매출 ○○만 원 · 투자 미팅 ○곳 · 고용 2명",
-     "note": "근거: 숫자 등록부(브리프 15장)",
-     "tiles": [{"label": "매출", "value": "○○만 원", "basis": "행사 ○건 × ○○만 원", "status": "계획"},
-               {"label": "투자", "value": "○곳 미팅", "basis": "엔젤·AC ○곳, ○월 진행", "status": "진행"},
-               {"label": "고용", "value": "2명", "basis": "○월 iOS 개발 1 · ○월 ML 개발 1", "status": "계획"}]},
-    {"id": "roadmap", "type": "roadmap", "kicker": "3-4 · 로드맵", "headline": "PoC 3건이 첫 유료 계약으로 이어진다",
-     "takeaway": "Q3에 행사 PoC를 하기 때문에 유료 전환이 Q4에 처음 생긴다", "note": "협약 8개월 가정",
-     "periods": ["1년 차 Q1", "Q2", "Q3", "Q4", "2년 차"],
-     "rows": [{"axis": "제품", "cells": ["추천 v0", "부스 모드", "운영자 대시보드", "안정화", "매장 구독판"]},
-              {"axis": "고객 검증", "cells": ["인터뷰 30명", "목업 반응 ○곳", "★ 행사 PoC 3건", "만족도 측정", "매장 PoC"]},
-              {"axis": "판매", "cells": ["—", "운영사 접촉 ○곳", "견적 ○건", "★ 유료 ○곳", "유료 ○곳"]}],
-     "kpi": {"axis": "KPI", "cells": ["—", "—", "선택률 ○○%", "월 ○○만 원", "월 ○○만 원"]}},
-    {"id": "gantt", "type": "gantt", "kicker": "2-1 · 추진 일정", "headline": "협약 8개월 안에 PoC 3건까지 끝낸다",
-     "takeaway": "6월 PoC 결과가 7월 첫 유료 계약의 근거가 된다", "note": "협약 8개월 가정 · 2026.○ 기준",
-     "periods": ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월"],
-     "tasks": [{"name": "추천 엔진 v0", "start": 1, "length": 2, "status": "완료", "out": "추천 정확도 측정"},
-               {"name": "부스 모드 개발", "start": 2, "length": 3, "status": "진행", "out": "아이패드 부스 앱"},
-               {"name": "운영자 대시보드", "start": 4, "length": 3, "status": "예정", "out": "운영사용 화면"},
-               {"name": "행사 PoC 3건", "start": 5, "length": 2, "status": "예정", "out": "만족도·선택률"},
-               {"name": "유료 전환", "start": 7, "length": 2, "status": "예정", "out": "계약 ○곳"}],
-     "milestones": [{"label": "M1 시제품", "at": 3}, {"label": "M2 PoC 완료", "at": 6}, {"label": "M3 첫 매출", "at": 8}]},
-    {"id": "ps_map", "type": "ps_map", "kicker": "1-2 → 2-1 · 문제와 해결", "headline": "두 문제를 두 기능이 하나씩 푼다",
-     "note": "근거 수준: 문제 근거는 인터뷰 후 갱신",
-     "rows": [{"no": "①", "problem": "필터 고르기 피로", "evidence": "사진 1장당 ○○초(관찰 예정)", "solution": "취향·조건 기반 추천 3개", "benefit": "선택 시간 ○○% 단축"},
-              {"no": "②", "problem": "앱 취향이 부스로 안 이어짐", "evidence": "매장마다 고정 필터", "solution": "QR로 부스에서 프로필 불러오기", "benefit": "어디서나 같은 내 톤"}]},
-    {"id": "trend", "type": "trend", "kicker": "1-1 · 외부 배경", "headline": "세계 포토부스 시장은 연 9%씩 커진다",
-     "note": "출처: QYResearch(2024) — 2025~2031은 전망", "unit": "백만 달러",
-     "labels": ["2024", "2025", "2026", "2027", "2028", "2029", "2030", "2031"],
-     "values": [96.7, 105.3, 114.7, 124.9, 136.1, 148.2, 161.4, 176.5], "forecast_from": 0},
-    {"id": "before_after", "type": "before_after", "kicker": "2-1 · 검증 결과(예시 형식)", "headline": "추천을 쓰면 필터 고르는 시간이 ○○% 줄었다",
-     "note": "시범 사용 ○명 · ○주(2026.○) — 측정 후 갱신", "metrics": [{"label": "필터 선택 시간", "before": 40, "after": 9, "unit": "초", "better": "lower"},
-                                                               {"label": "다시 보정한 비율", "before": 62, "after": 21, "unit": "%", "better": "lower"}]},
-    {"id": "bar", "type": "bar", "kicker": "2-2 · 비용 비교(예시 형식)", "headline": "부스 한 세트 비용은 키오스크의 ○○% 수준이다",
-     "note": "견적·공개 가격 기준(2026.○) — 견적 확보 후 갱신", "unit": "만 원",
-     "items": [{"label": "셀프 사진관 키오스크", "value": 1200}, {"label": "렌탈 부스(행사 1회)", "value": 150},
-               {"label": "필터픽 부스 1세트", "value": 180, "ours": True}]},
-]}
+SAMPLE = os.path.join(HERE, "..", "assets", "html-visuals-sample.json")   # 기본 목차 순서의 예시 spec
 
 if __name__ == "__main__":
     main()
