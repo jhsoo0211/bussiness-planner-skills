@@ -1,0 +1,18 @@
+{
+  "name": "mono-line",
+  "label": "모노 라인",
+  "summary": "흰 바탕·검정 1색·회색 단계. 위쪽 옅은 머리띠(브랜드·태그라인)와 아래쪽 가는 선+검정 탭, 검정 머리띠 카드. 장식 없이 내용이 앞서는 보수적 심사·교육용 발표에 맞다.",
+  "derived_from": "사용자 제공 PDF '초보자를 위한 친절한 프레젠테이션'(15쪽)의 색·여백·머리띠·바닥선 문법을 다시 그린 것 — 원본 사진·문구·로고는 넣지 않았다",
+  "fonts": {"head": "Pretendard", "body": "Pretendard", "accent": "Georgia"},
+  "colors": {
+    "bg": "FFFFFF", "surface": "FFFFFF", "text": "111111", "muted": "5F5F5F", "faint": "B0B0B0",
+    "line": "D9D9D9", "soft": "F3F3F3", "band": "F4F4F4", "primary": "111111", "neutral": "6E6E6E",
+    "series": ["111111", "8C8C8C", "4A4A4A", "C8C8C8", "6E6E6E"]
+  },
+  "chrome": {"header": "plain", "band": 38, "footer_rule": 498},
+  "layout": {"x": 40, "title_y": 70, "bottom": 474, "gap": 24},
+  "sizes": {"title": 26, "lead": 12, "eyebrow": 10, "body": 16, "small": 12.5},
+  "styles": {"cover": "center", "section": "number", "toc": "grid", "card": "head", "kpi": "box",
+             "process": "chevron", "callout": "solid", "table": "solid", "closing": "center",
+             "bullet": "■", "bullet_color": "text", "radius": 0}
+}

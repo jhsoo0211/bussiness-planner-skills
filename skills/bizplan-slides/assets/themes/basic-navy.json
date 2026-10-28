@@ -1,0 +1,18 @@
+{
+  "name": "basic-navy",
+  "label": "기본 남색",
+  "summary": "흰 바탕·남색 1색·호박색 보조. 템플릿이 없을 때의 기본값(bizplan-basic.pptx와 같은 색). 머리띠 없이 제목과 본문만, 알약 카드·화살 단계.",
+  "derived_from": "이 저장소 자체 디자인(bizplan-basic.pptx와 같은 색 체계)",
+  "fonts": {"head": "Pretendard", "body": "Pretendard", "accent": "Pretendard"},
+  "colors": {
+    "bg": "FFFFFF", "surface": "FFFFFF", "text": "111827", "muted": "4B5563", "faint": "9CA3AF",
+    "line": "E5E7EB", "soft": "F1F5F9", "primary": "1E3A8A", "neutral": "94A3B8",
+    "series": ["1E3A8A", "F59E0B", "3B82F6", "CBD5E1", "0EA5E9"]
+  },
+  "chrome": {"header": "plain"},
+  "layout": {"x": 56, "title_y": 52, "bottom": 506, "gap": 24},
+  "sizes": {"title": 26, "lead": 12.5, "eyebrow": 10, "body": 16, "small": 12.5},
+  "styles": {"cover": "dots", "section": "full", "toc": "list", "card": "pill", "kpi": "bar",
+             "process": "chevron", "callout": "solid", "table": "solid", "closing": "full",
+             "bullet": "•", "radius": 6}
+}

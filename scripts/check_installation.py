@@ -3,13 +3,14 @@
 
 import hashlib
 from pathlib import Path
+import json
 import subprocess
 import sys
 import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = {"bizplan", "bizplan-quick", "bizplan-item", "bizplan-problem",
+EXPECTED = {"bizplan", "bizplan-interview", "bizplan-quick", "bizplan-item", "bizplan-outline", "bizplan-problem",
             "bizplan-research", "bizplan-solution", "bizplan-growth", "bizplan-team",
             "bizplan-summary", "bizplan-visual", "bizplan-review", "bizplan-pitch",
             "bizplan-slides", "bizplan-export", "bizplan-analyze"}
@@ -42,7 +43,7 @@ def main():
             result = run(agent, destination)
             assert result.returncode != 0 and "Existing skills" in result.stderr
             assert snapshot(destination) == before, "Repeated install changed existing files"
-            print(f"PASS {agent}: 15 skills, exact resource copies, no overwrite on repeat")
+            print(f"PASS {agent}: {len(EXPECTED)} skills, exact resource copies, no overwrite on repeat")
 
         # Even a late-name collision must be caught before any earlier skills are copied.
         partial = Path(temporary) / "partial"
@@ -55,6 +56,34 @@ def main():
     result = run("codex", ROOT / "skills")
     assert result.returncode != 0 and "overlap" in result.stderr
     print("PASS source overlap guard")
+
+    themes = ROOT / "skills/bizplan-slides/assets/themes"
+    keys = {"name", "fonts", "colors", "chrome", "layout", "sizes", "styles"}
+    for path in sorted(themes.glob("*.json")):
+        if path.name.startswith("sample"):
+            continue
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert keys <= set(data), f"{path.name}: missing {keys - set(data)}"
+    print("PASS theme files")
+    with tempfile.TemporaryDirectory(prefix="bizplan-visuals-") as temporary:
+        script = ROOT / "skills/bizplan-visual/scripts/html_visuals.py"
+        sample = Path(temporary) / "sample.json"
+        for args in (["--sample", str(sample)], [str(sample), "--out", temporary, "--no-png"]):
+            result = subprocess.run([sys.executable, "-B", str(script), *args], capture_output=True, text=True)
+            assert result.returncode == 0, result.stdout + result.stderr
+        html = (Path(temporary) / "visuals.html").read_text(encoding="utf-8")
+        visuals = [v for v in json.loads(sample.read_text(encoding="utf-8"))["visuals"] if v.get("type") != "chapter"]
+        assert html.count('<section class="viz"') == len(visuals)
+    print("PASS HTML visual sample build")
+    try:
+        import pptx  # noqa: F401
+    except ImportError:
+        print("SKIP sample deck spec check (python-pptx not installed)")
+    else:
+        result = subprocess.run([sys.executable, "-B", str(ROOT / "skills/bizplan-slides/scripts/theme_deck.py"),
+                                 "--check", "--sample"], capture_output=True, text=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        print("PASS sample deck spec check")
     print("Static installation checks only; agent discovery and output quality are separate tests.")
 
 

@@ -1,11 +1,26 @@
 * text eol=lf
+# 바이너리: 줄바꿈 변환(CRLF→LF)을 막는다. 빠지면 커밋 순간 파일이 깨진다.
 *.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
 *.zip binary
-*.mp4 binary
-*.woff2 binary
+*.pdf binary
+*.ppt binary
+*.pptx binary
+*.potx binary
+*.doc binary
+*.docx binary
+*.dotx binary
+*.xls binary
+*.xlsx binary
 *.hwp binary
 *.hwpx binary
-*.webp binary
-*.gif binary
-*.jpg binary
+*.key binary
+*.mp4 binary
 *.wav binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
