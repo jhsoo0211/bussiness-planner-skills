@@ -68,12 +68,15 @@ def main():
     with tempfile.TemporaryDirectory(prefix="bizplan-visuals-") as temporary:
         script = ROOT / "skills/bizplan-visual/scripts/html_visuals.py"
         sample = Path(temporary) / "sample.json"
-        for args in (["--sample", str(sample)], [str(sample), "--out", temporary, "--no-png"]):
-            result = subprocess.run([sys.executable, "-B", str(script), *args], capture_output=True, text=True)
-            assert result.returncode == 0, result.stdout + result.stderr
-        html = (Path(temporary) / "visuals.html").read_text(encoding="utf-8")
-        visuals = [v for v in json.loads(sample.read_text(encoding="utf-8"))["visuals"] if v.get("type") != "chapter"]
-        assert html.count('<section class="viz"') == len(visuals)
+        visuals = None
+        for mode in ([], ["--print"], ["--slide"]):          # 화면·문서(인쇄)·발표 세 크기 모두 빌드되는지
+            out = Path(temporary) / (mode[0].lstrip("-") if mode else "screen")
+            for args in (["--sample", str(sample)], [str(sample), "--out", str(out), "--no-png", *mode]):
+                result = subprocess.run([sys.executable, "-B", str(script), *args], capture_output=True, text=True)
+                assert result.returncode == 0, result.stdout + result.stderr
+            html = (out / "visuals.html").read_text(encoding="utf-8")
+            visuals = visuals or [v for v in json.loads(sample.read_text(encoding="utf-8"))["visuals"] if v.get("type") != "chapter"]
+            assert html.count('<section class="viz"') == len(visuals), mode
     print("PASS HTML visual sample build")
     try:
         import pptx  # noqa: F401

@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 """누적한 사업계획서 .md를 한글(.hwpx, 선택 시 .hwp)로 만든다 — 제출 양식으로 옮기기 전 초안용.
 
-    python3 -B md_to_hwpx.py 사업계획서.md 사업계획서.hwpx [--hwp] [--no-gov-bullets] [--resource-path 그림폴더]
+    python3 -B md_to_hwpx.py 사업계획서.md 사업계획서.hwpx [--hwp] [--no-gov-bullets] [--resource-path 그림폴더] [--captions]
 서식: 제목(#·##·###)은 굵게 16/14/12pt, 불릿은 공문서 개조식(□ → ○ → - → ·, 기본 켬), 표는 테두리 + 머리행 음영·굵게,
-**굵게**는 굵은 글자로, 그림은 본문 폭(최대 160mm)으로 넣는다.
+**굵게**는 굵은 글자로, 그림은 본문 폭(최대 160mm, 높이 120mm까지)으로 넣는다(alt 캡션은 --captions일 때만).
 필요: python-hwpx(pip install python-hwpx, Apache-2.0). 저장 뒤 구조 검증(validate)과 다시 읽기 대조를 한다.
 한계: 이 환경에서는 한컴오피스 렌더를 확인할 수 없다 — 글꼴·줄간격·표 너비는 한글 프로그램에서 1회 열어 확인한다.
 공고 양식 파일의 칸을 채우는 작업(양식 채우기)은 하지 않는다 — 새 문서를 만든다.
@@ -27,7 +27,7 @@ def _cells(line):
     return [PLAIN(c.strip().replace("**", "")) for c in line.strip().strip("|").split("|")]
 
 
-def build(md, resource_path, gov=True):
+def build(md, resource_path, gov=True, captions=False):
     from hwpx import HwpxDocument
     doc = HwpxDocument.new()
     bold = doc.ensure_run_style(bold=True)
@@ -64,6 +64,7 @@ def build(md, resource_path, gov=True):
         from PIL import Image
         with Image.open(path) as im:
             w, h = im.size
+        width = min(width, 120.0 * w / h)          # 높이 120mm까지(docx와 같은 상한)
         with open(path, "rb") as f:
             doc.add_picture(f.read(), os.path.splitext(path)[1].lstrip(".").lower().replace("jpg", "jpeg"),
                             width_mm=width, height_mm=width * h / w)
@@ -129,7 +130,8 @@ def build(md, resource_path, gov=True):
         m = re.match(r"^!\[([^\]]*)\]\(([^)]+)\)", s)
         if m:
             picture(m.group(1), m.group(2))
-            if m.group(1) and os.path.exists(m.group(2) if os.path.isabs(m.group(2)) else os.path.join(resource_path, m.group(2))):
+            # 시각자료는 그림 안에 결론 제목이 있다 — alt 글을 그림 아래에 한 번 더 쓰지 않는다(--captions로 켠다)
+            if captions and m.group(1) and os.path.exists(m.group(2) if os.path.isabs(m.group(2)) else os.path.join(resource_path, m.group(2))):
                 para(m.group(1))
             i += 1
             continue
@@ -137,6 +139,8 @@ def build(md, resource_path, gov=True):
         if m:
             level = min(len(m.group(1)) // unit, len(GOV) - 1)
             prefix = ("　" * level + GOV[level] + " ") if gov else ("　" * level + "• ")
+            if re.match(r"^[□○◦·■●▪-] ", m.group(3)):   # 글이 이미 ○·□로 시작하면 기호를 겹쳐 붙이지 않는다
+                prefix = "　" * level
             para(m.group(3), prefix)
             i += 1
             continue
@@ -161,6 +165,7 @@ def main():
     ap.add_argument("--hwp", action="store_true", help=".hwp(한글 97 이후 바이너리)도 함께 저장")
     ap.add_argument("--no-gov-bullets", action="store_true")
     ap.add_argument("--resource-path")
+    ap.add_argument("--captions", action="store_true", help="그림 alt 글을 그림 아래 문단으로도 단다(기본: 달지 않음)")
     args = ap.parse_args()
     try:
         import hwpx  # noqa: F401
@@ -171,7 +176,7 @@ def main():
     with open(args.md, encoding="utf-8") as f:
         md = f.read()
     res = args.resource_path or os.path.dirname(os.path.abspath(args.md))
-    doc, stats, missing = build(md, res, gov=not args.no_gov_bullets)
+    doc, stats, missing = build(md, res, gov=not args.no_gov_bullets, captions=args.captions)
     doc.save_to_path(args.out)
     report = doc.validate()
     issues = getattr(report, "issues", [])
