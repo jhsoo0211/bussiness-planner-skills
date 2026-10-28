@@ -84,7 +84,7 @@ GPT-4o·Gemini·Nano Banana 등 범용 이미지 생성 AI로 만들 도식의 �
 
 ## 차트 제작 스크립트 (필수 사용)
 
-matplotlib 그래프는 매번 새로 코딩하지 말고 `scripts/chart_templates.py`의 템플릿 함수를 사용한다 — 스타일 일관성과 토큰 절약 모두를 위해서다. 제공 함수: `bar_compare`(경쟁 비교 막대), `growth_line`(시장 성장 추이 + CAGR — 주지 않으면 자동 계산, 주면 계산값과 대조해 경고), `tam_sam_som`(동심원 + 층위별 산정근거 `bases`), `positioning_map`(포지셔닝맵, `source`=좌표 근거), `gantt`(추진 일정표 — 상태 배지 완료/진행/예정, `milestones`). 모든 함수가 `source`(그림 안 출처 캡션)를 받고, 200dpi PNG로 저장한 경로를 반환한다.
+matplotlib 그래프는 매번 새로 코딩하지 말고 `scripts/chart_templates.py`의 템플릿 함수를 사용한다 — 스타일 일관성과 토큰 절약 모두를 위해서다. 제공 함수: `bar_compare`(경쟁 비교 막대), `growth_line`(시장 성장 추이 + CAGR — 주지 않으면 자동 계산, 주면 계산값과 대조해 경고), `tam_sam_som`(동심원 + 층위별 산정근거 `bases`), `positioning_map`(포지셔닝맵, `source`=좌표 근거), `gantt`(추진 일정표 — 상태 배지 완료/진행/예정, `milestones`), `funnel`(고객 확보 퍼널 — 단계 인원·구간 전환율·근거 라벨), `pnl_combo`(매출 막대 + 총비용·영업이익 선, ★ 흑자 전환). 모든 함수가 `source`(그림 안 출처 캡션)를 받고, 200dpi PNG로 저장한 경로를 반환한다.
 
 ```python
 import sys
@@ -98,4 +98,5 @@ gantt([("설계", 1, 1, "완료"), ("MVP", 2, 3, "진행"), ("베타", 4, 2, "�
 
 - 출력은 작업 폴더의 `시각자료/`에 둔다(공통 규칙 '파일 저장 규칙'). 만든 뒤 본문의 `[이미지: …]` 자리를 `![캡션](시각자료/파일.png)`로 바꾼다.
 - 한글 폰트가 없으면 스크립트가 캐시를 한 번 다시 읽고 범용 CJK 폰트까지 찾는다. 그래도 없으면 `apt-get install -y fonts-nanum` 후 다시 실행한다.
-- 템플릿에 없는 도식이 필요할 때만 새 코드를 작성하되, 팔레트·폰트 규칙은 스크립트의 PALETTE와 setup_korean_font를 재사용한다(예시 코드는 `references/visual-howto.md`).
+- 차트 제목에는 결론 수치를 쓰고(예: "유료 전환 2곳 — 모집단 500곳에서"), 출처·시점·표본은 `source`에 쓴다(섹션 설계도 3-3).
+- 템플릿에 없는 도식이 필요하면 [도구 지도](../bizplan/references/tool-map.md)의 '차트' 행을 본 뒤, 새 코드를 작성하되 팔레트·폰트 규칙은 스크립트의 PALETTE와 setup_korean_font를 재사용한다(예시 코드는 `references/visual-howto.md`).

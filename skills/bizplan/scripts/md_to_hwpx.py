@@ -18,17 +18,20 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 GOV = ["□", "○", "-", "·"]
-INLINE = re.compile(r"(\*\*[^*]+\*\*)")
+INLINE = re.compile(r"(\*\*[^*]+\*\*|\[[^\]]+\]\{\.underline\}|<u>[^<]+</u>)")
+IMG = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
+PLAIN = lambda t: re.sub(r"<u>([^<]+)</u>", r"\1", re.sub(r"\[([^\]]+)\]\{\.underline\}", r"\1", t))
 
 
 def _cells(line):
-    return [c.strip().replace("**", "") for c in line.strip().strip("|").split("|")]
+    return [PLAIN(c.strip().replace("**", "")) for c in line.strip().strip("|").split("|")]
 
 
 def build(md, resource_path, gov=True):
     from hwpx import HwpxDocument
     doc = HwpxDocument.new()
     bold = doc.ensure_run_style(bold=True)
+    uline = doc.ensure_run_style(underline=True)
     heads = {1: doc.ensure_run_style(bold=True, size=16), 2: doc.ensure_run_style(bold=True, size=14),
              3: doc.ensure_run_style(bold=True, size=12)}
     lines = md.splitlines()
@@ -46,9 +49,25 @@ def build(md, resource_path, gov=True):
                 continue
             if part.startswith("**") and part.endswith("**"):
                 p.add_run(part[2:-2], char_pr_id_ref=bold)
+            elif part.endswith("{.underline}") or part.startswith("<u>"):
+                p.add_run(PLAIN(part), char_pr_id_ref=uline)
             else:
                 p.add_run(part)
         stats["para"] += 1
+
+    def picture(alt, src, width=160.0):
+        path = src if os.path.isabs(src) else os.path.join(resource_path, src)
+        if not os.path.exists(path):
+            missing.append(src)
+            para(f"[그림: {alt}]")
+            return
+        from PIL import Image
+        with Image.open(path) as im:
+            w, h = im.size
+        with open(path, "rb") as f:
+            doc.add_picture(f.read(), os.path.splitext(path)[1].lstrip(".").lower().replace("jpg", "jpeg"),
+                            width_mm=width, height_mm=width * h / w)
+        stats["picture"] += 1
 
     i = 0
     while i < len(lines):
@@ -78,6 +97,21 @@ def build(md, resource_path, gov=True):
             while i < len(lines) and lines[i].strip().startswith("|"):
                 rows.append(_cells(lines[i]))
                 i += 1
+            grid = [header] + rows
+            if any(IMG.search(c) for row in grid for c in row):
+                # 사진 격자 표: 한글 표 칸에 그림을 넣지 않고 그림 + '▲ 캡션'을 차례로 놓는다
+                for r, row in enumerate(grid):
+                    for c, cell in enumerate(row):
+                        m = IMG.search(cell)
+                        if not m:
+                            continue
+                        nxt = grid[r + 1][c] if r + 1 < len(grid) and c < len(grid[r + 1]) else ""
+                        cap = nxt if nxt and not IMG.search(nxt) else (m.group(1) or "")
+                        picture(m.group(1), m.group(2), width=80.0)
+                        if cap:
+                            para(f"▲ {cap}")
+                stats["table"] += 1
+                continue
             t = doc.add_table(1 + len(rows), len(header))
             for c, h in enumerate(header):
                 t.set_cell_text(0, c, h)
@@ -94,21 +128,9 @@ def build(md, resource_path, gov=True):
             continue
         m = re.match(r"^!\[([^\]]*)\]\(([^)]+)\)", s)
         if m:
-            path = m.group(2) if os.path.isabs(m.group(2)) else os.path.join(resource_path, m.group(2))
-            if os.path.exists(path):
-                from PIL import Image
-                with Image.open(path) as im:
-                    w, h = im.size
-                width = 160.0
-                with open(path, "rb") as f:
-                    doc.add_picture(f.read(), os.path.splitext(path)[1].lstrip(".").lower().replace("jpg", "jpeg"),
-                                    width_mm=width, height_mm=width * h / w)
-                stats["picture"] += 1
-                if m.group(1):
-                    para(m.group(1))
-            else:
-                missing.append(m.group(2))
-                para(f"[그림: {m.group(1)}]")
+            picture(m.group(1), m.group(2))
+            if m.group(1) and os.path.exists(m.group(2) if os.path.isabs(m.group(2)) else os.path.join(resource_path, m.group(2))):
+                para(m.group(1))
             i += 1
             continue
         m = re.match(r"^( *)([-*+])\s+(.*)$", line)

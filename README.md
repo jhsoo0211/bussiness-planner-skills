@@ -127,8 +127,9 @@ python scripts/check_installation.py
 | `bizplan/scripts/check_tables.py` | 합계·비율 100%·곱셈식 검산, `=SUM` 수식 검산표 .xlsx | openpyxl(.xlsx) |
 | `bizplan/scripts/md_to_docx.py` | .md → A4·맑은 고딕·표 테두리 .docx (`--gov-bullets`로 □○-·) | python-docx, pandoc(선택) |
 | `bizplan/scripts/md_to_hwpx.py` | .md → 한글 .hwpx/.hwp (개조식·표·그림) + 구조 검증 | python-hwpx |
-| `bizplan/scripts/guide_draft.py` | 사업계획서 목차 순서대로 '작성 가이드'(별도 산출물) 골격 — PSST 작성법 항목 판정·적어야 할 것·미확보 표기·검토 점수 영향·넣어 줄 자산 | — |
-| `bizplan-visual/scripts/chart_templates.py` | 시장 추이·비교·TAM/SAM/SOM·포지셔닝맵·간트 차트(200dpi, 출처 캡션) | matplotlib, 한글 폰트 |
+| `bizplan/scripts/guide_draft.py` | 사업계획서 목차 순서대로 '작성 가이드'(별도 산출물) 골격 — 작성법·섹션 설계도 항목 판정, 주장형 헤드라인·시각자료 수, 숫자 등록부(`--brief`), 미확보 표기·검토 점수 영향·넣어 줄 자산 | — |
+| `bizplan/scripts/find_tools.py` | 이 환경에 설치된 스킬을 읽어 도구 지도(`tool-map.md`)의 작업별로 지금 쓸 수 있는 스킬과 대안을 보여 준다 | — |
+| `bizplan-visual/scripts/chart_templates.py` | 시장 추이·비교·TAM/SAM/SOM·포지셔닝맵·간트·고객 확보 퍼널·손익 콤보 차트(200dpi, 출처 캡션) | matplotlib, 한글 폰트 |
 | `bizplan-slides/scripts/pptx_inspect.py` | 발표 템플릿의 레이아웃·자리표시자·샘플 슬라이드·테마 분석 | python-pptx |
 | `bizplan-slides/scripts/pptx_build.py` | 템플릿 디자인을 유지한 채 스펙(JSON)대로 PPTX 생성 | python-pptx, Pillow |
 | `bizplan-slides/scripts/export_pdf.py` | PPTX/DOCX → PDF(LibreOffice), HTML 슬라이드 → PDF(Playwright) | LibreOffice / Node+Playwright |
@@ -138,6 +139,16 @@ python scripts/check_installation.py
 | `bizplan-slides/scripts/theme_deck.py` | 내용 스펙(JSON) → 테마 디자인의 편집 가능한 PPTX(패턴 23종·네이티브 차트), 스펙 검사·누락 대조 | python-pptx, Pillow |
 | `bizplan-slides/scripts/deck_check.py` | 발표 PPTX의 수치·날짜(차트 값 포함)를 원문과 대조, 미확보 표기·작은 글자 집계 | python-pptx |
 | `bizplan-slides/scripts/theme_from_pdf.py` | 그림 템플릿(PDF·PNG)에서 쪽 이미지·모아보기·색 후보·시작용 테마 JSON 추출 | pdftoppm, Pillow |
+
+## 섹션 설계도 · 조사노트 · 도구 지도
+
+- **[섹션 설계도](skills/bizplan/references/section-blueprints.md)**: 사업계획서를 블록 14개(한 줄 소개·개요·배경·문제·시장·준비 정도·구체화·차별·사업비·BM·진입·매출·투자·고용·로드맵·팀)로 쓰는 기준이다.
+  - 블록 문법: 소제목은 `○ [태그] 결론 문장` → 증명하는 시각자료 → 근거 2~4줄 → 출처·별첨.
+  - 숫자 등록부: 핵심 숫자 6~10개를 브리프에 먼저 적고, 본문·개요·그림·발표가 같은 값을 쓴다.
+  - 근거 수준 라벨(확인·산출·관찰·가정), 보수 추정(의향·전환율은 조사값의 절반), 검산 상자.
+  - 양식 매핑: 같은 블록을 예비창업패키지(최근형·세분형)·U300+·온라인 문항형(모두의 창업 등) 목차에 배치한다. 문체도 양식별로 자동이다(문서형은 헤드라인 + 개조식, 문항형은 ◆ 소제목 + 짧은 서술).
+- **조사노트** `조사노트.md`(`bizplan-research`): 하위 질문 → 출처 표(근거 수준·판정·확인 경로) → 1차 고객 수 깔때기 → 인터뷰 종합 → 경쟁 비교·요약 카드 → 숫자 등록부 후보 → 블록별 문장 초안 → 빈칸 계획.
+- **[도구 지도](skills/bizplan/references/tool-map.md)**: 웹 조사·인터뷰 종합·데이터 검증·차트·재무 표·규제 확인·문서 편집 같은 작업마다 '환경에 있으면 부를 스킬 / 넘길 것 / 받을 것 / 없으면 내장 절차'를 한 표에 둔다. 모든 스킬이 이 한 곳만 본다. `find_tools.py`로 지금 쓸 수 있는 것을 확인한다.
 
 ## 초안과 함께 받는 코칭
 

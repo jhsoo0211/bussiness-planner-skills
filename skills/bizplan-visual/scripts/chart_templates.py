@@ -3,7 +3,7 @@
 
 사용법: 스킬 폴더에 캐시를 만들지 않도록 경로만 추가해 import 한다(python3 -B 권장).
     import sys; sys.path.insert(0, "<설치 위치>/bizplan-visual/scripts")
-    from chart_templates import set_target, use_palette, bar_compare, growth_line, tam_sam_som, positioning_map, gantt
+    from chart_templates import set_target, use_palette, bar_compare, growth_line, tam_sam_som, positioning_map, gantt, funnel, pnl_combo
 각 함수는 데이터만 바꿔 호출하며 저장된 파일 경로를 반환한다. 출력 파일은 작업 폴더에 둔다.
 공통 규칙: 심사용 도표는 장식보다 가독성 — 큰 글씨, 값 라벨 직접 표기, 출처는 그림 안 캡션에.
 """
@@ -252,8 +252,86 @@ def gantt(tasks, out="gantt.png", title="사업 추진 일정", xlabel="개월�
     return _save(fig, out)
 
 
+_LEVEL_COLOR = {"확인": "#10b981", "산출": "#2563eb", "관찰": "#8b5cf6", "가정": "#ef4444"}
+
+
+def funnel(stages, title, out="funnel.png", source=None):
+    """고객 확보 퍼널. stages=[(단계명, 인원·곳 수, 근거 수준), ...] — 근거 수준은 확인·산출·관찰·가정(생략 가능).
+
+    단계 사이에 구간 전환율을 적고, 근거 수준 라벨을 오른쪽에 색으로 붙인다(가정은 빨강).
+    제목에는 결론 수치를 넣는다(예: "유료 전환 2곳 — 모집단 500곳에서").
+    """
+    setup_korean_font()
+    n = len(stages)
+    fig, ax = plt.subplots(figsize=(7, 0.75 * n + 1.4))
+    top = max(c for _, c, *_ in stages) or 1
+    for i, st in enumerate(stages):
+        name, count = st[0], st[1]
+        level = st[2] if len(st) > 2 else None
+        w = max((count / top) ** 0.5, 0.34)     # 면적감은 유지하되 작은 단계도 글자가 들어가게
+        y = n - 1 - i
+        ax.barh(y, w, left=(1 - w) / 2, height=0.62, color=PALETTE[0] if i == n - 1 else "#93c5fd")
+        ax.text(0.5, y, f"{name}  {_fmt_val(count)}", ha="center", va="center", fontsize=_fs(11),
+                fontweight="bold", color="white" if i == n - 1 else "#0f172a")
+        if level:
+            ax.text(1.02, y, level, ha="left", va="center", fontsize=_fs(9), fontweight="bold",
+                    color=_LEVEL_COLOR.get(level, "#64748b"))
+        if i:
+            prev = stages[i - 1][1]
+            rate = f"{count / prev * 100:.0f}%" if prev else "—"
+            ax.text(0.5, y + 0.5, f"↓ {rate}", ha="center", va="center", fontsize=_fs(9), color="#475569")
+    ax.set_xlim(0, 1.12)
+    ax.set_ylim(-0.6, n - 0.4)
+    ax.axis("off")
+    ax.set_title(title, fontsize=_fs(14), fontweight="bold", pad=10)
+    _source(fig, source)
+    return _save(fig, out)
+
+
+def pnl_combo(periods, revenue, cost, title, unit="백만 원", profit=None, out="pnl.png", source=None):
+    """매출(막대) · 총비용 · 영업이익(선) 콤보 차트. 영업이익이 처음 0 이상이 되는 기간에 ★(흑자 전환)을 단다.
+
+    profit을 주지 않으면 매출 − 총비용으로 계산한다. 주면 계산값과 대조해 다르면 경고한다.
+    """
+    setup_korean_font()
+    calc = [r - c for r, c in zip(revenue, cost)]
+    if profit is None:
+        profit = calc
+    elif any(abs(p - q) > 0.5 for p, q in zip(profit, calc)):
+        print("[경고] 영업이익이 매출 − 총비용과 다릅니다 — 표를 검산하세요")
+    x = list(range(len(periods)))
+    fig, ax = plt.subplots(figsize=(7.4, 4.4))
+    bars = ax.bar(x, revenue, width=0.55, color=PALETTE[0], label="매출")
+    for b, v in zip(bars, revenue):
+        ax.text(b.get_x() + b.get_width() / 2, v, _fmt_val(v), ha="center", va="bottom",
+                fontsize=_fs(10), fontweight="bold")
+    ax.plot(x, cost, marker="o", lw=2, color="#94a3b8", label="총비용")
+    ax.plot(x, profit, marker="o", lw=2.4, color=PALETTE[3], label="영업이익")
+    for xi, v in zip(x, profit):
+        ax.annotate(_fmt_val(v), (xi, v), textcoords="offset points", xytext=(16, 0), ha="left", va="center",
+                    fontsize=_fs(9), fontweight="bold", color=PALETTE[3],
+                    bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.9))
+    ax.axhline(0, color="#475569", lw=0.8)
+    lo = min(0, min(profit), min(cost))
+    hi = max(max(revenue), max(cost))
+    ax.set_ylim(lo - (hi - lo) * 0.12 if lo < 0 else 0, hi * 1.15)
+    be = next((i for i, v in enumerate(profit) if v >= 0), None)
+    if be is not None and be > 0:
+        ax.annotate("★ 흑자 전환", (be, profit[be]), textcoords="offset points", xytext=(0, 16),
+                    ha="center", fontsize=_fs(10), fontweight="bold", color=PALETTE[3])
+    ax.set_xticks(x)
+    ax.set_xticklabels([str(p) for p in periods])
+    ax.set_ylabel(unit, fontsize=_fs(10))
+    ax.tick_params(labelsize=_fs(10))
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(frameon=False, fontsize=_fs(9), loc="upper left")
+    ax.set_title(title, fontsize=_fs(14), fontweight="bold", pad=12)
+    _source(fig, source)
+    return _save(fig, out)
+
+
 if __name__ == "__main__":
-    # 자체 테스트: 5종 전부 샘플 생성 (임시 폴더)
+    # 자체 테스트: 7종 전부 샘플 생성 (임시 폴더)
     tmp = tempfile.mkdtemp(prefix="bizplan-charts-")
     p = lambda n: os.path.join(tmp, n)
     print("font:", setup_korean_font())
@@ -271,3 +349,8 @@ if __name__ == "__main__":
     print(gantt([("설계", 1, 1, "완료"), ("MVP 개발", 1, 3, "진행"), ("베타 테스트", 3, 2, "예정"),
                  ("정식 출시", 5, 1, "예정"), ("성과 검증", 5, 2, "예정")],
                 milestones=[("M1", 2), ("M2", 4), ("M3", 6)], out=p("t_gantt.png")))
+    print(funnel([("모집단", 500, "확인"), ("접촉", 50, "관찰"), ("설명", 18, "관찰"),
+                  ("사전 신청", 7, "관찰"), ("유료", 2, "가정")],
+                 "유료 전환 2곳 — 모집단 500곳에서", out=p("t_funnel.png"), source="OO통계(2026) · 자체 접촉 기록"))
+    print(pnl_combo(["1년 차", "2년 차", "3년 차"], [40, 150, 300], [160, 210, 240],
+                    "3년 차 영업이익 60백만 원 · 3년 차 흑자 전환", out=p("t_pnl.png"), source="자체 추정(산정 기준은 본문 표)"))

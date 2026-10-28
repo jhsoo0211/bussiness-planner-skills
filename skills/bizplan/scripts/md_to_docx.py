@@ -119,6 +119,23 @@ def _widths(tbl, total_mm=170):
                 row.cells[c].width = w
 
 
+def _image_grid(tbl, total_mm=170, max_h=Mm(60)):
+    """그림이 든 표(증빙 사진 격자)는 칸 너비를 같게 하고, 그림을 칸 안(높이 60mm 이하)에 맞춘다."""
+    from docx.shape import InlineShape
+    ncols = len(tbl.columns) or 1
+    col = Mm(total_mm / ncols)
+    tbl.autofit = False
+    for row in tbl.rows:
+        for cell in row.cells:
+            cell.width = col
+    for inline in tbl._tbl.xpath(".//wp:inline"):
+        shape = InlineShape(inline)
+        for limit, side in ((col - Mm(4), "width"), (max_h, "height")):
+            if getattr(shape, side) > limit:
+                ratio = limit / getattr(shape, side)
+                shape.width, shape.height = int(shape.width * ratio), int(shape.height * ratio)
+
+
 def _shade(p, fill="FFF8E6", bar="F59E0B"):
     """인용 문단에 옅은 바탕과 왼쪽 막대를 넣는다(작성 가이드의 '이렇게 써 보세요' 예문이 설명과 구분되게)."""
     pPr = p._p.get_or_add_pPr()
@@ -162,7 +179,10 @@ def postprocess(path, font):
                     j += 1
     for tbl in doc.tables:
         _borders(tbl)
-        _widths(tbl)
+        if tbl._tbl.xpath(".//w:drawing"):
+            _image_grid(tbl)                  # 사진 격자: 같은 너비 칸, 그림은 칸에 맞춘다
+        else:
+            _widths(tbl)
         if tbl.rows:
             for cell in tbl.rows[0].cells:
                 for p in cell.paragraphs:
@@ -170,6 +190,8 @@ def postprocess(path, font):
                         r.bold = True
     # 그림이 본문 폭(170mm)을 넘지 않게, 정사각형 도식이 한 쪽을 다 차지하지 않게 높이는 120mm까지
     for shape in doc.inline_shapes:
+        if shape._inline.xpath("ancestor::w:tc"):
+            continue                          # 표 안 그림은 _image_grid가 맞춘다
         for limit, side in ((Mm(170), "width"), (Mm(120), "height")):
             if getattr(shape, side) > limit:
                 ratio = limit / getattr(shape, side)
@@ -196,7 +218,7 @@ def via_pandoc(md_text, out, font, resource_path):
         reference_docx(ref, font)
         src = os.path.join(tmp, "in.md")
         with open(src, "w", encoding="utf-8") as f:
-            f.write(md_text)
+            f.write(re.sub(r"<u>([^<]+)</u>", r"[\1]{.underline}", md_text))   # pandoc은 <u>를 docx에서 버린다
         cmd = ["pandoc", src, "-f", "markdown", "--reference-doc", ref, "-o", out,
                f"--resource-path={resource_path}"]
         r = subprocess.run(cmd, capture_output=True, text=True)
@@ -207,7 +229,7 @@ def via_pandoc(md_text, out, font, resource_path):
 
 # ---------------------------------------------------------------- python-docx 경로
 
-INLINE = re.compile(r"(\*\*[^*]+\*\*|`[^`]+`)")
+INLINE = re.compile(r"(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\{\.underline\}|<u>[^<]+</u>)")
 
 
 def _runs(par, text):
@@ -219,12 +241,17 @@ def _runs(par, text):
         elif part.startswith("`") and part.endswith("`"):
             r = par.add_run(part[1:-1])
             r.font.name = "Consolas"
+        elif part.endswith("{.underline}"):
+            par.add_run(part[1:part.index("]{")]).underline = True
+        elif part.startswith("<u>"):
+            par.add_run(part[3:-4]).underline = True
         else:
             par.add_run(part)
 
 
 def _cells(line):
-    return [c.strip() for c in line.strip().strip("|").split("|")]
+    # 표 칸의 그림 표기는 python-docx 경로에서 '[그림: 설명]'으로 남긴다(pandoc 경로는 실제 그림을 넣는다)
+    return [re.sub(r"!\[([^\]]*)\]\([^)]+\)", r"[그림: \1]", c.strip()) for c in line.strip().strip("|").split("|")]
 
 
 def via_python(md_text, out, resource_path):

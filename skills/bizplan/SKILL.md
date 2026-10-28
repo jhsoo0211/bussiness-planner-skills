@@ -92,6 +92,10 @@ description: 정부지원사업 사업계획서 작성을 처음부터 끝까지
 
 `bizplan-interview` → `bizplan-item` → `bizplan-outline` → `bizplan-problem` → `bizplan-research` → `bizplan-solution` → `bizplan-growth` → `bizplan-team` → `bizplan-summary` → (시각자료 필요 시) `bizplan-visual` → `bizplan-review` → (발표 심사 시) `bizplan-pitch` → (발표자료 파일 필요 시) `bizplan-slides`
 
+- 모든 작성 모드는 [섹션 설계도](references/section-blueprints.md)의 블록 문법(헤드라인 → 시각자료 → 근거)과 브리프의 숫자 등록부를 따른다. 양식이 있으면 설계도 4절 매핑으로 목차에 배치한다.
+- 조사는 `조사노트.md`(출처 표·숫자 등록부 후보·블록별 문장)로 남기고, 본문은 노트에서 옮겨 쓴다.
+- 다른 스킬·도구(웹 조사·데이터 검증·차트·문서 편집·규제 확인)는 [도구 지도](references/tool-map.md) 한 곳을 보고 쓴다.
+
 ### 분량·우선순위 가이드 (분량 제한이 있을 때)
 
 사업계획서는 분량 제한이 있다(예: 2026 예비창업패키지 목차 제외 10쪽 이내, 창업도약패키지 20쪽 내외 — 사업별 값은 `bizplan-review/references/rubrics.md`, 최종은 공고). "뭘 우선 부각하고 뭘 줄일지" 모르는 사용자에게는 아래 원칙을 먼저 안내한다.

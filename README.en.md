@@ -113,6 +113,16 @@ Each section skill and `bizplan-quick` must **read the original references linke
 
 Evaluation must separately record **evidence that a reference was read** and **evidence that the draft applies its guidance**. Adding required-reference links is not completed validation. The earlier U300 run was one Codex drafting case that automatically selected the quick path; it was not a Claude performance comparison. See the [synthetic cases and results](evals/author-insights/README.md) for the limited explicit-invocation checks after this change. Full-workflow, Claude, and original-document page validation remain separate. See the [evaluation procedure and evidence boundary](evals/README.md).
 
+## Section blueprints, research notes, and the tool map
+
+- `skills/bizplan/references/section-blueprints.md` defines fourteen writing blocks (one-line pitch, overview, background, problem, market, readiness, solution, differentiation, budget, business model, go-to-market, revenue/investment/hiring, roadmap, team).
+  - Block grammar: a claim headline (`○ [tag] conclusion`), a visual that proves it, two to four evidence lines, then sources and attachments.
+  - A number register in the brief holds the six to ten key figures; the plan, overview, charts, and slides reuse the same values.
+  - Evidence labels (confirmed, derived, observed, assumed), conservative estimates (half of surveyed intent or conversion), and a check box under totals.
+  - Form mapping places the same blocks into the current and older pre-startup package forms, the U300+ student form, and online question-style applications. Writing style follows the form type.
+- `bizplan-research` now produces `조사노트.md`: sub-questions, a source table with evidence level, verdict, and verification path, a first-customer funnel, interview synthesis, competitor comparison and cards, number-register candidates, draft sentences per block, and gaps with acquisition plans.
+- `skills/bizplan/references/tool-map.md` is the single table for using other skills in the environment (web research, interview synthesis, data validation, charts, financial tables, regulatory checks, document editing): what to pass, what to receive, and the built-in fallback. `find_tools.py` lists which mapped skills are installed.
+
 ## A typical workflow
 
 1. Provide your idea and, when available, the official announcement, application form, and scoring rubric.
@@ -184,7 +194,7 @@ Each draft comes with coaching, defined in `skills/bizplan/references/coaching.m
 - **Writing guide** (`작성가이드.md`): a separate deliverable, read alongside the plan. It follows the plan's table of contents and says, for each part, what to consider and what must be written.
   - Each part covers the current state (method checklist ✓/△/✗), points to consider, a must-write checklist, fill-in sentences to use once the facts are confirmed, talking points for the pitch, how to secure the evidence, and assets to send (interview notes, quotes, LOIs).
   - A summary at the top lists the three actions that raise the score most and the materials to collect; a pre-submission checklist closes it.
-  - `guide_draft.py` builds the skeleton. Nothing is inserted into the plan itself; the submission copy remains `사업계획서.md`.
+  - `guide_draft.py` builds the skeleton and also counts claim headlines, visuals, and (with `--brief`) number-register rows. Nothing is inserted into the plan itself; the submission copy remains `사업계획서.md`.
 
 ## Information types and deck blueprints
 
