@@ -12,3 +12,8 @@ skills/bizplan-slides/assets/themes/local/
 
 # 사업계획서 원문·합격 사례 등 재배포 불가 자료(패턴만 references에 반영)
 자료/
+
+# 모션그래픽 렌더 프레임
+docs/motion-graphic/20s/frames/
+docs/motion-graphic/reel/frames/
+docs/motion-graphic/reel/*.wav

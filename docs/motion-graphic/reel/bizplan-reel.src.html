@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bizplan reel</title>
+<style>
+/*@FONTS@*/
+html,body{margin:0;height:100%;background:#16161A;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center}
+canvas{display:block;width:1920px;height:1080px;flex:none;transform-origin:center}
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+(() => {
+'use strict';
+// ───────────────────────── constants ─────────────────────────
+const W = 1920, H = 1080, BPM = 120, BEAT = 60 / BPM, DUR = 50, BEATS = DUR / BEAT;
+const COL = { paper: '#EDE6D5', note: '#F6F1E6', blue: '#1B3ED2', cyan: '#45F0DD', graphite: '#16161A', white: '#FFFFFF', margin: '#D2553F' };
+// three inks: grid paper (pencil) → blueprint → lined notebook (pencil)
+const INKS = {
+  paper: { bg: COL.paper, grid: COL.blue, main: COL.graphite, accent: COL.blue },
+  blue:  { bg: COL.blue,  grid: COL.white, main: COL.white,   accent: COL.cyan },
+  note:  { bg: COL.note,  grid: COL.blue, main: COL.graphite, accent: COL.blue },
+};
+const SANS = 'Geist, BP, sans-serif';
+const MONO = "'Geist Mono', BP, monospace";
+// section starts (s). Every move starts 0.05 s before its beat.
+const SEC = { draft: 0, problem: 2, outline: 5, psst: 10, match: 13, market: 16.5, review: 19.5, pitch: 23,
+  export: 26, chat: 29.5, term: 36, skills: 41, link: 43.5, end: 48 };
+const SECTIONS = Object.entries(SEC).map(([k, v]) => [v, k.toUpperCase()]);
+
+let INK = 'paper', T = 0, G = null;
+const PEN = () => INK !== 'blue';
+
+// ───────────────────────── easing ─────────────────────────
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const mix = (a, b, k) => a + (b - a) * k;
+const SP = (t, t0, w = 22) => { const x = t - t0; return x <= 0 ? 0 : 1 - (1 + w * x) * Math.exp(-w * x); };
+const XI = (t, t0, d) => { const p = clamp((t - t0) / d); return p <= 0 ? 0 : Math.pow(2, 10 * p - 10); };
+const XO = (t, t0, d) => { const p = clamp((t - t0) / d); return p >= 1 ? 1 : 1 - Math.pow(2, -10 * p); };
+const XIO = (t, t0, d) => {
+  const p = clamp((t - t0) / d);
+  if (p <= 0) return 0; if (p >= 1) return 1;
+  return p < .5 ? Math.pow(2, 20 * p - 10) / 2 : (2 - Math.pow(2, -20 * p + 10)) / 2;
+};
+const hash = i => { const s = Math.sin(i * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+const typedN = (len, t, t0, d, t1, d1 = .18) => {
+  const kin = d <= 0 ? (t >= t0 ? 1 : 0) : clamp((t - t0) / d);
+  const kout = t1 === undefined ? 0 : (d1 <= 0 ? (t >= t1 ? 1 : 0) : clamp((t - t1) / d1));
+  return Math.max(0, Math.round(len * (kin - kout)));
+};
+const len = s => Array.from(s).length;
+
+// ───────────────────────── geometry ─────────────────────────
+function cumLen(src) { const c = [0]; for (let i = 1; i < src.length; i++) c.push(c[i - 1] + Math.hypot(src[i][0] - src[i - 1][0], src[i][1] - src[i - 1][1])); return c; }
+function resample(pts, closed, step) {
+  const src = closed ? pts.concat([pts[0]]) : pts;
+  const out = [src[0].slice()]; let carry = 0;
+  for (let i = 1; i < src.length; i++) {
+    const a = src[i - 1], b = src[i], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+    if (L === 0) continue;
+    let d = step - carry;
+    while (d <= L) { out.push([a[0] + dx * d / L, a[1] + dy * d / L]); d += step; }
+    carry = L - (d - step);
+  }
+  out.push(src[src.length - 1].slice());
+  return out;
+}
+function resampleN(pts, closed, N) {
+  const src = closed ? pts.concat([pts[0]]) : pts, cum = cumLen(src), tot = cum[cum.length - 1] || 1;
+  const out = []; let j = 1; const M = closed ? N : N - 1;
+  for (let k = 0; k < N; k++) {
+    const s = k * tot / M;
+    while (j < cum.length - 1 && cum[j] < s) j++;
+    const s0 = cum[j - 1], s1 = cum[j], u = s1 > s0 ? (s - s0) / (s1 - s0) : 0, a = src[j - 1], b = src[j];
+    out.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]);
+  }
+  return out;
+}
+function partial(P, k) {
+  const cum = cumLen(P), target = cum[cum.length - 1] * k, out = [P[0]];
+  for (let i = 1; i < P.length; i++) {
+    if (cum[i] <= target) { out.push(P[i]); continue; }
+    const u = (target - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1);
+    out.push([mix(P[i - 1][0], P[i][0], u), mix(P[i - 1][1], P[i][1], u)]); break;
+  }
+  return out;
+}
+const lerpPts = (A, B, k) => A.map((p, i) => [mix(p[0], B[i][0], k), mix(p[1], B[i][1], k)]);
+const morph = (A, B, k, N = 180) => k <= 0 ? A : k >= 1 ? B : lerpPts(resampleN(A, true, N), resampleN(B, true, N), k);
+function rectPts(x, y, w, h, r = 0) {
+  r = Math.min(r, w / 2, h / 2);
+  if (r <= 0) return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  const P = [], arc = (cx, cy, a0) => { for (let i = 0; i <= 6; i++) { const a = a0 + i * Math.PI / 12; P.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } };
+  P.push([x + r, y], [x + w - r, y]); arc(x + w - r, y + r, -Math.PI / 2);
+  P.push([x + w, y + h - r]); arc(x + w - r, y + h - r, 0);
+  P.push([x + r, y + h]); arc(x + r, y + h - r, Math.PI / 2);
+  P.push([x, y + r]); arc(x + r, y + r, Math.PI);
+  return P;
+}
+function circlePts(cx, cy, r, n = 120, a0 = -3 * Math.PI / 4) { const P = []; for (let i = 0; i < n; i++) { const a = a0 + i * 2 * Math.PI / n; P.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } return P; }
+const lineLoop = (x0, y0, x1, y1) => [[x0, y0], [x1, y1]];
+const card = (x, y, w, h, f = 52) => [[x, y], [x + w - f, y], [x + w, y + f], [x + w, y + h], [x, y + h]];
+const shift = (P, dx, dy) => P.map(p => [p[0] + dx, p[1] + dy]);
+const scaleAt = (P, cx, cy, s) => P.map(p => [cx + (p[0] - cx) * s, cy + (p[1] - cy) * s]);
+const rotAt = (P, cx, cy, a) => { const c = Math.cos(a), s = Math.sin(a); return P.map(p => [cx + (p[0] - cx) * c - (p[1] - cy) * s, cy + (p[0] - cx) * s + (p[1] - cy) * c]); };
+const bbox = P => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const p of P) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); } return [x0, y0, x1, y1]; };
+
+// ───────────────────────── ink primitives ─────────────────────────
+function colorOf(c) { const ink = INKS[INK]; return c === 'accent' ? ink.accent : c === 'main' || !c ? ink.main : c; }
+function strokePts(P, closed, w, color, alpha, dash) {
+  G.save(); G.globalAlpha = alpha; G.strokeStyle = color; G.lineWidth = w; G.lineCap = 'round'; G.lineJoin = 'round';
+  if (dash) G.setLineDash(dash);
+  G.beginPath(); P.forEach((p, i) => i ? G.lineTo(p[0], p[1]) : G.moveTo(p[0], p[1])); if (closed) G.closePath(); G.stroke(); G.restore();
+}
+function wobble(P, amp, ph) {
+  const out = []; let s = 0;
+  for (let i = 0; i < P.length; i++) {
+    const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)];
+    const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+    if (i > 0) s += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
+    const d = amp * (Math.sin(s * .017 + ph) + .55 * Math.sin(s * .047 + ph * 1.9 + 1.3));
+    out.push([P[i][0] - dy / l * d, P[i][1] + dx / l * d]);
+  }
+  return out;
+}
+// a line in the current ink: pencil (paper, note) or clean white line (blueprint)
+function ln(pts, o = {}) {
+  let P = resample(pts, !!o.closed, 7);
+  if (o.prog !== undefined) { if (o.prog <= 0.001) return; if (o.prog < 1) P = partial(P, o.prog); }
+  const col = colorOf(o.c), w = o.w ?? 3, a = o.alpha ?? 1;
+  if (PEN()) {
+    const q = Math.floor(T * 8), sd = (o.seed ?? 1) * 7.31, wb = o.wob ?? 1, dash = o.dash ? [w * 4, w * 3.5] : null;
+    strokePts(wobble(P, 1.3 * wb, q * 1.7 + sd), false, w, col, .9 * a, dash);
+    strokePts(wobble(P, 2.6 * wb, q * 2.9 + sd + 4), false, w * .5, col, .4 * a, dash);
+  } else {
+    strokePts(P, false, o.dash ? Math.max(1.6, w * .6) : w, col, a, o.dash ? [14, 10] : null);
+  }
+}
+function pathOf(P) { G.beginPath(); P.forEach((p, i) => i ? G.lineTo(p[0], p[1]) : G.moveTo(p[0], p[1])); G.closePath(); }
+// hatch fill, drawn one line at a time
+function hatch(P, prog, o = {}) {
+  if (prog <= 0) return;
+  const [x0, y0, x1, y1] = bbox(P), col = colorOf(o.c ?? 'accent');
+  G.save(); pathOf(P); G.clip();
+  const a = (o.angle ?? 45) * Math.PI / 180, dx = Math.cos(a), dy = Math.sin(a), nx = -dy, ny = dx;
+  const corners = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(p => p[0] * nx + p[1] * ny);
+  const m0 = Math.min(...corners), m1 = Math.max(...corners), gap = o.gap ?? (PEN() ? 11 : 9);
+  const n = Math.ceil((m1 - m0) / gap), k = Math.floor(n * prog), L = (x1 - x0) + (y1 - y0) + 40;
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, mc = cx * nx + cy * ny;
+  G.strokeStyle = col; G.lineCap = 'round';
+  for (let i = 0; i < k; i++) {
+    const m = m0 + i * gap + gap / 2, off = m - mc, px = cx + nx * off, py = cy + ny * off;
+    const j = PEN() ? (hash(i + (o.seed ?? 0)) - .5) * 3 : 0;
+    G.globalAlpha = (PEN() ? .55 : .7) * (o.alpha ?? 1); G.lineWidth = PEN() ? 1.8 : 1.3;
+    G.beginPath(); G.moveTo(px - dx * L / 2 + j, py - dy * L / 2); G.lineTo(px + dx * L / 2 - j, py + dy * L / 2 + j); G.stroke();
+  }
+  G.restore();
+}
+function solid(P, c = 'main', alpha = 1) { G.save(); G.globalAlpha = alpha * (PEN() ? .92 : 1); G.fillStyle = colorOf(c); pathOf(P); G.fill(); G.restore(); }
+
+// patterns for hatched type
+const PAT = {};
+function pattern(kind) {
+  if (PAT[kind]) return PAT[kind];
+  const c = document.createElement('canvas'), g = c.getContext('2d');
+  c.width = c.height = 42;
+  g.strokeStyle = { 'pen-main': COL.graphite, 'pen-accent': COL.blue, 'blue-accent': COL.cyan, 'blue-main': COL.white }[kind];
+  g.lineWidth = kind.startsWith('pen') ? 2.6 : 2; g.globalAlpha = kind.startsWith('pen') ? .9 : .85;
+  for (let k = -42; k <= 84; k += 6) { g.beginPath(); g.moveTo(k, 42); g.lineTo(k + 42, 0); g.stroke(); }
+  return (PAT[kind] = G.createPattern(c, 'repeat'));
+}
+function font(size, wt, fam) { return `${wt} ${size}px ${fam === 'mono' ? MONO : SANS}`; }
+function measure(str, size, wt = 800, fam = 'sans', track = 0) {
+  G.save(); G.font = font(size, wt, fam); G.letterSpacing = (track * size) + 'px';
+  const m = G.measureText(str); G.restore(); return m;
+}
+const tw = (str, size, wt, fam, track) => measure(str, size, wt, fam, track).width;
+// text in the current ink
+function txt(str, x, y, o = {}) {
+  if (o.n !== undefined) str = Array.from(str).slice(0, o.n).join('');
+  if (!str) return;
+  const size = o.size ?? 40, wt = o.wt ?? 800, mode = o.mode ?? 'solid', col = colorOf(o.c);
+  G.save();
+  G.font = font(size, wt, o.fam); G.letterSpacing = ((o.track ?? 0) * size) + 'px';
+  G.textAlign = o.align ?? 'left'; G.textBaseline = 'alphabetic';
+  if (o.sy !== undefined || o.sx !== undefined) { const ay = o.ay ?? y, ax = o.ax ?? x; G.translate(ax, ay); G.scale(o.sx ?? 1, Math.max(.0001, o.sy ?? 1)); G.translate(-ax, -ay); }
+  if (o.rot) { G.translate(x, y); G.rotate(o.rot); G.translate(-x, -y); }
+  G.globalAlpha = o.alpha ?? 1;
+  if (mode === 'hatch') {
+    G.fillStyle = pattern(`${PEN() ? 'pen' : 'blue'}-${o.c === 'accent' ? 'accent' : 'main'}`); G.fillText(str, x, y);
+    if (PEN()) {
+      const q = Math.floor(T * 8), j = ((q % 3) - 1) * .9, lw = Math.max(1.6, size / 95);
+      G.strokeStyle = col; G.lineWidth = lw; G.globalAlpha = .92; G.strokeText(str, x + j, y - j * .6);
+      G.globalAlpha = .42; G.strokeText(str, x - 1.4 - j, y + 1.1);
+    } else {
+      G.strokeStyle = col; G.lineWidth = Math.max(1.6, size / 85); G.strokeText(str, x, y);
+    }
+  } else {
+    G.fillStyle = col; if (PEN()) G.globalAlpha *= .95; G.fillText(str, x, y);
+  }
+  G.restore();
+}
+function glyphs(str, size, wt, fam, track = 0) {
+  const out = []; let acc = '';
+  for (const ch of Array.from(str)) { const x = tw(acc, size, wt, fam, track); acc += ch; out.push({ ch, x }); }
+  return out;
+}
+function check(x, y, s, c = 'accent', prog = 1) { ln([[x - s * .5, y], [x - s * .12, y + s * .38], [x + s * .55, y - s * .42]], { w: 4, c, prog }); }
+
+// ───────────────────────── mascot (the guide) ─────────────────────────
+function mascot(x, yF, o = {}) {
+  const k = o.k ?? 2.0, lean = (o.lean ?? 0) * Math.PI / 180, run = o.run;
+  if (k < .02) return;
+  const c = Math.cos(lean), s = Math.sin(lean), lw = Math.max(1.6, 3.4 * Math.min(1, k / 2));
+  const tf = P => P.map(([px, py]) => { const X = px * k, Y = py * k; return [x + X * c - Y * s, yF + X * s + Y * c]; });
+  const liftA = run === undefined ? 0 : Math.max(0, Math.sin(run * Math.PI)) * 9;
+  const liftB = run === undefined ? 0 : Math.max(0, -Math.sin(run * Math.PI)) * 9;
+  [-30, -14, 3, 19].forEach((lx, i) => { const lift = i % 2 === 0 ? liftA : liftB; ln(tf(rectPts(lx, -33, 11, 33 - lift, 3)), { closed: true, w: lw * .9, seed: 30 + i }); });
+  const body = tf(rectPts(-38, -87, 76, 54, 11));
+  hatch(body, 1, { gap: PEN() ? 17 : 8, seed: 3 });
+  ln(body, { closed: true, w: lw, seed: 21 });
+  ln(tf(rectPts(-60, -68, 24, 16, 6)), { closed: true, w: lw * .9, seed: 22 });
+  ln(tf(rotAt(rectPts(36, -68, 26, 16, 6), 36, -60, -58 * Math.PI / 180)), { closed: true, w: lw * .9, seed: 23 });
+  const a = -58 * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a), bx = 36 + 24 * ux, by = -60 + 24 * uy, nx = -uy, ny = ux;
+  const pen = [[bx - nx * 3.5, by - ny * 3.5], [bx + ux * 30 - nx * 3.5, by + uy * 30 - ny * 3.5], [bx + ux * 40, by + uy * 40], [bx + ux * 30 + nx * 3.5, by + uy * 30 + ny * 3.5], [bx + nx * 3.5, by + ny * 3.5]];
+  ln(tf(pen), { closed: true, w: lw * .8, c: 'accent', seed: 24 });
+  [[-6, -78], [12, -78]].forEach(([ex, ey]) => solid(tf(rectPts(ex, ey, 8, 14, 4)), 'main'));
+}
+
+// ───────────────────────── language (?lang=en) ─────────────────────────
+const I18N = {
+  ko: {
+    sub: '아이디어에서 완성 문서까지 — 사업계획서 작성 스킬',
+    phA: '사업계획서,', phB: '막막하다면?',
+    ot: '스마트 복약 약통 사업계획서',
+    cells: [
+      { h: '1. 문제 인식', s: '1-1. 배경 및 필요성', m: '독거 어르신 복약 공백, 앱 알림 미도달' },
+      { h: '2. 실현 가능성', s: '2-1. 핵심 기능', m: '자동 분배 · 복용 감지 · 보호자 알림' },
+      { h: '3. 성장 전략', s: '3-1. 시장 진입', m: '시범 보급 → 보호자 구독으로 확장' },
+      { h: '4. 팀 구성', s: '4-1. 핵심 인력', m: '하드웨어 개발 + 돌봄 현장 경험' },
+    ],
+    sumSize: 31, tags: ['제목', '중제목', '소제목', '요약'], tagSize: 24,
+    psst: [['P', '문제 인식', 'PROBLEM'], ['S', '실현 가능성', 'SOLUTION'], ['S', '성장 전략', 'SCALE-UP'], ['T', '팀 구성', 'TEAM']],
+    prob: ['복약 시간을 놓친다', '복용 여부를 모른다', '이상 징후 대응이 늦다'],
+    solv: ['자동 분배 + 알림', '복용 감지 센서', '보호자 실시간 알림'],
+    hdrP: 'PROBLEM · 문제', hdrS: 'SOLUTION · 해결',
+    market: ['전체 시장', '유효 시장', '목표 매출'], f2: '고객 수 × 단가 × 전환율', fsub: '출처 · 산출식 병기',
+    rows: ['문제 인식', '실현 가능성', '성장 전략', '팀 구성'], pills: ['필수 수정 2건', '예상 질문 8개'],
+    thumbs: ['후킹', '문제', '해결', '검증', '시장', '팀'], pitchPill: '예상 질문 · 30초 답변 준비',
+    files: ['한글 문서', '워드 문서', '마크다운', '발표 슬라이드'],
+    chatAsk: '이 스킬 설치해줘', chatDone: 'bizplan 스킬 15종 설치 완료', chatNext: '이제 /bizplan 으로 시작하세요',
+    chatCmd: '/bizplan 사업계획서 같이 써줘', chatReply: '좋아요. 큰틀부터 잡아볼게요.', ok: '설치 완료',
+    caps: [
+      '제목 → 중제목 → 소제목 → 한두 줄 요약, 큰틀부터 한눈에',
+      'PSST — 문제 · 해결 · 성장 · 팀 순서로 본문 작성',
+      '문제와 해결을 1:1로 맞물리게',
+      'TAM · SAM · SOM으로 시장 규모 도식화',
+      '심사위원 시점으로 100점 채점 · 예상 질문까지',
+      '발표 흐름과 슬라이드 구성까지',
+      '한글(HWPX) · 워드 문서로 내보내기',
+      '채팅창에 깃허브 링크 + "설치해줘" — 가장 쉬운 설치',
+      '또는 터미널에서 — Claude Code 두 줄 · Codex 세 줄',
+      '아이디어부터 검토 · 발표까지, 스킬 15종',
+      '깃허브 링크 하나로 — Claude Code · Codex',
+    ],
+  },
+  en: {
+    sub: 'From idea to finished document — a business-plan skill',
+    phA: 'Stuck on a', phB: 'business plan?',
+    ot: 'Smart Pill Box — Business Plan',
+    cells: [
+      { h: '1. Problem', s: '1-1. Background & need', m: 'Seniors alone miss doses; apps miss them' },
+      { h: '2. Solution', s: '2-1. Core features', m: 'Auto-dispense · intake sensing · alerts' },
+      { h: '3. Scale-up', s: '3-1. Go-to-market', m: 'Pilot rollout → caregiver subscription' },
+      { h: '4. Team', s: '4-1. Key people', m: 'Hardware dev + caregiving know-how' },
+    ],
+    sumSize: 28, tags: ['TITLE', 'SECTION', 'SUB', 'SUMMARY'], tagSize: 20,
+    psst: [['P', 'Problem', 'WHY IT MATTERS'], ['S', 'Solution', 'HOW IT WORKS'], ['S', 'Scale-up', 'HOW IT GROWS'], ['T', 'Team', 'WHO BUILDS IT']],
+    prob: ['Doses get missed', 'No proof of intake', 'Risks noticed too late'],
+    solv: ['Auto-dispense + alarm', 'Intake sensor', 'Live caregiver alerts'],
+    hdrP: 'PROBLEM', hdrS: 'SOLUTION',
+    market: ['Total market', 'Serviceable', 'Target revenue'], f2: 'users × price × rate', fsub: 'with sources & formulas',
+    rows: ['Problem', 'Feasibility', 'Growth', 'Team'], pills: ['Must-fix: 2', 'Likely Qs: 8'],
+    thumbs: ['Hook', 'Problem', 'Solution', 'Proof', 'Market', 'Team'], pitchPill: 'Likely Qs · 30-sec answers',
+    files: ['Hangul doc', 'Word doc', 'Markdown', 'Pitch slides'],
+    chatAsk: 'Install this skill', chatDone: 'Installed 15 bizplan skills', chatNext: 'Start with /bizplan',
+    chatCmd: '/bizplan write my business plan', chatReply: "Let's start with the outline.", ok: 'Installed',
+    caps: [
+      'Title → section → sub → summary: outline first',
+      'PSST — problem · solution · scale-up · team',
+      'Every problem matched 1:1 to a solution',
+      'Market size as TAM · SAM · SOM',
+      'Judge-style 100-point review + likely questions',
+      'Pitch flow and slide structure',
+      'Export to Hangul (HWPX) and Word',
+      'Easiest: paste the GitHub link, ask to install',
+      'Or terminal: Claude Code 2 lines · Codex 3',
+      'From idea to review & pitch — 15 skills',
+      'One GitHub link — Claude Code · Codex',
+    ],
+  },
+};
+const LANG = new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'ko';
+const S = I18N[LANG];
+
+// ───────────────────────── layout ─────────────────────────
+let TS, TA, TD, TY, LT, RAIL0, KA, KD;   // title metrics, set in setup()
+const TITLE_W = 1400;
+const OT = { x: 290, y: 262, size: 60, str: S.ot };
+const CELLS = [[290, 410], [1030, 410], [290, 680], [1030, 680]].map(([x, y], i) => ({ x, y, ...S.cells[i] }));
+const BLK = i => [295 + i * 350, 290, 280];
+const PSST = S.psst;
+const PROB = S.prob;
+const SOLV = S.solv;
+const CARD_L = j => [240, 280 + j * 140, 600, 104];
+const CARD_R = j => [1080, 280 + j * 140, 600, 104];
+const STAMP = [960, 790, 60];
+const TAM = [700, 545, 315], SAM = [700, 655, 205], SOM = [700, 760, 100];
+const RING = [600, 520, 250];
+const SLIDE = [520, 272, 880, 495];
+const THUMB = i => [320 + (i % 3) * 440, 275 + Math.floor(i / 3) * 265, 400, 225];
+const THUMB_T = S.thumbs;
+const FILE = i => [270 + i * 360, 270, 300, 380];
+const FILES = ['.hwpx', '.docx', '.md', '16:9'].map((e, i) => [e, S.files[i]]);
+const CHATW = [260, 160, 1400, 700];
+const LINK = 'https://github.com/jhsoo0211/bussiness-planner-skills';
+const PANEL = [[170, 170, 1580, 300], [170, 510, 1580, 370]];
+const TERM = [
+  { p: 0, t: SEC.term + .45, d: .5, s: '/plugin marketplace add jhsoo0211/bussiness-planner-skills', k: 'cmd' },
+  { p: 0, t: SEC.term + .95, d: .45, s: '/plugin install bizplan@business-planner-skills', k: 'cmd' },
+  { p: 0, t: SEC.term + 1.45, d: 0, s: S.ok, k: 'ok' },
+  { p: 1, t: SEC.term + 1.95, d: .55, s: 'git clone https://github.com/jhsoo0211/bussiness-planner-skills.git', k: 'cmd' },
+  { p: 1, t: SEC.term + 2.45, d: .3, s: 'cd bussiness-planner-skills', k: 'cmd' },
+  { p: 1, t: SEC.term + 2.95, d: .5, s: 'python scripts/install_skills.py --agent codex', k: 'cmd' },
+  { p: 1, t: SEC.term + 3.45, d: 0, s: S.ok, k: 'ok' },
+];
+const SKILLS = ['bizplan', 'quick', 'item', 'problem', 'research', 'solution', 'growth', 'team',
+  'summary', 'visual', 'review', 'pitch', 'slides', 'export', 'analyze', 'outline'];
+const CHIP = k => [180 + (k % 4) * 400, 300 + Math.floor(k / 4) * 124, 360, 92];
+const URL = 'github.com/jhsoo0211/bussiness-planner-skills';
+const CAPTIONS = [[5.3, 9.9], [10.3, 12.9], [13.3, 16.4], [16.8, 19.4], [19.8, 22.9], [23.3, 25.9], [26.3, 29.45],
+  [29.9, 35.9], [36.3, 40.9], [41.3, 43.4], [44.0, 47.4]].map(([a, b], i) => [S.caps[i], a, b]);
+
+// ───────────────────────── frame 0 pieces ─────────────────────────
+function title(o = {}) {
+  txt('bizplan', o.x ?? 960, o.y ?? TY, { size: o.size ?? TS, wt: 900, align: 'center', mode: 'hatch', c: o.c ?? 'main', sy: o.sy, ay: o.ay });
+}
+function openLabels(k) {
+  const a = 'INTRODUCING', b = S.sub, c = 'BIZPLAN GUIDE';
+  txt(a, 960, RAIL0 - 64, { size: 28, wt: 700, track: .3, align: 'center', n: Math.round(len(a) * k) });
+  txt(b, 960, TY + TD + 80, { size: 40, wt: 700, align: 'center', n: Math.round(len(b) * k) });
+  txt(c, 1405, RAIL0 - 20, { size: 24, wt: 700, track: .2, align: 'right', n: Math.round(len(c) * k) });
+}
+
+// ───────────────────────── DRAFT + PROBLEM (0–5 s) ─────────────────────────
+const PH_A = S.phA, PH_B = S.phB;
+let PH = 132;   // shrunk in setup() if the phrase is wider than the slot
+function rails(t) {
+  const k1 = SP(t, .95, 20);
+  let y = mix(TY + 26, 540, k1), half = mix(810, 660, k1), gap = 140 * k1;
+  gap = mix(gap, 300, SP(t, 1.45, 20));
+  const ph = (tw(PH_A, PH, 800) + 44 + tw(PH_B, PH, 800)) / 2 + 90, bh = tw('bizplan', 200, 900) / 2 + 90;
+  half = mix(half, ph, SP(t, 1.95, 20));
+  if (t >= 3.7) gap = 300 * (1 - XI(t, 3.7, .1));
+  if (t >= 3.8) { gap = 300 * SP(t, 3.8, 24); half = mix(ph, bh, SP(t, 3.8, 20)); }
+  if (t >= 4.95) { gap = 300 * (1 - XI(t, 4.95, .1)); half = mix(bh, 738, XO(t, 4.95, .1)); }
+  return { y, half, gap };
+}
+function partOpen(t) {
+  if (t < .3) openLabels(1 - t / .3);
+  if (t < .5) {
+    const mx = 1560 + 900 * XI(t, 0, .42);
+    if (mx < 2100) mascot(mx, RAIL0, { run: t * 6, lean: 7 * clamp(t / .08) });
+  }
+  if (t < .95) {
+    const railY = mix(RAIL0, TY + 26, XI(t, .36, .14));
+    const top = Math.max(railY, LT), f = (TY + 26 - top) / (TY + 26 - LT);
+    if (f > .003) title({ sy: f, ay: TY + 26 });
+    ln([[150, railY], [1770, railY]], { w: 3.4, seed: 2 });
+    return;
+  }
+  if (t >= 5.05) return;
+  const { y, half, gap } = rails(t);
+  const top = y - gap / 2, bot = y + gap / 2;
+  ln([[960 - half, top], [960 + half, top]], { w: 3.4, seed: 2 });
+  if (gap > .5) ln([[960 - half, bot], [960 + half, bot]], { w: 3.4, seed: 3 });
+  const tin = XO(t, 1.0, .4), tout = XI(t, 2.0, .3);
+  for (let i = 0; i < 41; i++) {
+    if (i / 40 > tin || i / 40 < tout) continue;
+    const x = 960 - half + i * (2 * half / 40), h = i % 5 === 0 ? 24 : 12;
+    ln([[x, top - 4], [x, top - 4 - h]], { w: 2.2, c: 'accent', seed: 50 + i, wob: .3 });
+  }
+  if (t >= 1.45 && gap > 4) {
+    const dx = 960 + half + 46, p = XO(t, 1.45, .25);
+    ln([[dx, top], [dx, mix(top, bot, p)]], { w: 2.2, c: 'accent', seed: 9 });
+    ln([[dx - 10, top], [dx + 10, top]], { w: 2.2, c: 'accent', seed: 10 });
+    if (p > .95) ln([[dx - 10, bot], [dx + 10, bot]], { w: 2.2, c: 'accent', seed: 11 });
+    txt(String(Math.round(gap)), dx + 18, y + 9, { size: 26, wt: 700, c: 'accent' });
+  }
+  if (t < 1.95 || gap < .5) return;
+  G.save(); G.beginPath(); G.rect(0, top + 2, W, Math.max(0, gap - 4)); G.clip();
+  const sy = gap / 300;
+  if (t < 3.8) {
+    const wA = tw(PH_A, PH, 800), wB = tw(PH_B, PH, 800), x0 = 960 - (wA + 44 + wB) / 2;
+    const base = 540 + (KA - KD) / 2 * (PH / 100);
+    glyphs(PH_A, PH, 800).forEach((g, i) => {
+      const dy = 300 * (1 - SP(t, 2.0 + i * .05, 24));
+      txt(g.ch, x0 + g.x, base + dy, { size: PH, wt: 800, mode: 'hatch', sy, ay: 540 });
+    });
+    const bx = x0 + wA + 44 + 1400 * (1 - XO(t, 2.2, .25));
+    txt(PH_B, bx, base, { size: PH, wt: 800, mode: 'hatch', c: 'accent', sy, ay: 540 });
+    if (t >= 2.95) ln([[bx, base + 28], [bx + wB, base + 28]], { w: 4.5, c: 'accent', prog: XO(t, 2.95, .25), seed: 12 });
+  } else {
+    const wb = tw('bizplan', 200, 900), x0 = 960 - wb / 2, base = 540 + 200 * .28;
+    glyphs('bizplan', 200, 900).forEach((g, i) => {
+      const dy = -420 * (1 - SP(t, 3.8 + i * .06, 24));
+      txt(g.ch, x0 + g.x, base + dy, { size: 200, wt: 900, mode: 'hatch', c: 'accent', sy, ay: 540 });
+    });
+  }
+  G.restore();
+}
+
+// ───────────────────────── OUTLINE (5–10 s) ─────────────────────────
+function underlineOT() { return [OT.x, OT.y + 24, OT.x + tw(OT.str, OT.size, 800) + 16]; }
+function cellUnderline(i) { const c = CELLS[i]; return [c.x, c.y + 18, c.x + tw(c.h, 46, 800) + 12]; }
+function partOutline(t) {
+  const s = SEC.outline, out = SEC.psst - .05;
+  if (t < out + .3) {
+    const [ux0, uy, ux1] = underlineOT(), k = SP(t, s + .05, 20), ret = t >= out ? 1 - XI(t, out, .22) : 1;
+    if (ret > .01 && t >= s + .05) ln([[mix(222, ux0, k), mix(540, uy, k)], [mix(1698, ux1, k), mix(540, uy, k)]], { w: 3.2, seed: 2, prog: ret });
+    txt(OT.str, OT.x, OT.y, { size: OT.size, wt: 800, n: typedN(len(OT.str), t, s + .15, .4, out, .15) });
+    txt(S.tags[0], 268, OT.y, { size: S.tagSize, wt: 700, track: .1, c: 'accent', align: 'right', n: typedN(len(S.tags[0]), t, s + 3.45, .1, out, .1) });
+  }
+  CELLS.forEach((c, i) => {
+    const b = s + .45 + i * .75;
+    if (t < b) return;
+    if (t < out) {
+      const [ux0, uy, ux1] = underlineOT(), [cx0, cy, cx1] = cellUnderline(i), k = SP(t, b, 20);
+      ln([[mix(ux0, cx0, k), mix(uy, cy, k)], [mix(ux1, cx1, k), mix(uy, cy, k)]], { w: 3, seed: 40 + i });
+    }
+    txt(c.h, c.x, c.y, { size: 46, wt: 800, n: typedN(len(c.h), t, b + .05, .25, out, .12) });
+    txt(c.s, c.x + 30, c.y + 62, { size: 34, wt: 700, n: typedN(len(c.s), t, b + .17, .25, out, .12) });
+    const nm = typedN(len(c.m), t, b + .3, .45, out, .14);
+    if (nm > 0) ln([[c.x + 32, c.y + 94], [c.x + 32, c.y + 124]], { w: 5, c: 'accent', seed: 60 + i, wob: .2 });
+    txt(c.m, c.x + 48, c.y + 120, { size: S.sumSize, wt: 700, c: 'accent', n: nm });
+    if (i === 0) {
+      [[1, 0], [2, 62], [3, 120]].forEach(([k, dy], j) => txt(S.tags[k], 268, c.y + dy, { size: S.tagSize, wt: 700, track: .1, c: 'accent', align: 'right', n: typedN(len(S.tags[k]), t, s + 3.53 + j * .08, .1, out, .1) }));
+    }
+  });
+  if (t >= s + 3.95) {
+    const press = 1 + .5 * (1 - XO(t, s + 3.95, .15)), lift = -600 * XI(t, out, .3), cx = 1560, cy = 250 + lift;
+    const box = rotAt(scaleAt(rectPts(cx - 84, cy - 36, 168, 72, 8), cx, cy, press), cx, cy, -.12);
+    hatch(box, XO(t, s + 4.0, .3), { gap: 9, seed: 7 });
+    ln(box, { closed: true, w: 3.4, c: 'accent', seed: 70 });
+    txt('NEW', cx, cy + 16, { size: 46 * press, wt: 900, align: 'center', c: 'main', rot: -.12 });
+  }
+  if (t >= s + 4.45 && t < out + .2) {
+    const [ux0, , ux1] = underlineOT();
+    hatch(rectPts(ux0 - 12, OT.y - 56, ux1 - ux0 + 24, 74), (t >= out ? 1 - XI(t, out, .15) : XO(t, s + 4.45, .35)), { gap: 12, seed: 5 });
+  }
+}
+
+// ───────────────────────── PSST (10–13 s) ─────────────────────────
+function partPSST(t) {
+  const s = SEC.psst, out = SEC.match - .05;
+  PSST.forEach(([L, ko, en], i) => {
+    const [x, y, sz] = BLK(i), [cx0, cy, cx1] = cellUnderline(i), k = SP(t, s - .05 + i * .06, 18);
+    const sq = rectPts(x, y, sz, sz, 6);
+    if (t < out) {
+      ln(morph(lineLoop(cx0, cy, cx1, cy), sq, k), { closed: true, w: 3.4, seed: 80 + i });
+      hatch(sq, t < s + 1.95 ? 0 : XO(t, s + 1.95 + i * .05, .4), { gap: 14, seed: 90 + i });
+    }
+    const ti = s + .45 + i * .3, sc = SP(t, ti, 26) * (t >= out ? 1 - XI(t, out, .15) : 1);
+    if (sc > .01 && (i < 2 || t < out)) txt(L, x + sz / 2, y + sz / 2 + 76, { size: 210, wt: 900, align: 'center', mode: 'hatch', sy: sc, sx: sc, ay: y + sz / 2, ax: x + sz / 2 });
+    txt(ko, x + sz / 2, 650, { size: 42, wt: 800, align: 'center', n: typedN(len(ko), t, ti + .05, .2, out, .12) });
+    txt(en, x + sz / 2, 698, { size: 24, wt: 700, track: .2, align: 'center', c: 'accent', n: typedN(en.length, t, ti + .12, .2, out, .12) });
+  });
+  if (t >= out) {
+    [2, 3].forEach(i => {
+      const [x, y, sz] = BLK(i), dy = 900 * XI(t, out + (i - 2) * .05, .35);
+      if (dy > 880) return;
+      const sq = shift(rectPts(x, y, sz, sz, 6), 0, dy);
+      ln(sq, { closed: true, w: 3.4, seed: 80 + i }); hatch(sq, 1, { gap: 14, seed: 90 + i });
+      txt(PSST[i][0], x + sz / 2, y + sz / 2 + 76 + dy, { size: 210, wt: 900, align: 'center', mode: 'hatch' });
+    });
+  }
+}
+
+// ───────────────────────── MATCH (13–16.5 s) ─────────────────────────
+function partMatch(t) {
+  const s = SEC.match, enter = s - .05, out = SEC.market - .05;
+  for (let j = 0; j < 3; j++) {
+    [[0, CARD_L(j), PROB[j], -1], [1, CARD_R(j), SOLV[j], 1]].forEach(([bi, rc, label, side]) => {
+      const [x, y, sz] = BLK(bi), k = SP(t, enter + j * .05, 18), ex = side * 1150 * XI(t, out + j * .04, .32);
+      if (Math.abs(ex) > 1140) return;
+      const P = shift(morph(rectPts(x, y, sz, sz, 6), rectPts(...rc, 18), k), ex, 0);
+      if (j === 0 && t < enter + .15) hatch(P, 1 - XI(t, enter, .12), { gap: 14, seed: 90 + bi });
+      ln(P, { closed: true, w: 3.2, seed: 100 + bi * 3 + j });
+      const [cx, cy, , ch] = rc, by = cy + ch / 2 + 14, t0 = s + .15 + j * .1;
+      if (bi === 0) {
+        txt(String(j + 1), cx + 30 + ex, by, { size: 44, wt: 900, c: 'accent', n: typedN(1, t, t0, .05) });
+        txt(label, cx + 82 + ex, by, { size: 40, wt: 700, n: typedN(len(label), t, t0, .3) });
+      } else {
+        txt(label, cx + 36 + ex, by, { size: 40, wt: 700, n: typedN(len(label), t, t0 + .05, .3) });
+      }
+    });
+    const cy = 332 + j * 140, prog = XO(t, s + .95 + j * .3, .25) * (1 - XI(t, out, .15));
+    if (prog > .01) {
+      ln([[848, cy], [1072, cy]], { w: 3.8, c: 'accent', prog, seed: 120 + j });
+      solid(circlePts(848, cy, 8, 16), 'accent'); if (prog > .97) solid(circlePts(1072, cy, 8, 16), 'accent');
+    }
+  }
+  const hdr = (str, x, t0) => txt(str, x, 246, { size: 26, wt: 700, track: .12, n: typedN(len(str), t, t0, .2, out, .12) });
+  hdr(S.hdrP, 240, s + .2); hdr(S.hdrS, 1080, s + .25);
+  if (t >= s + 1.95 && t < out) {
+    const [sx, sy, r] = STAMP, press = 1 + .4 * (1 - XO(t, s + 1.95, .15)), C = circlePts(sx, sy, r * press, 72);
+    hatch(C, XO(t, s + 2.0, .25), { gap: 9, seed: 130 });
+    ln(C, { closed: true, w: 3.6, c: 'accent', seed: 131 });
+    txt('1:1', sx, sy + 17, { size: 48 * press, wt: 900, align: 'center', c: 'main' });
+  }
+}
+
+// ───────────────────────── MARKET (16.5–19.5 s) ─────────────────────────
+function partMarket(t) {
+  const s = SEC.market, enter = s - .05, out = SEC.review - .05, k = SP(t, enter, 16), [sx, sy, sr] = STAMP;
+  if (t < out) {
+    const cx = mix(sx, TAM[0], k), cy = mix(sy, TAM[1], k), r = mix(sr, TAM[2], k);
+    ln(circlePts(cx, cy, r, 160, -Math.PI / 2), { closed: true, w: 3.4, seed: 140 });
+    const tsq = 1 - XI(t, enter, .12);
+    if (tsq > .02) txt('1:1', sx, sy + 17, { size: 48, wt: 900, align: 'center', sy: tsq, ay: sy });
+    const cp = XO(t, s + .1, .3) * (1 - XI(t, out, .15));
+    if (cp > .01) {
+      ln([[TAM[0] - 360, TAM[1]], [TAM[0] + 360, TAM[1]]], { w: 2, dash: true, prog: cp, seed: 141 });
+      ln([[TAM[0], TAM[1] - 350], [TAM[0], TAM[1] + 340]], { w: 2, dash: true, prog: cp, seed: 142 });
+    }
+  }
+  [['TAM', S.market[0], 300, s + .2, TAM], ['SAM', S.market[1], 470, s + .5, SAM], ['SOM', S.market[2], 640, s + 1.0, SOM]].forEach(([a, b, ly, t0, circ], i) => {
+    const c = i === 2 ? 'accent' : 'main';
+    txt(a, 1130, ly, { size: 60, wt: 900, c, n: typedN(3, t, t0, .12, out, .1) });
+    txt(b, 1290, ly, { size: 38, wt: 700, c, n: typedN(len(b), t, t0 + .06, .15, out, .1) });
+    const lp = XO(t, t0, .25) * (1 - XI(t, out, .15));
+    if (lp > .01) { const a0 = -Math.PI / 4; ln([[circ[0] + circ[2] * Math.cos(a0), circ[1] + circ[2] * Math.sin(a0)], [1110, ly - 20]], { w: 2, dash: true, prog: lp, seed: 150 + i }); }
+  });
+  if (t < out) {
+    ln(circlePts(...SAM, 140, -Math.PI / 2), { closed: true, w: 3.2, prog: XO(t, s + .45, .4), seed: 160 });
+    hatch(circlePts(...SOM, 90), t < s + 1.0 ? 0 : XO(t, s + 1.0, .4), { gap: 8, seed: 161 });
+    ln(circlePts(...SOM, 120, -Math.PI / 2), { closed: true, w: 3.2, c: 'accent', prog: XO(t, s + .95, .4), seed: 162 });
+  }
+  const f1 = 'SOM =', f2 = S.f2;
+  txt(f1, 1130, 772, { size: 36, wt: 900, c: 'accent', n: typedN(f1.length, t, s + 1.45, .1, out, .1) });
+  txt(f2, 1258, 772, { size: 36, wt: 700, c: 'accent', n: typedN(len(f2), t, s + 1.5, .3, out, .12) });
+  txt(S.fsub, 1130, 822, { size: 24, wt: 700, track: .12, n: typedN(len(S.fsub), t, s + 1.6, .2, out, .1) });
+}
+
+// ───────────────────────── REVIEW (19.5–23 s) ─────────────────────────
+const ROWS = S.rows;
+function partReview(t) {
+  const s = SEC.review, enter = s - .05, out = SEC.pitch - .05, k = SP(t, enter, 16);
+  if (t < out) {
+    const cx = mix(TAM[0], RING[0], k), cy = mix(TAM[1], RING[1], k), r = mix(TAM[2], RING[2], k);
+    ln(circlePts(cx, cy, r, 160, -Math.PI / 2), { closed: true, w: 3, seed: 140 });
+    const sh = 1 - XI(t, enter, .25);
+    if (sh > .01) {
+      ln(circlePts(mix(SAM[0], cx, 1 - sh), mix(SAM[1], cy, 1 - sh), SAM[2] * sh, 120), { closed: true, w: 3.2, seed: 160 });
+      ln(circlePts(mix(SOM[0], cx, 1 - sh), mix(SOM[1], cy, 1 - sh), SOM[2] * sh, 90), { closed: true, w: 3.2, c: 'accent', seed: 162 });
+    }
+  }
+  const prog = XO(t, s + .05, 1.0) * (t >= out ? 1 - XI(t, out, .2) : 1);
+  if (prog > .005) {
+    const a0 = -Math.PI / 2, a1 = a0 + 2 * Math.PI * .84 * prog, [cx, cy] = RING, P = [];
+    for (let i = 0; i <= 80; i++) { const a = mix(a0, a1, i / 80); P.push([cx + 264 * Math.cos(a), cy + 264 * Math.sin(a)]); }
+    for (let i = 80; i >= 0; i--) { const a = mix(a0, a1, i / 80); P.push([cx + 236 * Math.cos(a), cy + 236 * Math.sin(a)]); }
+    hatch(P, 1, { gap: 7, seed: 170 });
+    ln(P, { closed: true, w: 2.4, c: 'accent', seed: 171 });
+  }
+  const num = String(Math.round(84 * XO(t, s + .05, 1.0)));
+  txt(num, RING[0], RING[1] + 62, { size: 176, wt: 900, align: 'center', n: typedN(num.length, t, s + .05, 0, out, .12) });
+  txt('/ 100', RING[0], RING[1] + 120, { size: 34, wt: 700, align: 'center', n: typedN(5, t, s + .1, .12, out, .1) });
+  txt('SCORE', RING[0], RING[1] - 94, { size: 24, wt: 700, track: .3, align: 'center', c: 'accent', n: typedN(5, t, s + .1, .12, out, .1) });
+  ROWS.forEach((r, j) => {
+    const y = 330 + j * 100, lp = XO(t, s + .15 + j * .1, .3) * (1 - XI(t, out, .15));
+    txt(r, 980, y, { size: 44, wt: 700, n: typedN(len(r), t, s + .2 + j * .1, .2, out, .1) });
+    if (lp > .01) ln([[980, y + 30], [1650, y + 30]], { w: 2, prog: lp, seed: 180 + j });
+    const tm = s + .95 + j * .3;
+    if (t >= tm) {
+      const sc = (1 + .7 * (1 - XO(t, tm, .15))) * (t >= out ? 1 - XI(t, out, .15) : 1), mx = 1610, my = y - 15;
+      if (sc > .02) {
+        if (j === 2) ln([[mx, my - 24 * sc], [mx + 26 * sc, my + 19 * sc], [mx - 26 * sc, my + 19 * sc]], { closed: true, w: 4, c: 'accent', seed: 190 + j });
+        else ln(circlePts(mx, my, 24 * sc, 40), { closed: true, w: 4, seed: 190 + j });
+      }
+    }
+  });
+  [[S.pills[0], 980, s + 2.45], [S.pills[1], 1290, s + 2.55]].forEach(([str, x, t0], i) => {
+    const p = XO(t, t0, .2) * (1 - XI(t, out, .15));
+    if (p > .01) ln(rectPts(x, 708, 280, 68, 34), { closed: true, w: 2.6, c: 'accent', prog: p, seed: 200 + i });
+    txt(str, x + 140, 754, { size: 32, wt: 700, align: 'center', c: 'accent', n: typedN(len(str), t, t0 + .05, .15, out, .1) });
+  });
+}
+
+// ───────────────────────── PITCH (23–26 s) ─────────────────────────
+function partPitch(t) {
+  const s = SEC.pitch, enter = s - .05, split = s + .45, out = SEC.export - .05;
+  if (t < split) ln(morph(circlePts(RING[0], RING[1], RING[2], 160), rectPts(...SLIDE, 16), SP(t, enter, 18)), { closed: true, w: 3.2, seed: 140 });
+  for (let i = 0; i < 6 && t >= split; i++) {
+    const [x, y, w, h] = THUMB(i), k = SP(t, split + i * .04, 20);
+    if (t < out) ln(morph(rectPts(...SLIDE, 16), rectPts(x, y, w, h, 12), k), { closed: true, w: 3, seed: 210 + i });
+    txt('0' + (i + 1), x + 24, y + 46, { size: 24, wt: 700, track: .2, c: 'accent', n: typedN(2, t, s + .6 + i * .05, .08, out, .1) });
+    txt(THUMB_T[i], x + 24, y + 110, { size: 46, wt: 800, n: typedN(len(THUMB_T[i]), t, s + .65 + i * .05, .15, out, .1) });
+    const lp = XO(t, s + .7 + i * .05, .25) * (1 - XI(t, out, .15));
+    if (lp > .01) { ln([[x + 24, y + 152], [x + 284, y + 152]], { w: 3, prog: lp, seed: 220 + i }); ln([[x + 24, y + 184], [x + 214, y + 184]], { w: 3, prog: lp, seed: 230 + i }); }
+    const hp = XO(t, s + 1.2 + i * .15, .2) * (1 - XI(t, out, .15));
+    if (hp > .01) hatch(rectPts(x, y, w, h, 12), hp, { gap: 11, seed: 240 + i });
+  }
+  const p = XO(t, s + 1.95, .2) * (1 - XI(t, out, .15)), q = S.pitchPill;
+  if (p > .01) ln(rectPts(320, 804, 470, 64, 32), { closed: true, w: 2.6, c: 'accent', prog: p, seed: 250 });
+  txt(q, 555, 847, { size: 30, wt: 700, align: 'center', c: 'accent', n: typedN(len(q), t, s + 2.0, .25, out, .1) });
+}
+
+// ───────────────────────── EXPORT (26–29.5 s) ─────────────────────────
+function partExport(t) {
+  const s = SEC.export, enter = s - .05, out = SEC.chat - .05;
+  for (let i = 0; i < 6 && t < out; i++) {
+    const fi = Math.min(i, 3), [x, y, w, h] = FILE(fi);
+    ln(morph(rectPts(...THUMB(i), 12), card(x, y, w, h), SP(t, enter + fi * .05, 18)), { closed: true, w: 3.2, seed: 210 + i });
+  }
+  FILES.forEach(([ext, sub], i) => {
+    const [x, y, w] = FILE(i), t0 = s + .25 + i * .12;
+    if (t >= s + .2) ln([[x + w - 52, y], [x + w - 52, y + 52], [x + w, y + 52]], { w: 2.4, prog: XO(t, s + .2, .2) * (t >= out ? 1 - XI(t, out, .12) : 1), seed: 260 + i });
+    txt(ext, x + 30, y + 190, { size: 72, wt: 900, c: i === 0 ? 'accent' : 'main', n: typedN(ext.length, t, t0, .15, out, .1) });
+    txt(sub, x + 32, y + 246, { size: 34, wt: 700, n: typedN(len(sub), t, t0 + .08, .2, out, .1) });
+    const lp = XO(t, t0 + .12, .25) * (1 - XI(t, out, .12));
+    if (lp > .01) { ln([[x + 32, y + 300], [x + 252, y + 300]], { w: 3, prog: lp, seed: 270 + i }); ln([[x + 32, y + 332], [x + 192, y + 332]], { w: 3, prog: lp, seed: 280 + i }); }
+  });
+  if (t >= s + .95) {
+    const [x, y, w, h] = FILE(0), cx = x + 214, cy = y + 92, sc = (1 + .5 * (1 - XO(t, s + .95, .15))) * (t >= out ? 1 - XI(t, out, .15) : 1);
+    if (sc > .02) {
+      const box = rotAt(scaleAt(rectPts(cx - 64, cy - 28, 128, 56, 6), cx, cy, sc), cx, cy, -.14);
+      ln(box, { closed: true, w: 3, c: 'accent', seed: 290 });
+      txt('NEW', cx, cy + 12, { size: 34 * sc, wt: 900, align: 'center', c: 'accent', rot: -.14 });
+    }
+    hatch(card(x, y, w, h), XO(t, s + 1.2, .3) * (t >= out ? 1 - XI(t, out, .12) : 1), { gap: 12, seed: 291 });
+  }
+}
+
+// ───────────────────────── CHAT install — the easiest way (29.5–36 s) ─────────────────────────
+const U1 = [600, 290, 1020, 140], A1 = [370, 456, 800, 140], U2 = [880, 626, 740, 86], A2 = [370, 740, 720, 86];
+function partChat(t) {
+  const s = SEC.chat, enter = s - .05, out = SEC.term - .05;
+  for (let i = 0; i < 4; i++) {
+    const [x, y, w, h] = FILE(i);
+    if (i === 0) { if (t < out) ln(morph(card(x, y, w, h), rectPts(...CHATW, 18), SP(t, enter, 16)), { closed: true, w: 3.2, seed: 300 }); }
+    else { const dy = 900 * XI(t, enter + (i - 1) * .05, .35); if (dy < 880) ln(shift(card(x, y, w, h), 0, dy), { closed: true, w: 3, seed: 300 + i }); }
+  }
+  const [wx, wy, ww] = CHATW;
+  [['Claude Code', wx + 40, 236], ['Codex', wx + 296, 150]].forEach(([lab, x, w], i) => {
+    const p = XO(t, s + .15 + i * .08, .25) * (1 - XI(t, out, .15));
+    if (p > .01) ln(rectPts(x, wy + 28, w, 54, 27), { closed: true, w: 2.6, prog: p, seed: 310 + i });
+    txt(lab, x + w / 2, wy + 65, { size: 28, wt: 700, align: 'center', n: typedN(lab.length, t, s + .2 + i * .08, .15, out, .1) });
+  });
+  txt('METHOD 01 · CHAT', wx + ww - 40, wy + 65, { size: 24, wt: 700, track: .18, align: 'right', c: 'accent', n: typedN(16, t, s + .25, .2, out, .1) });
+  const dp = XO(t, s + .2, .3) * (1 - XI(t, out, .15));
+  if (dp > .01) ln([[wx + 30, wy + 108], [wx + ww - 30, wy + 108]], { w: 1.8, prog: dp, seed: 315 });
+  const bub = (r, t0, seed) => { const p = XO(t, t0, .3) * (1 - XI(t, out, .15)); if (p > .01) ln(rectPts(...r, 30), { closed: true, w: 3, prog: p, seed }); };
+  // you: paste the link, ask to install
+  bub(U1, s + .45, 320);
+  txt(LINK, U1[0] + 36, U1[1] + 56, { size: 29, wt: 600, fam: 'mono', c: 'accent', n: typedN(LINK.length, t, s + .5, .8, out, .15) });
+  if (t >= s + 1.3) ln([[U1[0] + 36, U1[1] + 66], [U1[0] + 36 + tw(LINK, 29, 600, 'mono'), U1[1] + 66]], { w: 2, c: 'accent', prog: XO(t, s + 1.3, .2) * (1 - XI(t, out, .15)), seed: 321 });
+  txt(S.chatAsk, U1[0] + 36, U1[1] + 112, { size: 40, wt: 800, n: typedN(len(S.chatAsk), t, s + 1.45, .3, out, .12) });
+  // agent: typing dots → reply
+  if (t >= s + 1.95 && t < s + 2.45) {
+    ln(rectPts(A1[0], A1[1], 150, 70, 30), { closed: true, w: 3, seed: 330 });
+    for (let i = 0; i < 3; i++) { const on = Math.floor((t - s) * 8) % 3 === i; solid(circlePts(A1[0] + 45 + i * 30, A1[1] + 35, on ? 9 : 6, 18), on ? 'accent' : 'main', on ? 1 : .5); }
+  }
+  if (t >= s + 2.45) {
+    const k = SP(t, s + 2.45, 20), r = morph(rectPts(A1[0], A1[1], 150, 70, 30), rectPts(...A1, 30), k);
+    if (t < out) ln(r, { closed: true, w: 3, seed: 330 });
+    else { const p = 1 - XI(t, out, .15); if (p > .01) ln(rectPts(...A1, 30), { closed: true, w: 3, prog: p, seed: 330 }); }
+    const n1 = typedN(len(S.chatDone), t, s + 2.5, .3, out, .12);
+    if (n1 > 0) check(A1[0] + 50, A1[1] + 50, 36, 'accent');
+    txt(S.chatDone, A1[0] + 90, A1[1] + 62, { size: 40, wt: 800, n: n1 });
+    txt(S.chatNext, A1[0] + 36, A1[1] + 114, { size: 32, wt: 700, c: 'accent', n: typedN(len(S.chatNext), t, s + 2.75, .3, out, .12) });
+  }
+  // you: start
+  bub(U2, s + 3.4, 340);
+  txt(S.chatCmd, U2[0] + 36, U2[1] + 56, { size: 33, wt: 600, fam: 'mono', n: typedN(len(S.chatCmd), t, s + 3.45, .5, out, .12) });
+  // agent: reply
+  bub(A2, s + 4.45, 350);
+  txt(S.chatReply, A2[0] + 36, A2[1] + 58, { size: 38, wt: 800, n: typedN(len(S.chatReply), t, s + 4.5, .35, out, .12) });
+  // the guide stands next to its replies
+  if (t >= s + 2.45) {
+    const k = .64 * SP(t, s + 2.45, 22) * (1 - XI(t, out, .2)), yF = mix(A1[1] + A1[3], A2[1] + A2[3], SP(t, s + 4.45, 18));
+    mascot(312, yF, { k });
+  }
+}
+
+// ───────────────────────── TERMINAL install — the alternative (36–41 s) ─────────────────────────
+function partTerm(t) {
+  const s = SEC.term, enter = s - .05, out = SEC.skills - .05;
+  if (t < out) PANEL.forEach((p, i) => ln(morph(rectPts(...CHATW, 18), rectPts(...p, 14), SP(t, enter + i * .05, 16)), { closed: true, w: 3, seed: 360 + i }));
+  [['Claude Code', s + .2], ['Codex', s + .3]].forEach(([a, t0], p) => {
+    const [x, y, w] = PANEL[p];
+    txt(a, x + 44, y + 62, { size: 40, wt: 800, n: typedN(a.length, t, t0, .15, out, .12) });
+    txt('METHOD 02 · TERMINAL', x + w - 44, y + 62, { size: 24, wt: 700, track: .18, align: 'right', c: 'accent', n: typedN(20, t, t0 + .05, .2, out, .12) });
+    const dp = XO(t, t0, .3) * (1 - XI(t, out, .15));
+    if (dp > .01) ln([[x + 30, y + 86], [x + w - 30, y + 86]], { w: 1.6, prog: dp, seed: 370 + p });
+  });
+  [0, 1].forEach(p => {
+    const [x, y] = PANEL[p], top = y + 92;
+    TERM.filter(l => l.p === p).forEach((l, i) => {
+      if (t < l.t) return;
+      const by = top + 64 + i * 60, n = typedN(len(l.s), t, l.t, l.d, out, .15);
+      if (l.k === 'cmd') {
+        if (t < out + .05) txt('›', x + 44, by, { size: 36, wt: 700, fam: 'mono', c: 'accent' });
+        txt(l.s, x + 82, by, { size: 34, wt: 600, fam: 'mono', n });
+        if (t < l.t + l.d + .25 && t < out && Math.floor(t * 8) % 2 === 0) solid(rectPts(x + 82 + tw(Array.from(l.s).slice(0, n).join(''), 34, 600, 'mono') + 4, by - 30, 18, 36), 'accent');
+      } else if (n > 0) {
+        check(x + 60, by - 12, 30, 'accent');
+        txt(l.s, x + 92, by, { size: 34, wt: 800, c: 'accent', n });
+      }
+    });
+  });
+}
+
+// ───────────────────────── SKILLS (41–43.5 s) ─────────────────────────
+function partSkills(t) {
+  const s = SEC.skills, enter = s - .05, out = SEC.link - .05;
+  SKILLS.forEach((name, k) => {
+    if (t >= out) return;
+    const [x, y, w, h] = CHIP(k), t0 = enter + Math.floor(k / 2) * .1;
+    ln(morph(rectPts(...PANEL[k < 8 ? 0 : 1], 14), rectPts(x, y, w, h, 46), SP(t, t0, 22)), { closed: true, w: 3, c: k === 15 ? 'accent' : 'main', seed: 380 + k });
+    const tr = s + 1.2 + Math.floor(k / 4) * .25;
+    const fill = k === 15 ? XO(t, tr, .3) : XO(t, tr, .12) * (1 - XI(t, tr + .16, .12));
+    if (fill > .01) hatch(rectPts(x, y, w, h, 46), fill, { gap: 12, seed: 390 + k, alpha: .7 });
+    txt(name, x + w / 2 - (k === 15 ? 34 : 0), y + 58, { size: 34, wt: 600, fam: 'mono', align: 'center', c: k === 15 ? 'accent' : 'main', n: typedN(name.length, t, t0 + .12, .15, out, .1) });
+    if (k === 15) txt('NEW', x + w - 40, y + 57, { size: 22, wt: 900, align: 'right', c: 'accent', n: typedN(3, t, t0 + .2, .08, out, .1) });
+  });
+  txt('BIZPLAN SKILLS × 15', 180, 262, { size: 30, wt: 800, track: .14, c: 'accent', n: typedN(19, t, s + .2, .2, out, .12) });
+  txt('+ outline (NEW)', 1740, 262, { size: 26, wt: 700, track: .1, align: 'right', n: typedN(15, t, s + .3, .2, out, .12) });
+}
+
+// ───────────────────────── LINK → END (43.5–48 s) ─────────────────────────
+function partLink(t) {
+  const s = SEC.link, enter = s - .05, merge = s + .45, toEnd = SEC.end - .05, gone = SEC.end - .55;
+  if (t < merge + .05) {
+    SKILLS.forEach((name, k) => {
+      const [x, y, w, h] = CHIP(k), sx = 300 + k * 82.5;
+      ln(morph(rectPts(x, y, w, h, 46), lineLoop(sx, 600, sx + 70, 600), SP(t, enter + k * .02, 20)), { closed: true, w: 3, seed: 380 + k });
+    });
+  }
+  if (t >= merge) {
+    const k = SP(t, toEnd, 14), y = mix(600, RAIL0, k), half = mix(660, 810, k);
+    ln([[960 - half, y], [960 + half, y]], { w: 3.4, seed: 2 });
+    if (t >= s + 1.95 && t < s + 2.55) {
+      const p = XIO(t, s + 1.95, .5), sx = mix(300, 1620, p);
+      ln([[Math.max(300, sx - 120), 600], [Math.min(1620, sx + 120), 600]], { w: 6, c: 'accent', seed: 3 });
+    }
+    const g = SP(t, toEnd, 14);
+    title({ size: mix(210, TS, g), y: mix(572, TY, g), sy: SP(t, merge, 18), ay: 600 });
+  }
+  txt(URL, 960, 692, { size: 50, wt: 700, fam: 'mono', align: 'center', c: 'accent', n: typedN(URL.length, t, s + .95, .5, gone, .2) });
+  [['Claude Code', 640], ['Codex', 980]].forEach(([str, x], i) => {
+    const p = XO(t, s + 1.45 + i * .08, .2) * (1 - XI(t, gone, .2));
+    if (p > .01) ln(rectPts(x, 758, 300, 68, 34), { closed: true, w: 2.6, prog: p, seed: 340 + i });
+    const f = XO(t, s + 1.7 + i * .25, .3) * (1 - XI(t, gone, .2));
+    if (f > .01) hatch(rectPts(x, 758, 300, 68, 34), f, { gap: 12, seed: 345 + i });
+    txt(str, x + 150, 804, { size: 32, wt: 700, align: 'center', n: typedN(str.length, t, s + 1.5 + i * .08, .15, gone, .15) });
+  });
+  if (t >= SEC.end + .25) {
+    const p = XO(t, SEC.end + .25, .85);
+    mascot(mix(-260, 1560, p), RAIL0, p < .985 ? { run: (t - SEC.end - .25) * 6, lean: 7 * (1 - p) } : {});
+  }
+  if (t >= SEC.end + .75) openLabels(clamp((t - SEC.end - .75) / .3));
+}
+
+// ───────────────────────── chrome ─────────────────────────
+function captions(t) {
+  for (const [str, t0, t1] of CAPTIONS) {
+    if (t < t0 || t > t1 + .25) continue;
+    const n = typedN(len(str), t, t0, .35, t1, .2);
+    if (n <= 0) continue;
+    const x0 = 960 - tw(str, 46, 800) / 2;
+    solid(rectPts(x0 - 38, 962 - 30, 16, 16), 'accent');
+    txt(str, x0, 962, { size: 46, wt: 800, n });
+  }
+}
+function corners(t) {
+  let idx = 0; SECTIONS.forEach(([st], i) => { if (t >= st) idx = i; });
+  const beat = Math.min(BEATS - 1, Math.floor(t / BEAT)), pad = n => String(n).padStart(2, '0');
+  txt(`FIG. ${pad(idx + 1)} — ${SECTIONS[idx][1]}`, 150, 114, { size: 24, wt: 700, track: .2 });
+  txt(`BEAT ${pad(beat + 1)} / ${BEATS}`, 1770, 990, { size: 24, wt: 700, track: .2, align: 'right' });
+}
+function scene(t) {
+  if (t < SEC.outline + .1) partOpen(t);
+  if (t >= SEC.outline && t < SEC.psst + .4) partOutline(t);
+  if (t >= SEC.psst - .05 && t < SEC.match + .5) partPSST(t);
+  if (t >= SEC.match - .05 && t < SEC.market + .5) partMatch(t);
+  if (t >= SEC.market - .05 && t < SEC.review + .4) partMarket(t);
+  if (t >= SEC.review - .05 && t < SEC.pitch + .4) partReview(t);
+  if (t >= SEC.pitch - .05 && t < SEC.export + .4) partPitch(t);
+  if (t >= SEC.export - .05 && t < SEC.chat + .4) partExport(t);
+  if (t >= SEC.chat - .05 && t < SEC.term + .4) partChat(t);
+  if (t >= SEC.term - .05 && t < SEC.skills + .4) partTerm(t);
+  if (t >= SEC.skills - .05 && t < SEC.link + .4) partSkills(t);
+  if (t >= SEC.link - .05) partLink(t);
+  captions(t); corners(t);
+}
+
+// ───────────────────────── backgrounds & passes ─────────────────────────
+const cv = document.getElementById('c'), X = cv.getContext('2d');
+const layer = document.createElement('canvas'); layer.width = W; layer.height = H; const L = layer.getContext('2d');
+G = L;
+function noiseCanvas(seed, fn) {
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), img = g.createImageData(W, H);
+  let s = seed >>> 0; const rnd = () => { s += 0x6D2B79F5; let r = Math.imul(s ^ s >>> 15, 1 | s); r ^= r + Math.imul(r ^ r >>> 7, 61 | r); return ((r ^ r >>> 14) >>> 0) / 4294967296; };
+  for (let i = 0; i < W * H; i++) { const [r, gg, b, a] = fn(rnd); img.data[i * 4] = r; img.data[i * 4 + 1] = gg; img.data[i * 4 + 2] = b; img.data[i * 4 + 3] = a; }
+  g.putImageData(img, 0, 0); return c;
+}
+let GRAIN, TOOTH;
+function background(g, ink) {
+  g.fillStyle = INKS[ink].bg; g.fillRect(0, 0, W, H);
+  if (ink !== 'blue') { g.globalCompositeOperation = 'multiply'; g.drawImage(GRAIN, 0, 0); g.globalCompositeOperation = 'source-over'; }
+  g.save(); g.lineWidth = 1;
+  if (ink === 'note') {
+    // lined notebook: ruled lines + red margin
+    g.strokeStyle = COL.blue;
+    for (let y = 132, i = 0; y < H; y += 54, i++) { g.globalAlpha = .2; g.beginPath(); g.moveTo(0, y + .5); g.lineTo(W, y + .5); g.stroke(); }
+    g.strokeStyle = COL.margin; g.globalAlpha = .55; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(116, 0); g.lineTo(116, H); g.stroke();
+    g.globalAlpha = .3; g.beginPath(); g.moveTo(122, 0); g.lineTo(122, H); g.stroke();
+  } else {
+    g.strokeStyle = INKS[ink].grid;
+    for (let x = 0, i = 0; x <= W; x += 60, i++) { g.globalAlpha = i % 5 === 0 ? .26 : .13; g.beginPath(); g.moveTo(x + .5, 0); g.lineTo(x + .5, H); g.stroke(); }
+    for (let y = 0, i = 0; y <= H; y += 60, i++) { g.globalAlpha = i % 5 === 0 ? .26 : .13; g.beginPath(); g.moveTo(0, y + .5); g.lineTo(W, y + .5); g.stroke(); }
+  }
+  g.restore();
+}
+function pass(ink, t, clip) {
+  X.save();
+  if (clip) { X.beginPath(); clip(X); X.clip(); }
+  X.globalCompositeOperation = 'source-over'; X.globalAlpha = 1;
+  background(X, ink);
+  L.setTransform(1, 0, 0, 1, 0, 0); L.globalCompositeOperation = 'source-over'; L.globalAlpha = 1; L.clearRect(0, 0, W, H);
+  INK = ink; scene(t);
+  if (ink !== 'blue') {
+    L.globalCompositeOperation = 'destination-out'; L.drawImage(TOOTH, 0, 0); L.globalCompositeOperation = 'source-over';
+    X.globalCompositeOperation = 'multiply';
+  }
+  X.drawImage(layer, 0, 0);
+  X.restore();
+}
+function scanLine(y) { X.save(); X.fillStyle = COL.blue; X.fillRect(0, y - 3, W, 6); X.fillStyle = COL.white; X.fillRect(0, y - 1, W, 2); X.restore(); }
+const FLOOD = [SEC.market - .5, .45], SCAN1 = SEC.chat - .5, SCAN2 = SEC.end - .5;
+function render(t) {
+  T = t;
+  if (t < FLOOD[0]) pass('paper', t);
+  else if (t < FLOOD[0] + FLOOD[1]) {
+    const R = STAMP[2] + 2300 * XI(t, FLOOD[0], FLOOD[1]);
+    pass('paper', t); pass('blue', t, g => g.arc(STAMP[0], STAMP[1], R, 0, Math.PI * 2));
+  } else if (t < SCAN1) pass('blue', t);
+  else if (t < SCAN1 + .5) {
+    const y = mix(-4, H + 4, XIO(t, SCAN1, .5));
+    pass('blue', t, g => g.rect(0, y, W, H - y)); pass('note', t, g => g.rect(0, 0, W, y)); scanLine(y);
+  } else if (t < SCAN2) pass('note', t);
+  else if (t < SCAN2 + .5) {
+    const y = mix(H + 4, -4, XIO(t, SCAN2, .5));
+    pass('note', t, g => g.rect(0, 0, W, y)); pass('paper', t, g => g.rect(0, y, W, H - y)); scanLine(y);
+  } else pass('paper', t);
+}
+
+// ───────────────────────── sound events & music map (read by sound.py) ─────────────────────────
+function events() {
+  const E = [], e = (t, kind, x = {}) => E.push({ t: +t.toFixed(4), kind, ...x });
+  const keys = (str, t0, d) => { const n = len(str); for (let i = 0; i < n; i++) e(t0 + d * i / n, 'key'); };
+  e(0, 'steps', { d: .45 }); e(.36, 'whoosh', { d: .14 }); e(.5, 'press');
+  e(.95, 'pencil', { d: .3 }); e(1.0, 'ticks', { d: .4 }); e(1.45, 'pencil', { d: .25 });
+  e(2.0, 'scribble', { d: .4 }); e(2.2, 'whip'); e(2.95, 'pencil', { d: .25 }); e(3.7, 'clap');
+  for (let i = 0; i < 7; i++) e(3.8 + i * .06, 'drop'); e(4.95, 'clap');
+  const o = SEC.outline;
+  e(o + .05, 'pencil', { d: .25 }); e(o + .15, 'scribble', { d: .4 });
+  for (let i = 0; i < 4; i++) { e(o + .45 + i * .75, 'pencil', { d: .2 }); e(o + .5 + i * .75, 'scribble', { d: .7 }); }
+  e(o + 3.45, 'scribble', { d: .35 }); e(o + 3.95, 'stamp'); e(o + 4.45, 'scribble', { d: .4 });
+  const p = SEC.psst;
+  e(p - .05, 'whoosh', { d: .25 }); for (let i = 0; i < 4; i++) e(p + .45 + i * .3, 'stamp', { soft: 1 }); e(p + 1.95, 'scribble', { d: .45 });
+  const m = SEC.match;
+  e(m - .05, 'whoosh', { d: .3 }); e(m + .15, 'scribble', { d: .5 }); for (let j = 0; j < 3; j++) e(m + .95 + j * .3, 'pencil', { d: .25 });
+  e(m + 1.95, 'stamp'); e(FLOOD[0], 'flood', { d: FLOOD[1] }); e(FLOOD[0] + FLOOD[1], 'impact');
+  const k = SEC.market;
+  e(k + .1, 'tick'); e(k + .45, 'tick'); e(k + .95, 'tick'); e(k + 1.45, 'type', { d: .4, n: 12 });
+  const r = SEC.review;
+  e(r - .05, 'whoosh', { d: .25 }); e(r + .05, 'riser', { d: 1.0 }); for (let j = 0; j < 4; j++) e(r + .95 + j * .3, 'stamp', { soft: 1 }); e(r + 2.45, 'tick'); e(r + 2.55, 'tick');
+  const q = SEC.pitch;
+  e(q - .05, 'whoosh', { d: .25 }); for (let i = 0; i < 6; i++) e(q + .45 + i * .04, 'pop'); for (let i = 0; i < 6; i++) e(q + 1.2 + i * .15, 'tick', { soft: 1 }); e(q + 1.95, 'tick');
+  const x = SEC.export;
+  e(x - .05, 'whoosh', { d: .25 }); e(x + .25, 'type', { d: .6, n: 12 }); e(x + .95, 'stamp'); e(SCAN1, 'scan', { d: .5 }); e(SCAN1 + .5, 'impact');
+  const c = SEC.chat;
+  e(c + .15, 'tick'); e(c + .23, 'tick'); keys(LINK, c + .5, .8); keys(S.chatAsk, c + 1.45, .3); e(c + 1.8, 'pop');
+  for (let i = 0; i < 4; i++) e(c + 1.95 + i * .125, 'tick', { soft: 1 }); e(c + 2.45, 'ding');
+  e(c + 3.4, 'pop'); keys(S.chatCmd, c + 3.45, .5); e(c + 4.45, 'reply');
+  e(SEC.term - .05, 'whoosh', { d: .25 });
+  TERM.forEach(l => { if (l.k === 'cmd') keys(l.s, l.t, l.d); else e(l.t, 'ding'); });
+  const sk = SEC.skills;
+  e(sk - .05, 'whoosh', { d: .25 }); for (let i = 0; i < 8; i++) e(sk - .05 + i * .1, 'pop'); for (let i = 0; i < 4; i++) e(sk + 1.2 + i * .25, 'tick', { soft: 1 });
+  const li = SEC.link;
+  e(li - .05, 'whoosh', { d: .3 }); e(li + .45, 'riser', { d: .5 }); keys(URL, li + .95, .5); e(li + 1.45, 'tick'); e(li + 1.53, 'tick'); e(li + 1.95, 'sweep', { d: .5 });
+  e(SCAN2, 'scan', { d: .5 }); e(SEC.end - .05, 'whoosh', { d: .4 }); e(SEC.end + .25, 'steps', { d: .8 }); e(SEC.end + .75, 'scribble', { d: .3 });
+  return E;
+}
+function musicMap() {
+  const styles = [];
+  for (let b = 0; b < DUR / 2; b++) { const t0 = b * 2; styles.push(t0 < 16 ? 'paper' : t0 < 30 ? 'blue' : t0 < SEC.end ? 'note' : 'paper'); }
+  return { bpm: BPM, styles };
+}
+
+// ───────────────────────── setup & playback ─────────────────────────
+async function setup() {
+  const loads = [];
+  for (const w of [600, 700, 800, 900]) loads.push(document.fonts.load(`${w} 40px Geist`, 'Ab'), document.fonts.load(`${w} 40px BP`, '가'));
+  for (const w of [600, 700]) loads.push(document.fonts.load(`${w} 40px 'Geist Mono'`, 'Ab'));
+  await Promise.all(loads); await document.fonts.ready;
+  G = L;
+  const m = measure('bizplan', 100, 900); TS = 100 * TITLE_W / m.width;
+  const mm = measure('bizplan', TS, 900); TA = mm.actualBoundingBoxAscent; TD = mm.actualBoundingBoxDescent;
+  RAIL0 = 372; LT = RAIL0 + 96; TY = LT + TA;
+  const km = measure(PH_A + PH_B, 100, 800); KA = km.actualBoundingBoxAscent; KD = km.actualBoundingBoxDescent;
+  PH = Math.min(132, 132 * 1480 / (tw(PH_A, 132, 800) + 44 + tw(PH_B, 132, 800)));
+  GRAIN = noiseCanvas(7, r => { const v = r(); return [70, 60, 40, v > .55 ? (v - .55) * 70 : 0]; });
+  TOOTH = noiseCanvas(11, r => { const v = r(); return [0, 0, 0, v > .62 ? 60 + r() * 120 : 0]; });
+}
+
+const renderMode = new URLSearchParams(location.search).has('render');
+function fit() { const s = renderMode ? 1 : Math.min(innerWidth / W, innerHeight / H); cv.style.transform = `scale(${s})`; }
+addEventListener('resize', fit); fit();
+
+window.__duration = DUR;
+window.__ready = setup().then(() => {
+  window.__seek = t => render(((t % DUR) + DUR) % DUR);
+  window.__events = events();
+  window.__music = musicMap();
+  render(0);
+  if (!renderMode) {
+    let paused = false, off = 0, t0 = performance.now();
+    const loop = now => { if (!paused) render(((now - t0) / 1000 + off) % DUR); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+    addEventListener('keydown', e => { if (e.code !== 'Space') return; if (paused) { t0 = performance.now(); paused = false; } else { off += (performance.now() - t0) / 1000; paused = true; } });
+  }
+});
+})();
+</script>
+</body>
+</html>

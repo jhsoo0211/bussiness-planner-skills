@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bizplan 20s</title>
+<style>
+/*@FONTS@*/
+:root{
+  --navy:#1F3A5F; --navy2:#2E5281; --orange:#F28C28; --orange-t:#FDEBD8;
+  --bg:#F7F8FA; --gray:#8A94A6; --line:#DCE4EE; --ink:#14243A; --white:#FFFFFF;
+}
+html,body{margin:0;height:100%;background:#0E1724;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center}
+#stage{position:relative;flex:none;width:1920px;height:1080px;background:var(--bg);overflow:hidden;
+  font-family:'BP','Pretendard','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  color:var(--ink);font-weight:500;letter-spacing:-0.02em}
+.abs{position:absolute}
+.center{left:0;width:1920px;text-align:center}
+#grid{inset:0;background-image:radial-gradient(circle,rgba(31,58,95,.10) 1.6px,transparent 1.8px);background-size:48px 48px}
+#prog{left:0;bottom:0;height:8px;width:0;background:var(--orange)}
+.or{color:var(--orange)}
+
+/* scene A */
+.h-xl{font-size:84px;font-weight:700;color:var(--navy);line-height:1.15;white-space:nowrap}
+.b8{font-weight:800}
+.doc{background:var(--white);border-radius:20px;box-shadow:0 30px 60px rgba(20,36,58,.12),0 2px 6px rgba(20,36,58,.06)}
+.doc-head{position:absolute;left:52px;top:56px;width:220px;height:22px;border-radius:11px;background:var(--line)}
+.dline{position:absolute;left:52px;height:14px;width:0;border-radius:7px;background:#E7ECF3}
+.cursor{position:absolute;left:52px;top:136px;width:5px;height:44px;border-radius:2px;background:var(--navy)}
+
+/* logo */
+.logo{display:flex;align-items:center;gap:30px}
+.mark{position:relative;width:120px;height:120px;border-radius:30px;background:var(--navy)}
+.mark i{position:absolute;left:26px;height:12px;border-radius:6px;background:var(--white);width:0}
+.word{font-size:132px;font-weight:800;color:var(--navy);letter-spacing:-0.04em;line-height:1}
+.sub{font-size:40px;font-weight:600;color:var(--gray)}
+.chip{display:inline-block;margin:0 8px;padding:12px 26px;border:2px solid var(--line);border-radius:999px;background:var(--white);font-size:28px;font-weight:600;color:var(--navy)}
+
+/* header */
+#tracker{left:1200px;top:58px;width:600px;height:56px}
+.trk{position:absolute;top:0;width:150px;text-align:center;font-size:26px;font-weight:600;color:var(--gray)}
+.trk.on{color:var(--navy);font-weight:800}
+#trk-bar{left:30px;top:46px;width:90px;height:5px;border-radius:3px;background:var(--orange)}
+
+/* left column */
+.left{left:120px;top:318px;width:700px}
+.num{font-size:112px;font-weight:800;color:var(--orange);line-height:1;letter-spacing:-0.03em}
+.ttl{margin-top:26px;font-size:66px;font-weight:700;color:var(--navy);line-height:1.2}
+.cap{margin-top:30px;font-size:31px;font-weight:500;color:var(--gray);line-height:1.6}
+.new{display:inline-block;vertical-align:middle;margin-left:14px;padding:6px 16px;border-radius:10px;background:var(--orange);color:var(--white);font-size:26px;font-weight:800;letter-spacing:0;line-height:1.3}
+
+/* panel */
+#panel{left:860px;top:170px;width:940px;height:760px;border-radius:30px;background:var(--white);
+  box-shadow:0 40px 80px rgba(20,36,58,.10),0 2px 8px rgba(20,36,58,.05);overflow:hidden}
+.vis{position:absolute;inset:0}
+.tag{display:inline-block;padding:4px 12px;margin-right:14px;border-radius:8px;background:var(--line);color:var(--navy);font-size:20px;font-weight:700;vertical-align:middle}
+.tt{font-size:34px;font-weight:800;color:var(--navy);vertical-align:middle}
+.h2row{font-size:30px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:14px}
+.nb{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:var(--navy);color:var(--white);font-size:22px;font-weight:800}
+.conn{width:22px;height:28px;border-left:3px solid var(--line);border-bottom:3px solid var(--line);border-bottom-left-radius:8px}
+.h3row{font-size:25px;font-weight:600;color:var(--ink)}
+.h3row b{color:var(--navy2);font-weight:700;margin-right:10px}
+.sum{font-size:24px;font-weight:500;color:var(--gray);white-space:nowrap}
+.sum::before{content:'';display:inline-block;width:6px;height:22px;margin-right:12px;border-radius:3px;background:var(--orange);vertical-align:-3px}
+
+.seg{position:absolute;top:44px;width:196px;height:88px;border-radius:18px;overflow:hidden}
+.seg .base,.seg .on{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:12px}
+.seg .base{background:#EEF2F7;color:var(--navy)}
+.seg .on{background:var(--navy);color:var(--white)}
+.seg .L{font-size:42px;font-weight:800}
+.seg .t{font-size:24px;font-weight:600}
+.colh{font-size:22px;font-weight:700;color:var(--gray);letter-spacing:.02em}
+.card{position:absolute;height:80px;border-radius:16px;display:flex;align-items:center;padding:0 24px;box-sizing:border-box;font-size:25px;font-weight:600}
+.card.p{left:56px;width:300px;background:#F2F5F9;color:var(--ink)}
+.card.s{left:528px;width:356px;background:var(--white);border:2px solid var(--navy);color:var(--navy)}
+.card .k{font-weight:800;margin-right:12px;color:var(--orange)}
+#d-svg,#e-svg{position:absolute;left:0;top:0;overflow:visible}
+.link{fill:none;stroke:var(--orange);stroke-width:4;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1}
+.badge{display:inline-flex;align-items:center;gap:12px;padding:12px 24px;border-radius:999px;background:var(--orange-t);color:#B85E0B;font-size:26px;font-weight:800}
+.mini{position:absolute;top:620px;width:400px;height:84px;border-radius:16px;background:#F2F5F9;display:flex;align-items:center;padding:0 24px;box-sizing:border-box;font-size:24px;font-weight:600;color:var(--ink)}
+.mini b{color:var(--navy);font-weight:800;margin-right:12px}
+
+.ring{transform-box:fill-box;transform-origin:center}
+.rlab{font-size:28px;font-weight:800;fill:var(--navy)}
+.rsub{font-size:19px;font-weight:600;fill:var(--navy2)}
+.score{font-size:132px;font-weight:800;color:var(--navy);line-height:1;letter-spacing:-0.04em}
+.of{font-size:40px;font-weight:700;color:var(--gray);margin-left:10px}
+.row{position:absolute;left:480px;width:404px;height:68px;border-bottom:2px solid #EEF2F7;display:flex;align-items:center;justify-content:space-between;font-size:27px;font-weight:600;color:var(--ink)}
+.mk{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800}
+.mk.o{color:var(--navy);border:4px solid var(--navy);border-radius:50%;box-sizing:border-box;width:40px;height:40px;font-size:0}
+.mk.t{color:var(--orange)}
+.pill{position:absolute;top:630px;padding:12px 22px;border-radius:999px;font-size:24px;font-weight:700}
+
+.fcard{position:absolute;top:176px;width:240px;height:300px;border-radius:20px;background:var(--white);border:2px solid var(--line);box-shadow:0 18px 36px rgba(20,36,58,.08);overflow:hidden}
+.fcard .band{height:14px;background:var(--navy)}
+.fcard .ext{margin:62px 0 0 28px;font-size:52px;font-weight:800;color:var(--navy);letter-spacing:-0.03em}
+.fcard .lb{margin:14px 0 0 30px;font-size:26px;font-weight:600;color:var(--gray)}
+.fcard .ln{position:absolute;left:30px;height:10px;border-radius:5px;background:#EEF2F7}
+.fnew{position:absolute;top:152px;padding:6px 16px;border-radius:10px;background:var(--orange);color:var(--white);font-size:24px;font-weight:800}
+.chk{position:absolute;top:556px;display:flex;align-items:center;gap:14px;font-size:27px;font-weight:600;color:var(--ink)}
+.chk i{display:inline-flex;width:38px;height:38px;border-radius:50%;background:var(--navy);color:var(--white);align-items:center;justify-content:center;font-style:normal;font-size:22px;font-weight:800}
+
+.tag2{font-size:52px;font-weight:700;color:var(--navy)}
+.url{font-size:30px;font-weight:600;color:var(--gray);letter-spacing:0}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="grid" class="abs"></div>
+
+  <!-- A. hook -->
+  <div id="a-h1" class="abs h-xl" style="left:150px;top:372px">아이디어는 있는데,</div>
+  <div id="a-h2" class="abs h-xl b8" style="left:150px;top:478px">사업계획서가 <span class="or">막막할 때</span></div>
+  <div id="a-doc" class="abs doc" style="left:1220px;top:200px;width:480px;height:660px">
+    <div class="doc-head"></div>
+    <div id="a-cur" class="cursor"></div>
+    <div id="a-l0" class="dline" style="top:150px"></div>
+    <div id="a-l1" class="dline" style="top:196px"></div>
+    <div id="a-l2" class="dline" style="top:242px"></div>
+    <div id="a-l3" class="dline" style="top:310px"></div>
+    <div id="a-l4" class="dline" style="top:356px"></div>
+    <div id="a-l5" class="dline" style="top:402px"></div>
+    <div id="a-l6" class="dline" style="top:470px"></div>
+    <div id="a-l7" class="dline" style="top:516px"></div>
+  </div>
+
+  <!-- B / G. logo -->
+  <div id="logo-wrap" class="abs center" style="top:318px;display:flex;justify-content:center">
+    <div id="logo" class="logo">
+      <div class="mark"><i id="m0" style="top:30px"></i><i id="m1" style="top:50px"></i><i id="m2" style="top:70px"></i><i id="m3" style="top:90px;background:var(--orange)"></i></div>
+      <div class="word">bizplan</div>
+    </div>
+  </div>
+  <div id="b-sub" class="abs center sub" style="top:530px">아이디어에서 완성 문서까지, 사업계획서 작성 스킬</div>
+  <div id="b-chips" class="abs center" style="top:618px"><span class="chip">Claude Code</span><span class="chip">Codex</span></div>
+
+  <!-- header -->
+  <div id="tracker" class="abs">
+    <div class="trk" style="left:0">01 큰틀</div>
+    <div class="trk" style="left:150px">02 작성</div>
+    <div class="trk" style="left:300px">03 검토</div>
+    <div class="trk" style="left:450px">04 문서</div>
+    <div id="trk-on0" class="trk on" style="left:0">01 큰틀</div>
+    <div id="trk-on1" class="trk on" style="left:150px">02 작성</div>
+    <div id="trk-on2" class="trk on" style="left:300px">03 검토</div>
+    <div id="trk-on3" class="trk on" style="left:450px">04 문서</div>
+    <div id="trk-bar" class="abs"></div>
+  </div>
+
+  <!-- left columns -->
+  <div id="c-left" class="abs left">
+    <div class="num">01</div>
+    <div class="ttl">큰틀부터<br>한눈에<span class="new">NEW</span></div>
+    <div class="cap">제목 → 중제목 → 소제목 →<br>한두 줄 요약까지 먼저 잡고 시작</div>
+  </div>
+  <div id="d-left" class="abs left">
+    <div class="num">02</div>
+    <div class="ttl">PSST 순서로<br>본문 작성</div>
+    <div class="cap">문제 · 해결 · 성장 · 팀,<br>문제와 해결은 1:1로 맞물리게</div>
+  </div>
+  <div id="e-left" class="abs left">
+    <div class="num">03</div>
+    <div class="ttl">시장 도식과<br>심사 시점 검토</div>
+    <div class="cap">TAM·SAM·SOM 도식부터<br>100점 채점·예상 질문까지</div>
+  </div>
+  <div id="f-left" class="abs left">
+    <div class="num">04</div>
+    <div class="ttl">완성 문서로<br>내보내기<span class="new">NEW</span></div>
+    <div class="cap">한글(HWPX)·워드 파일과<br>발표 슬라이드까지</div>
+  </div>
+
+  <!-- panel -->
+  <div id="panel" class="abs">
+    <!-- C. outline tree -->
+    <div id="c-vis" class="vis">
+      <div id="c-t" class="abs" style="left:56px;top:46px"><span class="tag">제목</span><span class="tt">스마트 복약 약통 사업계획서</span></div>
+      <div id="c-h0" class="abs h2row" style="left:56px;top:128px"><span class="nb">1</span>문제 인식</div>
+      <div id="c-c0" class="abs conn" style="left:74px;top:170px"></div>
+      <div id="c-s0" class="abs h3row" style="left:112px;top:180px"><b>1-1</b>배경 및 필요성</div>
+      <div id="c-m0" class="abs sum" style="left:112px;top:222px" data-text="독거 어르신의 복약 공백, 앱 알림은 닿지 않음"></div>
+      <div id="c-h1" class="abs h2row" style="left:56px;top:280px"><span class="nb">2</span>실현 가능성</div>
+      <div id="c-c1" class="abs conn" style="left:74px;top:322px"></div>
+      <div id="c-s1" class="abs h3row" style="left:112px;top:332px"><b>2-1</b>핵심 기능</div>
+      <div id="c-m1" class="abs sum" style="left:112px;top:374px" data-text="자동 분배 · 복용 감지 · 보호자 알림"></div>
+      <div id="c-h2" class="abs h2row" style="left:56px;top:432px"><span class="nb">3</span>성장 전략</div>
+      <div id="c-c2" class="abs conn" style="left:74px;top:474px"></div>
+      <div id="c-s2" class="abs h3row" style="left:112px;top:484px"><b>3-1</b>시장 진입</div>
+      <div id="c-m2" class="abs sum" style="left:112px;top:526px" data-text="시범 보급 → 보호자 구독으로 확장"></div>
+      <div id="c-h3" class="abs h2row" style="left:56px;top:584px"><span class="nb">4</span>팀 구성</div>
+      <div id="c-c3" class="abs conn" style="left:74px;top:626px"></div>
+      <div id="c-s3" class="abs h3row" style="left:112px;top:636px"><b>4-1</b>핵심 인력</div>
+      <div id="c-m3" class="abs sum" style="left:112px;top:678px" data-text="하드웨어 개발 + 돌봄 현장 경험"></div>
+    </div>
+
+    <!-- D. PSST -->
+    <div id="d-vis" class="vis">
+      <div id="d-g0" class="seg" style="left:56px"><div class="base"><span class="L">P</span><span class="t">문제</span></div><div id="d-o0" class="on"><span class="L">P</span><span class="t">문제</span></div></div>
+      <div id="d-g1" class="seg" style="left:264px"><div class="base"><span class="L">S</span><span class="t">해결</span></div><div id="d-o1" class="on"><span class="L">S</span><span class="t">해결</span></div></div>
+      <div id="d-g2" class="seg" style="left:472px"><div class="base"><span class="L">S</span><span class="t">성장</span></div><div id="d-o2" class="on"><span class="L">S</span><span class="t">성장</span></div></div>
+      <div id="d-g3" class="seg" style="left:680px"><div class="base"><span class="L">T</span><span class="t">팀</span></div><div id="d-o3" class="on"><span class="L">T</span><span class="t">팀</span></div></div>
+      <div id="d-hp" class="abs colh" style="left:58px;top:170px">PROBLEM · 문제</div>
+      <div id="d-hs" class="abs colh" style="left:530px;top:170px">SOLUTION · 해결</div>
+      <div id="d-p0" class="card p" style="top:210px"><span class="k">1</span>복약 시간을 놓친다</div>
+      <div id="d-p1" class="card p" style="top:308px"><span class="k">2</span>복용 여부를 모른다</div>
+      <div id="d-p2" class="card p" style="top:406px"><span class="k">3</span>이상 징후 대응이 늦다</div>
+      <div id="d-s0" class="card s" style="top:210px">약 자동 분배 + 알림</div>
+      <div id="d-s1" class="card s" style="top:308px">복용 감지 센서</div>
+      <div id="d-s2" class="card s" style="top:406px">보호자 실시간 알림</div>
+      <svg id="d-svg" width="940" height="760">
+        <path id="d-k0" class="link" pathLength="1" d="M358 250 C 440 250, 446 250, 526 250"/>
+        <path id="d-k1" class="link" pathLength="1" d="M358 348 C 440 348, 446 348, 526 348"/>
+        <path id="d-k2" class="link" pathLength="1" d="M358 446 C 440 446, 446 446, 526 446"/>
+      </svg>
+      <div id="d-bd" class="abs" style="left:56px;top:520px"><span class="badge">✓ 문제 ↔ 해결 1:1 대응</span></div>
+      <div id="d-m0" class="mini" style="left:56px"><b>성장</b>시장 진입 · 수익 모델</div>
+      <div id="d-m1" class="mini" style="left:484px"><b>팀</b>핵심 역량 · 협력 기관</div>
+    </div>
+
+    <!-- E. visual + review -->
+    <div id="e-vis" class="vis">
+      <div id="e-t1" class="abs colh" style="left:56px;top:48px">시장 규모 도식</div>
+      <div id="e-t2" class="abs colh" style="left:480px;top:48px">심사 시점 채점</div>
+      <svg id="e-svg" width="940" height="760">
+        <circle id="e-r0" class="ring" cx="244" cy="390" r="200" fill="#E6ECF4" stroke="#C9D5E4" stroke-width="2"/>
+        <circle id="e-r1" class="ring" cx="244" cy="432" r="140" fill="#BFD0E3"/>
+        <circle id="e-r2" class="ring" cx="244" cy="482" r="82" fill="#F28C28"/>
+        <g id="e-l0"><text class="rlab" x="244" y="236" text-anchor="middle">TAM</text><text class="rsub" x="244" y="262" text-anchor="middle">전체 시장</text></g>
+        <g id="e-l1"><text class="rlab" x="244" y="342" text-anchor="middle">SAM</text><text class="rsub" x="244" y="368" text-anchor="middle">유효 시장</text></g>
+        <g id="e-l2"><text class="rlab" x="244" y="482" text-anchor="middle" style="fill:#fff">SOM</text><text class="rsub" x="244" y="508" text-anchor="middle" style="fill:#fff">목표 매출</text></g>
+      </svg>
+      <div id="e-sc" class="abs" style="left:480px;top:88px"><span id="e-num" class="score">0</span><span class="of">/ 100</span></div>
+      <div id="e-w0" class="row" style="top:262px">문제 인식<span id="e-k0" class="mk o">O</span></div>
+      <div id="e-w1" class="row" style="top:332px">실현 가능성<span id="e-k1" class="mk o">O</span></div>
+      <div id="e-w2" class="row" style="top:402px">성장 전략<span id="e-k2" class="mk t">△</span></div>
+      <div id="e-w3" class="row" style="top:472px">팀 구성<span id="e-k3" class="mk o">O</span></div>
+      <div id="e-p0" class="pill" style="left:480px;background:var(--orange-t);color:#B85E0B">필수 수정 2건</div>
+      <div id="e-p1" class="pill" style="left:676px;background:#EEF2F7;color:var(--navy)">예상 질문 8개</div>
+    </div>
+
+    <!-- F. export -->
+    <div id="f-vis" class="vis">
+      <div id="f-c0" class="fcard" style="left:76px;border-color:var(--orange)"><div class="band" style="background:var(--orange)"></div><div class="ext">.hwpx</div><div class="lb">한글 문서</div><div class="ln" style="top:236px;width:170px"></div><div class="ln" style="top:258px;width:130px"></div></div>
+      <div id="f-c1" class="fcard" style="left:350px"><div class="band"></div><div class="ext">.docx</div><div class="lb">워드 문서</div><div class="ln" style="top:236px;width:170px"></div><div class="ln" style="top:258px;width:130px"></div></div>
+      <div id="f-c2" class="fcard" style="left:624px"><div class="band" style="background:var(--navy2)"></div><div class="ext">16:9</div><div class="lb">발표 슬라이드</div><div class="ln" style="top:236px;width:170px"></div><div class="ln" style="top:258px;width:130px"></div></div>
+      <div id="f-nw" class="fnew" style="left:210px">NEW</div>
+      <div id="f-k0" class="chk" style="left:76px"><i>✓</i>양식 목차 그대로</div>
+      <div id="f-k1" class="chk" style="left:376px"><i>✓</i>표·출처 정리</div>
+      <div id="f-k2" class="chk" style="left:636px"><i>✓</i>개조식 서식</div>
+    </div>
+  </div>
+
+  <!-- G. outro -->
+  <div id="g-tag" class="abs center tag2" style="top:534px">막막한 사업계획서, 큰틀부터 완성 문서까지</div>
+  <div id="g-chips" class="abs center" style="top:632px"><span class="chip">Claude Code</span><span class="chip">Codex</span></div>
+  <div id="g-url" class="abs center url" style="top:730px">github.com/jhsoo0211/bussiness-planner-skills</div>
+
+  <div id="prog" class="abs"></div>
+</div>
+
+<script>
+(() => {
+  const DURATION = 20;
+  const EASE = {
+    lin: p => p,
+    out: p => 1 - Math.pow(1 - p, 3),
+    io: p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2,
+    back: p => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); },
+  };
+  const tracks = {};   // id -> prop -> [{start,dur,from,to,ease}]
+  function tw(id, start, dur, props, ease = 'out') {
+    for (const [prop, [from, to]] of Object.entries(props)) {
+      ((tracks[id] ||= {})[prop] ||= []).push({ start, dur, from, to, ease });
+    }
+  }
+  const inn = (id, t, d = .45, dy = 28) => tw(id, t, d, { o: [0, 1], y: [dy, 0] });
+  const out = (id, t, d = .3, dy = -24) => tw(id, t, d, { o: [1, 0], y: [0, dy] }, 'io');
+
+  // A. hook (0 - 2.6)
+  inn('a-h1', .15, .5, 34); inn('a-h2', .5, .5, 34);
+  tw('a-doc', .05, .6, { o: [0, 1], y: [40, 0] });
+  [380, 330, 400, 360, 250, 390, 300, 340].forEach((w, i) => tw('a-l' + i, 1.5 + i * .09, .35, { w: [0, w] }));
+  tw('a-cur', 1.45, .1, { o: [1, 0] }, 'lin');
+  out('a-h1', 2.45); out('a-h2', 2.5);
+  tw('a-doc', 2.45, .35, { o: [1, 0], s: [1, .92] }, 'io');
+
+  // B. brand (2.6 - 4.6)
+  tw('logo', 2.7, .55, { o: [0, 1], s: [.82, 1] }, 'back');
+  [60, 44, 54, 30].forEach((w, i) => tw('m' + i, 2.9 + i * .07, .3, { w: [0, w] }));
+  inn('b-sub', 3.1); inn('b-chips', 3.3);
+  out('b-sub', 4.15, .25); out('b-chips', 4.15, .25);
+  // 큰 로고가 그대로 헤더 자리로 이동한다(목표 좌표는 글꼴 로드 후 placeLogo에서 계산)
+  const LOGO_S = .38;
+  tw('logo', 4.2, .55, { x: [0, 0], y: [0, 0], s: [1, LOGO_S] }, 'io');
+  tw('tracker', 4.55, .35, { o: [0, 1], y: [-14, 0] });
+  tw('panel', 4.6, .5, { o: [0, 1], y: [24, 0], s: [.97, 1] });
+
+  // tracker steps
+  const STEP = [4.7, 8.6, 12.45, 15.6];
+  STEP.forEach((t, i) => {
+    tw('trk-on' + i, t, .25, { o: [0, 1] }, 'lin');
+    if (i < 3) tw('trk-on' + i, STEP[i + 1], .25, { o: [1, 0] }, 'lin');
+    if (i > 0) tw('trk-bar', t - .05, .4, { x: [(i - 1) * 150, i * 150] }, 'io');
+  });
+
+  // C. outline (4.7 - 8.6)
+  inn('c-left', 4.75); out('c-left', 8.35);
+  inn('c-t', 4.95, .35, 16);
+  for (let k = 0; k < 4; k++) {
+    const b = 5.25 + k * .6;
+    tw('c-h' + k, b, .3, { o: [0, 1], x: [-20, 0] });
+    tw('c-c' + k, b + .12, .2, { o: [0, 1] }, 'lin');
+    tw('c-s' + k, b + .18, .3, { o: [0, 1], x: [-14, 0] });
+    tw('c-m' + k, b + .3, .08, { o: [0, 1] }, 'lin');
+    tw('c-m' + k, b + .3, .5, { type: [0, 1] }, 'lin');
+  }
+  tw('c-vis', 8.35, .3, { o: [1, 0], y: [0, -16] }, 'io');
+
+  // D. PSST (8.6 - 12.45)
+  inn('d-left', 8.65); out('d-left', 12.25);
+  tw('d-vis', 8.5, .01, { o: [0, 1] }, 'lin');
+  for (let i = 0; i < 4; i++) tw('d-g' + i, 8.8 + i * .08, .3, { o: [0, 1], y: [18, 0] });
+  for (let i = 0; i < 4; i++) tw('d-o' + i, [9.25, 9.35, 11.1, 11.2][i], .3, { o: [0, 1] }, 'lin');
+  inn('d-hp', 9.35, .3, 10); inn('d-hs', 9.4, .3, 10);
+  for (let j = 0; j < 3; j++) {
+    tw('d-p' + j, 9.45 + j * .1, .35, { o: [0, 1], x: [-24, 0] });
+    tw('d-s' + j, 9.6 + j * .1, .35, { o: [0, 1], x: [24, 0] });
+    tw('d-k' + j, 10.0 + j * .15, .4, { draw: [0, 1] }, 'io');
+  }
+  tw('d-bd', 10.7, .4, { o: [0, 1], s: [.85, 1] }, 'back');
+  inn('d-m0', 11.25, .35, 16); inn('d-m1', 11.35, .35, 16);
+  tw('d-vis', 12.25, .3, { o: [1, 0], y: [0, -16] }, 'io');
+
+  // E. visuals + review (12.45 - 15.6)
+  inn('e-left', 12.55); out('e-left', 15.4);
+  tw('e-vis', 12.4, .01, { o: [0, 1] }, 'lin');
+  inn('e-t1', 12.6, .3, 10); inn('e-t2', 12.65, .3, 10);
+  ['e-r0', 'e-r1', 'e-r2'].forEach((id, i) => tw(id, 12.7 + i * .15, .5, { s: [0, 1] }, 'back'));
+  ['e-l0', 'e-l1', 'e-l2'].forEach((id, i) => tw(id, 13.05 + i * .1, .25, { o: [0, 1] }, 'lin'));
+  tw('e-sc', 12.8, .3, { o: [0, 1] }, 'lin');
+  tw('e-num', 12.85, 1.1, { count: [0, 84] });
+  for (let j = 0; j < 4; j++) {
+    tw('e-w' + j, 13.15 + j * .12, .3, { o: [0, 1], x: [18, 0] });
+    tw('e-k' + j, 13.45 + j * .18, .3, { o: [0, 1], s: [1.8, 1] }, 'back');
+  }
+  tw('e-p0', 14.3, .35, { o: [0, 1], s: [.85, 1] }, 'back');
+  tw('e-p1', 14.42, .35, { o: [0, 1], s: [.85, 1] }, 'back');
+  tw('e-vis', 15.4, .3, { o: [1, 0], y: [0, -16] }, 'io');
+
+  // F. export (15.6 - 18.2)
+  inn('f-left', 15.7); out('f-left', 17.95);
+  tw('f-vis', 15.55, .01, { o: [0, 1] }, 'lin');
+  [-7, 0, 7].forEach((r, j) => tw('f-c' + j, 15.85 + j * .14, .55, { o: [0, 1], y: [90, 0], r: [r, 0] }, 'back'));
+  tw('f-nw', 16.45, .35, { o: [0, 1], s: [0, 1] }, 'back');
+  for (let j = 0; j < 3; j++) tw('f-k' + j, 16.75 + j * .15, .3, { o: [0, 1], y: [14, 0] });
+  tw('f-vis', 17.95, .3, { o: [1, 0] }, 'io');
+  tw('panel', 18.0, .35, { o: [1, 0], s: [1, .97] }, 'io');
+  tw('tracker', 17.95, .3, { o: [1, 0] }, 'lin');
+
+  // G. outro (18.2 - 20)
+  tw('logo', 18.1, .6, { x: [0, 0], y: [0, 0], s: [LOGO_S, 1] }, 'io');
+  inn('g-tag', 18.6, .4, 22); inn('g-chips', 18.85, .35, 16); inn('g-url', 19.05, .35, 12);
+
+  tw('prog', 0, DURATION, { w: [0, 1920] }, 'lin');
+
+  // ---------- renderer ----------
+  const DEF = { o: 1, x: 0, y: 0, s: 1, r: 0 };
+  const els = {};
+  for (const id of Object.keys(tracks)) {
+    els[id] = document.getElementById(id);
+    if (!els[id]) console.warn('missing element', id);
+    for (const list of Object.values(tracks[id])) list.sort((a, b) => a.start - b.start);
+  }
+  const typed = {};
+  document.querySelectorAll('[data-text]').forEach(el => typed[el.id] = el.dataset.text);
+
+  function valueAt(list, t) {
+    let v = list[0].from;
+    for (const k of list) {
+      if (t < k.start) break;
+      const p = Math.min(1, (t - k.start) / Math.max(k.dur, 1e-6));
+      v = k.from + (k.to - k.from) * EASE[k.ease](p);
+    }
+    return v;
+  }
+
+  const grid = document.getElementById('grid');
+  const cursor = document.getElementById('a-cur');
+
+  function render(t) {
+    for (const [id, props] of Object.entries(tracks)) {
+      const el = els[id]; if (!el) continue;
+      const v = {};
+      for (const [prop, list] of Object.entries(props)) v[prop] = valueAt(list, t);
+      if ('o' in v) el.style.opacity = Math.max(0, Math.min(1, v.o));
+      if ('x' in v || 'y' in v || 's' in v || 'r' in v) {
+        const x = v.x ?? DEF.x, y = v.y ?? DEF.y, s = v.s ?? DEF.s, r = v.r ?? DEF.r;
+        el.style.transform = `translate(${x}px,${y}px) scale(${s}) rotate(${r}deg)`;
+      }
+      if ('w' in v) el.style.width = v.w + 'px';
+      if ('draw' in v) el.style.strokeDashoffset = 1 - v.draw;
+      if ('count' in v) el.textContent = Math.round(v.count);
+      if ('type' in v) { const s = typed[id]; el.textContent = s.slice(0, Math.round(v.type * s.length)); }
+    }
+    cursor.style.visibility = (t < 1.45 && Math.floor(t * 2.4) % 2 === 0) ? 'visible' : 'hidden';
+    grid.style.backgroundPosition = `${-t * 10}px ${-t * 5}px`;
+  }
+
+  // ---------- playback ----------
+  const stage = document.getElementById('stage');
+  const params = new URLSearchParams(location.search);
+  const renderMode = params.has('render');
+  function fit() {
+    if (renderMode) { stage.style.transform = 'none'; return; }
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transform = `scale(${s})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  // 헤더 자리(왼쪽 120px, 세로 중심 78px)로 가는 이동량을 실제 레이아웃에서 계산
+  let now = 0;
+  function placeLogo() {
+    const wrap = document.getElementById('logo-wrap'), logo = els.logo;
+    const w = logo.offsetWidth, h = logo.offsetHeight;
+    const cx = wrap.offsetLeft + logo.offsetLeft + w / 2;
+    const cy = wrap.offsetTop + logo.offsetTop + h / 2;
+    const dx = 120 + LOGO_S * w / 2 - cx, dy = 78 - cy;
+    tracks.logo.x[0].to = dx; tracks.logo.x[1].from = dx;
+    tracks.logo.y[0].to = dy; tracks.logo.y[1].from = dy;
+    render(now);
+  }
+  document.fonts.ready.then(placeLogo);
+
+  window.__duration = DURATION;
+  window.__seek = t => render(now = Math.max(0, Math.min(DURATION, t)));
+  render(0);
+
+  if (!renderMode) {
+    let paused = false, offset = 0, t0 = performance.now();
+    const HOLD = 1.2;
+    const loop = now => {
+      if (!paused) {
+        const t = ((now - t0) / 1000 + offset) % (DURATION + HOLD);
+        render(now = Math.min(t, DURATION));
+      }
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+    addEventListener('keydown', e => {
+      if (e.code !== 'Space') return;
+      paused = !paused;
+      if (!paused) t0 = performance.now();
+      else offset = ((performance.now() - t0) / 1000 + offset);
+    });
+  }
+})();
+</script>
+</body>
+</html>

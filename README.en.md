@@ -2,6 +2,13 @@
 
 [한국어](README.md) | [English](README.en.md)
 
+<p align="center">
+  <a href="https://cdn.jsdelivr.net/gh/jhsoo0211/bussiness-planner-skills@main/docs/motion-graphic/reel/bizplan-reel-en-web.mp4">
+    <img src="docs/motion-graphic/reel/bizplan-reel-en-preview.webp" width="100%" alt="bizplan intro video: outline first, PSST drafting, 1:1 problem–solution matching, market sizing, judge-style review, Hangul/Word export, install by pasting the GitHub link in chat">
+  </a>
+</p>
+<p align="center"><sub>▶ <b>Intro video (50 s)</b> — click the preview to play it with sound in your browser · <a href="https://github.com/jhsoo0211/bussiness-planner-skills/raw/main/docs/motion-graphic/reel/bizplan-reel-en.mp4">download the 1080p original</a></sub></p>
+
 17 skills for drafting, reviewing, and presenting business plans for **Korean government startup-support programs**. Claude Code and Codex use the same `skills/` source.
 
 ## Scope: designed for Korean PSST applications
@@ -40,6 +47,24 @@ The intended context includes 예비창업패키지, 초기창업패키지, 창�
 | `bizplan-slides` | Parsing the plan into information units and choosing a visual structure per unit (cards, KPIs, TAM, comparison, Gantt, and so on), then producing PPTX and PDF decks. Supplied .pptx templates are filled in place; PDF/image-only templates (or no template) are redrawn as editable PPTX with a theme. Finally it checks for dropped text, overflow, and numbers that do not match the source |
 | `bizplan-export` | Export-voucher plans and target-market analysis |
 | `bizplan-analyze` | Comparing completed plans and extracting reusable writing patterns |
+
+## Easiest: install from chat
+
+Paste the repository link into a Claude Code or Codex chat and ask the agent to install it. The agent clones the repository and runs the installer described below for you.
+
+```text
+https://github.com/jhsoo0211/bussiness-planner-skills — install this skill
+```
+
+To be explicit about how to install it:
+
+```text
+Clone https://github.com/jhsoo0211/bussiness-planner-skills and install the bizplan skills with scripts/install_skills.py
+```
+
+- Install locations: `~/.claude/skills/` for Claude Code, `~/.agents/skills/` for Codex. Review and approve the commands when the agent asks.
+- When it finishes, start a new session (or restart) and begin with `/bizplan` (Claude Code) or `$bizplan` (Codex).
+- If the agent cannot install it or picks a different location, run the terminal commands below yourself.
 
 ## Install for Codex
 
