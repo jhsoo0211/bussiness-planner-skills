@@ -75,7 +75,7 @@ def darker(hex_color, f=0.75):
     return "#%02x%02x%02x" % tuple(round(int(h[i:i + 2], 16) * f) for i in (0, 2, 4))
 
 
-def nice_ticks(lo, hi, n=4):
+def nice_ticks(lo, hi, n=5):
     """깔끔한 눈금(0 포함)."""
     lo, hi = min(lo, 0), max(hi, 0)
     span = (hi - lo) or 1
@@ -327,7 +327,12 @@ def v_trend(v, A):
         s.append(f'<circle cx="{x}" cy="{y}" r="{4.5 if fut else 5}" fill="{"#fff" if fut else A}" stroke="{A if fut else "#fff"}" '
                  f'stroke-width="2"/>')
         s.append(f'<text x="{x}" y="{B + 22}" text-anchor="middle" font-size="13" fill="{INK2}">{html.escape(str(lab))}</text>')
-    for i in (0, len(pts) - 1):
+    # 값 라벨: 처음 · 끝 + 가운데의 최고·최저점(제목이 '정점'·'바닥'을 말할 때 그 점이 보이게)
+    marks = {0, len(pts) - 1}
+    for k in (ys.index(max(ys)), ys.index(min(ys))):
+        if 0 < k < len(pts) - 1:
+            marks.add(k)
+    for i in sorted(marks):
         x, y = pts[i]
         s.append(f'<text x="{x}" y="{y - 14}" text-anchor="middle" font-size="15" font-weight="700" fill="{INK}">'
                  f'{fmt(ys[i])}</text>')
