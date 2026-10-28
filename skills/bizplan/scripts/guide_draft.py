@@ -223,7 +223,7 @@ def section_block(title, body, check, items):
             if mark != "O" and re.search(check[5], name):
                 gains.append(f"{sec} '{name}' {mark}→O +{mx - g:g}점")
     state = " · ".join(f"{'✓' if ok else '✗'} {label}" for ok, label in got) or "(해당 체크리스트 없음 — coaching.md 3절에서 고른다)"
-    claims = [l for l in body if CLAIM.match(l)]
+    claims = [l for l in [title] + body if CLAIM.match(l) or (l is title and re.match(r"^\S*\s*\[[^\]]{1,15}\]", l))]
     numbered = sum(1 for l in claims if re.search(r"\d", l))
     visuals = sum(1 for l in body if VISUAL.search(l))
     out = [f"### {title}", "",
