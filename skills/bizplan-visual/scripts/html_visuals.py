@@ -179,6 +179,8 @@ def v_positioning(v, A):
     """x_axis/y_axis: {label, low, high}; points: [{name, x, y (0~10), ours, kind:'substitute'}]; quadrant: {x, y, label}."""
     W, H = 1024, 500
     L, R, T, B = 70, 954, 24, 452
+    if TXT > 1:                     # 문서용: 글자가 커진 만큼 판을 낮춰 쪽 높이를 아낀다
+        H, B = 430, 382
     sx = lambda x: L + (R - L) * x / 10
     sy = lambda y: B - (B - T) * y / 10
     xa, ya = v.get("x_axis", {}), v.get("y_axis", {})
@@ -520,8 +522,9 @@ def v_bm(v, A):
                 if not a.get("pos"):
                     a["pos"] = next(free)
     rows = sorted({BM_SLOTS[a["pos"]][1] for a in acts})
-    ys = {r: 62 + 168 * k for k, r in enumerate(rows)}
-    W, H = 1024, 62 + 168 * (len(rows) - 1) + 70
+    top, gap, foot = (54, 150, 52) if TXT > 1 else (62, 168, 70)   # 문서용: 행 간격·아래 여백을 줄여 쪽 높이를 아낀다(칩은 두 줄까지 들어간다)
+    ys = {r: top + gap * k for k, r in enumerate(rows)}
+    W, H = 1024, top + gap * (len(rows) - 1) + foot
     geo = []
     for a in acts:
         x, r = BM_SLOTS[a["pos"]]
@@ -933,7 +936,7 @@ def v_revenue_mix(v, A):
     """channels: [{name, formula('○○개 × ○○원'), amount(숫자, 없으면 생략)}], unit, target — 채널 합이 목표와 같은지 보인다."""
     ch = v["channels"]
     known = [c["amount"] for c in ch if isinstance(c.get("amount"), (int, float))]
-    mx = max(known) if known else 1
+    mx = max(known, default=0) or 1           # 채널이 모두 0원이어도 막대 비율이 0으로 나뉘지 않게
     rows = []
     for c in ch:
         amt = c.get("amount")
@@ -1184,8 +1187,22 @@ PRINT_CSS = ("section.viz{width:860px;padding:24px 28px 18px}.kicker{display:non
              # 확대(zoom)를 받지 않는 자리(TAM 오른쪽 글, 단위, 되돌이 화살표 글)는 글자를 직접 키운다
              ".unit,.tam .chip,.loopbar span,.legend .unit-in{font-size:13.5px}.tam-formula{font-size:14px}"
              ".personas.two{grid-template-columns:1fr 1fr}.personas.two .persona{grid-template-columns:1fr}"
-             ".pl{padding:16px 18px;gap:8px}.pr{padding:14px 18px;gap:8px}"
-             + HTML_TYPES + "{zoom:1.15}")
+             ".pl{padding:14px 16px;gap:6px}.pr{padding:12px 16px;gap:6px}"
+             ".q{padding:12px 16px 8px;min-height:0}.qh{margin-bottom:4px}.qh b{font-size:26px}.q li{margin:3px 0}"
+             ".strat{margin-top:10px}.sc{padding:8px 12px}table.cmp th,table.cmp td{padding:8px 10px}"
+             ".swot{gap:8px}.personas{gap:10px}.pp p{line-height:1.4}.pscene{line-height:1.45}"
+             # 수익원 카드: 칩을 이름 줄 오른쪽에 둔다
+             ".strm{padding:7px 12px;display:grid;grid-template-columns:1fr auto;column-gap:8px;row-gap:2px}"
+             ".strm b{grid-area:1/1}.strm .chip{grid-area:1/2;margin:0;align-self:start}.strm>span{grid-area:2/1/3/3}"
+             # 반폭(size: half) — 개요 이미지 칸용: 폭 430px, 제목·여백을 줄인다(HTML 유형 권장 — SVG는 글자가 함께 작아진다)
+             "section.viz.half{width:430px;padding:12px 12px 8px}section.viz.half h2.headline{font-size:17px}"
+             "section.viz.half .sub,section.viz.half .note{font-size:14px;margin-top:6px}"
+             "section.viz.half .takeaway{font-size:14px;padding:6px 10px;margin-top:8px}section.viz.half .body{margin-top:8px}"
+             "section.viz.half .phone{max-width:124px;border-width:5px;border-radius:20px}section.viz.half .scr-cap small{display:none}"
+             "section.viz.half .ui{padding:8px 7px;gap:5px}section.viz.half .ui-top{font-size:11.5px;padding:2px 2px 5px}"
+             "section.viz.half .ui-row{font-size:11px;padding:5px 6px}section.viz.half .ui-btn{font-size:11px;padding:6px}"
+             + HTML_TYPES + "{zoom:1.15}"
+             + ",".join("section.viz.half " + t for t in HTML_TYPES.split(",")) + "{zoom:1.3}")
 
 
 def css(A, slide, print_=False):
@@ -1338,7 +1355,7 @@ h1.chapter{{font-size:20px;font-weight:800;color:{INK2};margin:18px 0 -8px;lette
 .fx-op{{font-size:22px;font-weight:700;color:{INK2}}} .fx-text{{font-size:16px;font-weight:700}}
 .streams{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:10px}}
 .strm{{border:1px solid {GRAY_FILL};border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;gap:3px}}
-.strm b{{font-size:14.5px}} .strm>span{{font-size:13px;color:{INK2}}} .strm .chip{{align-self:flex-start;margin:4px 0 0}}
+.strm b{{font-size:14.5px}} .strm>span{{font-size:13px;color:{INK2};word-break:keep-all}} .strm .chip{{align-self:flex-start;margin:4px 0 0}}
 /* flow */
 .flow{{display:grid;gap:44px;position:relative}}
 .fw{{position:relative;border:1.5px solid {GRAY_FILL};border-radius:12px;padding:16px 16px 14px;background:#fff;min-height:110px;display:flex;flex-direction:column;gap:6px}}
@@ -1487,7 +1504,8 @@ def section(v, A):
         raise SystemExit(f"[오류] {v.get('id')}: 모르는 type '{kind}' — {', '.join(RENDER)}")
     if not v.get("headline"):
         raise SystemExit(f"[오류] {v.get('id')}: headline(결론 문장)이 없다 — 이 시각자료가 말하는 것을 한 문장으로 쓴다")
-    parts = [f'<section class="viz" id="{html.escape(v["id"])}">']
+    half = " half" if v.get("size") == "half" else ""     # 개요 양식 표의 이미지 칸(약 70mm)에 넣을 반폭 그림
+    parts = [f'<section class="viz{half}" id="{html.escape(v["id"])}">']
     if v.get("kicker"):
         parts.append(f'<div class="kicker">{esc(v["kicker"])}</div>')
     parts.append(f'<h2 class="headline">{esc(v["headline"])}</h2>')
@@ -1588,6 +1606,26 @@ def warn(spec):
     return out
 
 
+def tall(spec, out_dir):
+    """문서용(--print) 그림이 쪽에서 줄어들 만큼 높은지 본다 — 본문 폭 170mm에서 120mm, 반폭(개요 칸 70mm)에서 62mm."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return []
+    out = []
+    for v in spec.get("visuals", []):
+        path = os.path.join(out_dir, f"{v.get('id')}.png")
+        if v.get("type") == "chapter" or not os.path.exists(path):
+            continue
+        with Image.open(path) as im:
+            w, h = im.size
+        width, limit = (70, 62) if v.get("size") == "half" else (170, 120)
+        if h / w * width > limit:
+            out.append(f"{v['id']}: 문서에서 높이 {h / w * width:.0f}mm({width}mm 폭) — {limit}mm를 넘어 변환기가 줄이고 "
+                       f"글자도 작아진다. 항목·행을 줄이거나 그림을 둘로 나눈다")
+    return out
+
+
 def shoot(html_path, out_dir):
     node = shutil.which("node")
     if not node:
@@ -1638,6 +1676,9 @@ def main():
             print(f"[PNG 건너뜀] {err}")
         else:
             print(f"PNG {len(files)}개: {', '.join(os.path.basename(f) for f in files)}")
+            if a.print_:
+                for w in tall(spec, a.out):
+                    print(f"[확인] {w}")
 
 
 SAMPLE = os.path.join(HERE, "..", "assets", "html-visuals-sample.json")   # 기본 목차 순서의 예시 spec

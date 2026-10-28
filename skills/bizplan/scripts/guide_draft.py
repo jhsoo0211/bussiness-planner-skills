@@ -71,7 +71,7 @@ CHECKS = [
         ("세분화 근거", r"세분|세그먼트|1차|2차")],
      "'모든 사람'은 고객이 아니다 — 측정·접근·구매력·니즈 동질성으로 좁혔는가(B5)",
      "고객 설문 응답 분포, 모집단 통계 원문(출처·시점), 페르소나 근거 인터뷰", r"문제 정의"),
-    ("실행 증거", r"실행 증거|준비 정도|준비정도|\(준비\) 정도|개발 방안|증빙 자산|한 일|^[\d\-. ]*현황$|보유역량|진행역량", [
+    ("실행 증거", r"^(?!.*(대표자|팀 현황|팀원)).*(실행 증거|준비 정도|준비정도|\(준비\) 정도|개발 방안|증빙 자산|한 일|[\d\-. ]*현황$|보유역량|진행역량)", [
         ("보유역량(경험 횟수·기간·자산)", r"\d+\s*(회|년|개월|명|건)|보유"),
         ("진행역량(완료·진행·예정 상태)", r"완료|진행 중|예정"),
         ("미확보 공개(되는 것·안 되는 것)", r"미확보|확보하지 못|안 되는|없다"),
@@ -93,6 +93,11 @@ CHECKS = [
         ("예산 연결", r"예산|금액|비용")],
      "로드맵은 일정표가 아니라 '이 과업을 이 시점에 하기 때문에 이 매출'이 되는 인과 사슬(B13)",
      "이미 한 일의 기록(개발 일지·커밋 로그·회의록)", r"일정"),
+    ("자금 조달", r"기타 자금|조달계획|자금 조달", [
+        ("자기자본·투자·융자 금액", r"자기자본|자본금|투자|융자|대출"),
+        ("시기·조건", r"(19|20)\d\d|M\d|시기|조건|이후")],
+     "정부지원금 밖의 자금이 실제로 확보됐는가(약정·조건) — 약정 없는 금액을 확정처럼 쓰지 않는다(B9·B12)",
+     "투자의향서·자본금 증빙", r"자금|조달"),
     ("사업비", r"사업비|예산|자금", [
         ("비목 표(세부 내용·금액)", r"비목|\|.*금액"),
         ("비율", r"비율|%"),
@@ -156,7 +161,7 @@ CHECKS = [
 ]
 
 CLAIM = re.compile(r"^\s*(?:#{1,6}\s+)?(?:[-*]\s+)?(?:\*\*)?(○|◆)\s*\S")
-VISUAL = re.compile(r"!\[|\[이미지|\[그림|\[시각자료")
+VISUAL = re.compile(r"!\[|\[이미지|\[그림|\[시각자료|^이미지\s*[:：]")   # 마지막은 ```개요``` 양식 블록의 이미지 줄
 
 
 def sections(lines):
@@ -287,6 +292,7 @@ def main():
     items, score = review_items(a.review) if a.review else ([], None)
     secs = sections(lines)
     body_out, all_marks, all_gains, assets, last_parent, n_blocks = [], [], [], [], None, 0
+    emitted = set()
     n_claims = n_visuals = 0
     for k, (i, lvl, title) in enumerate(secs):
         nxt = secs[k + 1][0] if k + 1 < len(secs) else len(lines)
@@ -297,8 +303,15 @@ def main():
         body = lines[i + 1:nxt]
         if has_child and not any(l.strip() for l in body):
             continue
+        chain = []                                   # 위 단계 제목 전부(장 → 절) — '3. 성장전략 → 3-1. 사업화 방안 → 3-1-1. BM'
+        for _, l2, t in reversed(secs[:k]):
+            if l2 < (chain[0][0] if chain else lvl):
+                chain.insert(0, (l2, t))
         if parent and parent != last_parent:
-            body_out += [f"## {parent}", ""]
+            for depth, (_, t) in enumerate(chain):
+                if t not in emitted:
+                    body_out += [f"## {t}" if depth == 0 else f"**{t}**", ""]
+                    emitted.add(t)
             last_parent = parent
         elif not parent:
             last_parent = None

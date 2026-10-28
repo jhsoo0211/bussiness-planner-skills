@@ -65,8 +65,10 @@ def main():
 
     code, out = run([os.path.join(HERE, "check_tables.py"), md])
     errors = [l.strip() for l in out.splitlines() if l.strip().startswith("✕")]
-    report.append(f"검산: {'오류 ' + str(len(errors)) + '건' if errors else '오류 없음'}")
-    report += [f"  {e}" for e in errors]
+    holds = [l.strip() for l in out.splitlines() if l.strip().startswith("△")]
+    report.append(f"검산: {'오류 ' + str(len(errors)) + '건' if errors else '오류 없음'}"
+                  + (f" · 판단 보류 {len(holds)}건(○○ 칸이 있어 합계를 확인하지 못함 — 값이 들어오면 다시 돌린다)" if holds else ""))
+    report += [f"  {e}" for e in errors + holds]
 
     visual_warn = []
     if a.visuals:
@@ -137,6 +139,8 @@ def main():
     for f in made:
         print(f"  {os.path.relpath(f, folder)}")
     print("확인: 미리보기를 쪽마다 열어 헤드라인만 쪽 끝에 남은 곳·빈 공간·표 칸 끊김·그림 숫자를 본다. hwpx는 한글에서 1회 연다.")
+    print("참고: 이 PDF는 LibreOffice로 그린 미리보기다 — 한국어 줄 끝에서 숫자가 갈라질 수 있다('6 / 11건'). "
+          "제출용 PDF는 한글·워드에서 docx·hwpx를 열어 저장한다.")
     return 1 if errors or visual_warn else 0
 
 

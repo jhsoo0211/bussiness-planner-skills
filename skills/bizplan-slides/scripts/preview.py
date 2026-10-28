@@ -22,6 +22,8 @@ def main():
     args = ap.parse_args()
     out = args.out or os.path.splitext(args.pdf)[0] + "_미리보기"
     os.makedirs(out, exist_ok=True)
+    for old in glob.glob(os.path.join(out, "slide-*.png")):   # 쪽 수가 줄었을 때 지난 렌더의 남은 쪽이 섞이지 않게
+        os.remove(old)
     if not shutil.which("pdftoppm"):
         print("pdftoppm이 없다 — poppler-utils를 설치하거나 PDF 뷰어로 장마다 확인한다", file=sys.stderr)
         return 1

@@ -144,8 +144,10 @@ def _widths(tbl, total_mm=170):
     for c in range(ncols):
         texts = [row.cells[c].text for row in tbl.rows if c < len(row.cells)]
         lens.append(max([_em(t) for t in texts] + [2]))
-        # 끊기면 읽기 어려운 낱말 폭: 한글 낱말은 4자, 영문·숫자 낱말(제품명 등)은 6em까지만 지킨다(URL은 끊겨도 된다)
-        word = max([min(_em(w), 4 if re.search("[가-힣]", w) else 6) for t in texts for w in t.split()] + [1])
+        # 끊기면 읽기 어려운 낱말 폭: 숫자가 든 낱말('1,200만~2,500만')은 8em, 영문(제품명)은 6em, 한글 낱말은 4자까지 지킨다
+        # (URL처럼 더 긴 것은 끊겨도 된다)
+        word = max([min(_em(w), 8 if re.search(r"\d", w) else 4 if re.search("[가-힣]", w) else 6)
+                    for t in texts for w in t.split()] + [1])
         mins.append(word * em_mm + 4.6)                # + 칸 안 좌우 여백(LibreOffice·한글 기본 약 1.9mm × 2)과 여유
     shares = [min(max(l / sum(lens), 0.10), 0.55) for l in lens]
     w = [total_mm * x / sum(shares) for x in shares]
@@ -215,12 +217,13 @@ def _shade(p, fill="FFF8E6", bar="F59E0B"):
 
 
 def _keep_with_next(doc):
-    """그림·표 바로 앞 문단(헤드라인·표 제목)이 쪽 끝에 홀로 남지 않게 다음 것과 같은 쪽에 묶는다."""
+    """그림·표 바로 앞의 짧은 문단(헤드라인·표 제목·이끔말)이 쪽 끝에 홀로 남지 않게 다음 것과 같은 쪽에 묶는다.
+    긴 서술 문단(90자 넘게)은 묶지 않는다 — 문단과 큰 그림이 한 덩어리로 넘어가 쪽 절반이 비는 것을 막는다."""
     prev = None
     for el in doc.element.body.iterchildren():
         tag = el.tag.rsplit("}", 1)[-1]
         if tag == "tbl" or (tag == "p" and el.xpath(".//w:drawing")):
-            if prev is not None:
+            if prev is not None and len("".join(prev.itertext()).strip()) <= 90:
                 prev.get_or_add_pPr().keepNext_val = True
         if tag == "p" and "".join(el.itertext()).strip():
             prev = el
@@ -377,7 +380,7 @@ def _form_values(cell, vals):
             heads += 1
 
 
-def _form_picture(cell, path, res, width_mm, max_h=Mm(55)):
+def _form_picture(cell, path, res, width_mm, max_h=Mm(62)):
     full = path if os.path.isabs(path) else os.path.join(res or ".", path)
     cell.text = ""
     par = cell.paragraphs[0]

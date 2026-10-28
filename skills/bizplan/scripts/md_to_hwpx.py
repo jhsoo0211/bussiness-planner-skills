@@ -105,7 +105,7 @@ def build(md, resource_path, gov=True, captions=False, style="plain"):
         from PIL import Image
         with Image.open(path) as im:
             w, h = im.size
-        width = min(width_mm - 4, 55.0 * w / h)
+        width = min(width_mm - 4, 62.0 * w / h)          # 개요 칸 그림 높이 62mm까지(docx와 같다)
         with open(path, "rb") as f:
             bid = doc.add_image(f.read(), os.path.splitext(path)[1].lstrip(".").lower().replace("jpg", "jpeg"))
         p = cell.paragraphs[0]
@@ -318,6 +318,7 @@ def main():
     res = args.resource_path or os.path.dirname(os.path.abspath(args.md))
     doc, stats, missing = build(md, res, gov=not args.no_gov_bullets, captions=args.captions, style=args.style)
     doc.save_to_path(args.out)
+    os.chmod(args.out, 0o644)                           # python-hwpx는 0600으로 쓴다 — 다른 산출물과 같은 권한으로
     report = doc.validate()
     issues = getattr(report, "issues", [])
     from hwpx import HwpxDocument
