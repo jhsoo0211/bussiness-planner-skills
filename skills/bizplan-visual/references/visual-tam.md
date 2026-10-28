@@ -1,6 +1,6 @@
 # TAM/SAM/SOM 심화 (visual-guide 분리본)
 
-> 사례 출처는 [visual-guide.md](visual-guide.md) 머리말과 같다. 도식은 `scripts/chart_templates.py`의 `tam_sam_som(…, bases=…, source=…)`를 먼저 쓴다.
+> 사례 출처는 [visual-guide.md](visual-guide.md) 머리말과 같다. 도식은 `scripts/html_visuals.py`의 `tam` 유형(층마다 값 · 정의 · 산식 · 근거 수준, 값이 없으면 `○○`)을 먼저 쓰고, Node가 없을 때 `chart_templates.py`의 `tam_sam_som(…, bases=…, source=…)`을 쓴다.
 
 ## TAM/SAM/SOM 심화
 

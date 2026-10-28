@@ -278,7 +278,8 @@ def funnel(stages, title, out="funnel.png", source=None):
                     color=_LEVEL_COLOR.get(level, "#64748b"))
         if i:
             prev = stages[i - 1][1]
-            rate = f"{count / prev * 100:.0f}%" if prev else "—"
+            p = count / prev * 100 if prev else None      # 1% 아래는 유효숫자 2자리 — 0%로 뭉개지 않는다
+            rate = "—" if p is None else f"{p:.0f}%" if p >= 10 or p == 0 else f"{p:.1f}%" if p >= 1 else f"{p:.2g}%"
             ax.text(0.5, y + 0.5, f"↓ {rate}", ha="center", va="center", fontsize=_fs(9), color="#475569")
     ax.set_xlim(0, 1.12)
     ax.set_ylim(-0.6, n - 0.4)

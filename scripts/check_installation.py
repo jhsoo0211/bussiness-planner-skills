@@ -65,6 +65,15 @@ def main():
         data = json.loads(path.read_text(encoding="utf-8"))
         assert keys <= set(data), f"{path.name}: missing {keys - set(data)}"
     print("PASS theme files")
+    with tempfile.TemporaryDirectory(prefix="bizplan-visuals-") as temporary:
+        script = ROOT / "skills/bizplan-visual/scripts/html_visuals.py"
+        sample = Path(temporary) / "sample.json"
+        for args in (["--sample", str(sample)], [str(sample), "--out", temporary, "--no-png"]):
+            result = subprocess.run([sys.executable, "-B", str(script), *args], capture_output=True, text=True)
+            assert result.returncode == 0, result.stdout + result.stderr
+        html = (Path(temporary) / "visuals.html").read_text(encoding="utf-8")
+        assert html.count('<section class="viz"') == len(json.loads(sample.read_text(encoding="utf-8"))["visuals"])
+    print("PASS HTML visual sample build")
     try:
         import pptx  # noqa: F401
     except ImportError:

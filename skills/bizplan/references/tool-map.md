@@ -27,7 +27,7 @@ bizplan 스킬이 작업 중에 **다른 스킬·도구를 부를 때 보는 단
 | 기존 고객 인용 수집 | research | `sales:customer-voice`(통화·메일 커넥터 있을 때) | 주제 | 출처 붙은 인용 | 인터뷰 |
 | 설문 데이터 분석 | research | `data:explore-data`, `data:statistical-analysis`, `data:analyze` | CSV | 분포 · 교차표 · 유의성 | 직접 계산 |
 | 수치 검증 | research, review | `data:validate-data` | 출처 표 · 산식 | 판정(그대로·단서·재조사) | 조사 스킬 5절 |
-| 차트 | visual | `dataviz`, `data:create-viz`, `data:data-visualization` | 값 · 출처 · 결론 수치 | 차트 파일 | `bizplan-visual/scripts/chart_templates.py` |
+| 차트 | visual | `dataviz`, `data:create-viz`, `data:data-visualization` | 값 · 출처 · 결론 수치 | 차트 파일 | `bizplan-visual/scripts/html_visuals.py`(결론 제목·출처 틀, PNG) — Node가 없으면 `chart_templates.py` |
 | 손익 · 재무 표 | growth | `finance:financial-statements` | 매출·비용 가정 | 손익 형식 표 | growth E절 |
 | 계획 대비 실적(단계 평가) | growth, review | `finance:variance-analysis` | 계획 · 실적 | 차이 원인 | 직접 비교 |
 | 규제 · 인허가 확인 | solution | `legal:compliance-check`, `legal:legal-risk-assessment` | 기능 · 데이터 · 업종 | 해당 규제 · 필요 승인 · 위험 등급 | 라우터 분야표의 게이트 + "법률 확인 필요" |

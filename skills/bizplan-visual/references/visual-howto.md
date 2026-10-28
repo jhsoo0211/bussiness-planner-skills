@@ -1,6 +1,6 @@
 # 시각자료 제작 방법 (visual-guide 분리본)
 
-> 사례 출처·용어는 [visual-guide.md](visual-guide.md) 머리말과 같다. 차트는 `scripts/chart_templates.py`를 먼저 쓴다 — 아래 코드는 템플릿에 없는 도식을 만들 때의 참고용이다.
+> 사례 출처·용어는 [visual-guide.md](visual-guide.md) 머리말과 같다. 그림은 `scripts/html_visuals.py`(유형·규칙은 [visual-html.md](visual-html.md))를 먼저 쓰고, Node가 없으면 `scripts/chart_templates.py`를 쓴다 — 아래 코드는 둘 다에 없는 도식을 만들 때의 참고용이다.
 
 ## 시각자료 유형별 제작 절차
 

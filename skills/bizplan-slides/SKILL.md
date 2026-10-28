@@ -143,8 +143,8 @@ PDF·이미지 템플릿이나 템플릿이 없을 때, 정보 패턴 23종을 �
   - 출처·단위 9pt
 - 숫자가 주인공이면 크게, 단위는 작게 쓴다(`kpi`·`tam`·`value`).
 - 그래프·도식은 경로 R이면 네이티브 `chart`를 우선한다. 그림으로 넣을 때는 `bizplan-visual` 산출물을 쓴다.
-  - 슬라이드용 차트는 `chart_templates.set_target("slide")`로 글자를 키운다.
-  - `use_palette([...])`에 테마의 `series` 색(경로 T는 템플릿 accent·디자인 색)을 넘겨 색을 맞춘다.
+  - 슬라이드용 그림은 `html_visuals.py spec.json --slide --theme <테마>.json`으로 16:9 크기·테마 강조색에 맞춰 만든다(경로 T는 `--accent`에 템플릿 accent 색).
+  - 대체 경로(matplotlib)는 `chart_templates.set_target("slide")`와 `use_palette([...])`(테마의 `series` 색)로 맞춘다.
   - 아직 없으면 `[이미지: ○○]` 자리 표시 후 `bizplan-visual`로 연결한다.
 - 자료가 없는 칸은 계획서와 같은 표기(`[작성 필요: 항목]`)를 슬라이드에도 쓴다. 제출 전 0개가 될 때까지 사용자와 채운다.
 

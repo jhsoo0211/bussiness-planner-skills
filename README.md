@@ -107,7 +107,7 @@ python scripts/install_skills.py --agent claude
 ### 도구와 검증 범위
 
 - 기본 작성·검토 지침은 Markdown 스킬이며 별도의 API 키를 포함하지 않는다. 실행할 Claude Code 또는 Codex 계정·환경은 사용자가 준비한다.
-- 웹 조사, Python 그래프, 문서 변환, 슬라이드 렌더 검수는 해당 환경의 도구·권한이 있을 때 수행한다. 설치만으로 외부 도구나 서비스를 추가하지 않는다. 스크립트별 필요 도구는 아래 '포함된 스크립트' 표.
+- 웹 조사, 시각자료 렌더(Node + Playwright, 없으면 Python 그래프), 문서 변환, 슬라이드 렌더 검수는 해당 환경의 도구·권한이 있을 때 수행한다. 설치만으로 외부 도구나 서비스를 추가하지 않는다. 스크립트별 필요 도구는 아래 '포함된 스크립트' 표.
 - 도구가 없으면 수행하지 못한 작업과 필요한 자료를 밝힌다. 확인하지 못한 통계·출처·팀 실적을 검증 완료로 쓰지 않는다.
 - `dist/*v0.4.0.zip`은 기존 배포 파일이다. 이번 Codex 안내와 변경을 사용하려면 이 저장소의 현재 체크아웃으로 설치한다.
 
@@ -129,7 +129,8 @@ python scripts/check_installation.py
 | `bizplan/scripts/md_to_hwpx.py` | .md → 한글 .hwpx/.hwp (개조식·표·그림) + 구조 검증 | python-hwpx |
 | `bizplan/scripts/guide_draft.py` | 사업계획서 목차 순서대로 '작성 가이드'(별도 산출물) 골격 — 작성법·섹션 설계도 항목 판정, 주장형 헤드라인·시각자료 수, 숫자 등록부(`--brief`), 미확보 표기·검토 점수 영향·넣어 줄 자산 | — |
 | `bizplan/scripts/find_tools.py` | 이 환경에 설치된 스킬을 읽어 도구 지도(`tool-map.md`)의 작업별로 지금 쓸 수 있는 스킬과 대안을 보여 준다 | — |
-| `bizplan-visual/scripts/chart_templates.py` | 시장 추이·비교·TAM/SAM/SOM·포지셔닝맵·간트·고객 확보 퍼널·손익 콤보 차트(200dpi, 출처 캡션) | matplotlib, 한글 폰트 |
+| `bizplan-visual/scripts/html_visuals.py` | 시각자료 spec(JSON) → HTML(인라인 SVG) + PNG. 결론 제목 · 그래서 한 줄 · 출처 틀로 TAM/SAM/SOM·포지셔닝맵·SWOT·비교표·막대·전후·추이·퍼널·손익·BM·3지표·간트·로드맵·문제→해결 14종, 발표용 16:9(`--slide`)·테마 색(`--theme`), 성장률·손익 불일치 경고 | Node + Playwright(PNG), 한글 글꼴 |
+| `bizplan-visual/scripts/chart_templates.py` | (대체 경로) matplotlib 차트 — 시장 추이·비교·TAM/SAM/SOM·포지셔닝맵·간트·퍼널·손익 콤보(200dpi, 출처 캡션) | matplotlib, 한글 폰트 |
 | `bizplan-slides/scripts/pptx_inspect.py` | 발표 템플릿의 레이아웃·자리표시자·샘플 슬라이드·테마 분석 | python-pptx |
 | `bizplan-slides/scripts/pptx_build.py` | 템플릿 디자인을 유지한 채 스펙(JSON)대로 PPTX 생성 | python-pptx, Pillow |
 | `bizplan-slides/scripts/export_pdf.py` | PPTX/DOCX → PDF(LibreOffice), HTML 슬라이드 → PDF(Playwright) | LibreOffice / Node+Playwright |
@@ -148,6 +149,7 @@ python scripts/check_installation.py
   - 근거 수준 라벨(확인·산출·관찰·가정), 보수 추정(의향·전환율은 조사값의 절반), 검산 상자.
   - 양식 매핑: 같은 블록을 예비창업패키지(최근형·세분형)·U300+·온라인 문항형(모두의 창업 등) 목차에 배치한다. 문체도 양식별로 자동이다(문서형은 헤드라인 + 개조식, 문항형은 ◆ 소제목 + 짧은 서술).
 - **조사노트** `조사노트.md`(`bizplan-research`): 하위 질문 → 출처 표(근거 수준·판정·확인 경로) → 1차 고객 수 깔때기 → 인터뷰 종합 → 경쟁 비교·요약 카드 → 숫자 등록부 후보 → 블록별 문장 초안 → 빈칸 계획.
+- **[HTML 시각자료](skills/bizplan-visual/references/visual-html.md)**: 그림마다 결론 제목(무엇을 말하는가) → 그림 → 그래서 한 줄 → 출처 · 시점 · 표본. 우리만 강조색, 나머지는 회색, 축은 하나, 미확보 값은 `○○` 점선으로 보인다. `html_visuals.py --sample 예시.json`으로 14종 예시를 만든다.
 - **[도구 지도](skills/bizplan/references/tool-map.md)**: 웹 조사·인터뷰 종합·데이터 검증·차트·재무 표·규제 확인·문서 편집 같은 작업마다 '환경에 있으면 부를 스킬 / 넘길 것 / 받을 것 / 없으면 내장 절차'를 한 표에 둔다. 모든 스킬이 이 한 곳만 본다. `find_tools.py`로 지금 쓸 수 있는 것을 확인한다.
 
 ## 초안과 함께 받는 코칭

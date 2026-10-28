@@ -121,6 +121,7 @@ Evaluation must separately record **evidence that a reference was read** and **e
   - Evidence labels (confirmed, derived, observed, assumed), conservative estimates (half of surveyed intent or conversion), and a check box under totals.
   - Form mapping places the same blocks into the current and older pre-startup package forms, the U300+ student form, and online question-style applications. Writing style follows the form type.
 - `bizplan-research` now produces `조사노트.md`: sub-questions, a source table with evidence level, verdict, and verification path, a first-customer funnel, interview synthesis, competitor comparison and cards, number-register candidates, draft sentences per block, and gaps with acquisition plans.
+- `bizplan-visual/scripts/html_visuals.py` renders visuals from a JSON spec to HTML (inline SVG) and PNG. Every visual shares one frame: a conclusion headline, the chart, a so-what line, and source/date/sample. Fourteen types cover TAM/SAM/SOM, positioning maps, SWOT, comparison tables, bars, before/after, trends, funnels, P&L, business-model flows, KPI tiles, Gantt charts, roadmaps, and problem-to-solution maps. Only our item takes the accent color; unconfirmed values (`○○`) show as dashed blanks. `--slide` sizes for 16:9 and `--theme` matches a deck theme. The matplotlib templates remain as a fallback. See `skills/bizplan-visual/references/visual-html.md`.
 - `skills/bizplan/references/tool-map.md` is the single table for using other skills in the environment (web research, interview synthesis, data validation, charts, financial tables, regulatory checks, document editing): what to pass, what to receive, and the built-in fallback. `find_tools.py` lists which mapped skills are installed.
 
 ## A typical workflow
@@ -217,7 +218,7 @@ Content is mapped to a visual form by the **relationship between pieces of infor
 The core package contains Markdown instructions and optional Python scripts (form reading, table checks, DOCX/HWPX export, charts, PPTX template filling, theme rendering, content parsing, deck number checks, PDF export). It does not include an API key, install external services, or grant tool access. Use the capabilities and permissions available in your agent environment:
 
 - Web research requires browsing access or supplied source materials.
-- Python charts require Python, relevant libraries, and a Korean font.
+- HTML visuals need Node + Playwright for PNG export (otherwise open the HTML in a browser); the matplotlib fallback needs Python, matplotlib, and a Korean font.
 - DOCX export uses `python-docx` (Pandoc optional); HWPX/HWP export and reading use `python-hwpx`; spreadsheet checks use `openpyxl`.
 - PPTX template filling uses `python-pptx`; PDF export uses LibreOffice (PPTX/DOCX) or Node + Playwright (HTML); previews use `pdftoppm`.
 - HWPX files are structurally validated only; open them once in Hancom Office to confirm layout.
