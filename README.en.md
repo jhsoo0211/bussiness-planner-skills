@@ -153,6 +153,29 @@ This repository is **public**. Commit only material that may be redistributed.
 | Original winning plans (PDF/HWP) | `자료/` or a private repository | No (gitignored) |
 | Anonymized writing patterns / review lessons | `skills/bizplan/references/award-patterns.md`, `skills/bizplan-review/references/cases/` | Yes |
 
+## Repository rules (ruleset and confidential-material check)
+
+Changes reach `main` only through pull requests, and two checks must pass:
+
+- `install-check`: script syntax, JSON parsing, and `scripts/check_installation.py`.
+- `confidential-guard`: `scripts/check_confidential.py` blocks private folders (`자료/`, `분석/`, `templates/local/`, `themes/local/`), original-document formats (.pdf, .hwp, .hwpx, .doc, .docx, .xlsx, .ppt), ZIP files outside `dist/`, and private terms.
+
+One-time setup:
+
+1. Merge the branch that adds these checks. If the branch contains merge commits, use **Squash and merge** (linear history is required).
+2. Settings → Rules → Rulesets → New ruleset ▾ → **Import a ruleset**, then import `.github/rulesets/main.json` and `tags.json`.
+   - `main.json` requires a pull request (zero approvals), blocks force pushes and deletion, requires linear history and both checks. Repository admins may bypass it in an emergency.
+   - `tags.json` blocks deleting or moving `v*` tags.
+   - If the import rejects `allowed_merge_methods`, delete that line and import again.
+3. Settings → Secrets and variables → Actions → New repository secret named `CONFIDENTIAL_TERMS`, one private term per line (team names, item names, real names).
+   - The log shows only paths, line numbers, and reasons, never the term. Path segments that contain a term are shown as `***`.
+
+Run the same check locally before committing. A terms file at `~/.config/bizplan/confidential-terms.txt` is read automatically:
+
+```bash
+python3 scripts/check_confidential.py [--terms TERMS_FILE]
+```
+
 ## Coaching with every draft
 
 Each draft comes with coaching, defined in `skills/bizplan/references/coaching.md`.

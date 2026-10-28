@@ -175,6 +175,31 @@ python scripts/check_installation.py
 - 사업계획서 원문은 `bizplan-analyze`로 분석하면 패턴·교훈을 위 파일들에 익명으로 옮기는 추가안을 만들어 준다.
 - `.pptx`·`.pdf`·`.hwp` 같은 바이너리는 `.gitattributes`가 줄바꿈 변환에서 보호한다.
 
+## 저장소 규칙 (ruleset · 기밀 차단 검사)
+
+main 브랜치는 PR로만 바꾸고, PR마다 자동 검사 두 개가 통과해야 병합된다.
+
+| 검사 | 하는 일 |
+|------|---------|
+| `install-check` | 스크립트 문법, JSON 파싱, `scripts/check_installation.py` |
+| `confidential-guard` | `scripts/check_confidential.py` — 비공개 폴더(`자료/`·`분석/`·`templates/local/`·`themes/local/`), 원문 형식(.pdf·.hwp·.hwpx·.doc·.docx·.xlsx·.ppt), `dist/` 밖 zip, 비공개 용어 |
+
+처음 한 번 설정한다.
+
+1. 이 검사가 들어 있는 브랜치를 main에 병합한다. 작업 브랜치에 merge 커밋이 있으면 **Squash and merge**를 쓴다(선형 이력 규칙).
+2. Settings → Rules → Rulesets → New ruleset ▾ → **Import a ruleset** → `.github/rulesets/main.json`, 이어서 `tags.json`.
+   - `main.json`: PR 필수(승인 0명), 강제 푸시·삭제 차단, 선형 이력, 검사 2개 필수. 저장소 관리자는 긴급 시 우회할 수 있다.
+   - `tags.json`: `v*` 태그 삭제·이동 금지.
+   - 가져오기에서 `allowed_merge_methods`가 거부되면 그 줄을 지우고 다시 가져온다.
+3. Settings → Secrets and variables → Actions → New repository secret → 이름 `CONFIDENTIAL_TERMS`, 값은 저장소에 들어가면 안 되는 용어(팀명·아이템명·실명 등)를 한 줄에 하나씩.
+   - 검사 로그에는 경로·줄 번호·사유만 나오고 용어 자체는 나오지 않는다. 경로에 용어가 있으면 그 부분을 `***`로 가린다.
+
+커밋 전에 로컬에서 같은 검사를 돌릴 수 있다. 용어 파일은 `~/.config/bizplan/confidential-terms.txt`에 두면 자동으로 읽는다.
+
+```bash
+python3 scripts/check_confidential.py [--terms 용어파일]
+```
+
 ## 빠른 시작 (스텝 바이 스텝)
 
 **Step 1.** Claude Code 또는 Codex에 이렇게 말한다 (공고문 파일이 있으면 함께 첨부):

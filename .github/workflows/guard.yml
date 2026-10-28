@@ -1,0 +1,47 @@
+name: guard
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install-check:
+    name: install-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install python-pptx pillow
+      - name: Python syntax
+        run: python -m compileall -q skills scripts
+      - name: JSON files parse
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          files = [p for p in pathlib.Path(".").rglob("*.json") if ".git" not in p.parts]
+          for p in files:
+              json.loads(p.read_text(encoding="utf-8"))
+          print(f"{len(files)} JSON files OK")
+          PY
+      - name: Installation smoke test
+        run: python scripts/check_installation.py
+
+  confidential-guard:
+    name: confidential-guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for confidential material
+        env:
+          CONFIDENTIAL_TERMS: ${{ secrets.CONFIDENTIAL_TERMS }}
+        run: |
+          printf '%s\n' "$CONFIDENTIAL_TERMS" > "$RUNNER_TEMP/terms.txt"
+          python3 scripts/check_confidential.py --terms "$RUNNER_TEMP/terms.txt"
