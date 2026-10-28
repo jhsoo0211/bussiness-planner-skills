@@ -7,7 +7,7 @@
 | `report-blue` | 밝은 회색 바탕 + 선명한 파랑 1색. 작은 영문 머리말·굵은 제목·오른쪽 한 줄 설명, 흰 카드 + 파란 알약 라벨, 점 격자 모티프 | 사용자 제공 PDF 「Annual Business Plan」의 색·여백·머리 문법을 다시 그림 | [previews/report-blue.jpg](previews/report-blue.jpg) |
 | `mono-line` | 흰 바탕 · 검정 1색 · 회색 단계. 위쪽 옅은 머리띠(브랜드·태그라인), 아래쪽 가는 선 + 검정 탭, 검정 머리띠 카드 | 사용자 제공 PDF 「초보자를 위한 친절한 프레젠테이션」의 문법을 다시 그림 | [previews/mono-line.jpg](previews/mono-line.jpg) |
 | `basic-navy` | 흰 바탕 · 남색 + 호박색 보조. 템플릿이 없을 때 기본값 | 이 저장소 자체 디자인(`bizplan-basic.pptx`와 같은 색) | [previews/basic-navy.jpg](previews/basic-navy.jpg) |
-| `forest-mint` | 차분한 녹색·민트, 얇은 구획·알약 카드 | 독자 작성, 미리캔버스의 구획·대비 문법 참고 | `--sample --theme forest-mint`로 생성 |
+| `forest-mint` | 차분한 녹색·민트, 얇은 구획·알약 카드 | 독자 작성, 구획·대비 문법 참고 | `--sample --theme forest-mint`로 생성 |
 | `warm-sand` | 크림·테라코타, 머리 카드·숫자 상자 | 독자 작성, 제품 사진·설명 병치 문법 참고 | `--sample --theme warm-sand`로 생성 |
 | `plum-soft` | 보라·라일락 구획, 부드러운 카드 | 독자 작성, 옅은 색 구획·번호 카드 문법 참고 | `--sample --theme plum-soft`로 생성 |
 | `lime-ink` | 잉크 본문·라임 구획, 큰 대비·머리 카드 | 독자 작성, 제품 중심 IR의 대비 문법 참고 | `--sample --theme lime-ink`로 생성 |

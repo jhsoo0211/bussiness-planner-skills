@@ -34,6 +34,7 @@ bizplan 스킬이 작업 중에 **다른 스킬·도구를 부를 때 보는 단
 | 설문 데이터 분석 | research | `data:explore-data`, `data:statistical-analysis`, `data:analyze` | CSV | 분포 · 교차표 · 유의성 | 직접 계산 |
 | 수치 검증 | research, review | `data:validate-data` | 출처 표 · 산식 | 판정(그대로·단서·재조사) | 조사 스킬 5절 |
 | 차트 | visual | `dataviz`, `data:create-viz`, `data:data-visualization` | 만든 spec · PNG(원자료 탐색이면 CSV) | 형식 · 색 점검(그림은 렌더러로 만든다) | `bizplan-visual/scripts/html_visuals.py`(결론 제목·출처 틀, PNG — 문서용 `--print`, 발표용 `--slide`) — Node가 없으면 `chart_templates.py` |
+| 파싱·디자인 분류 | visual, slides | — | 기존 단위 JSON·덱 스펙 또는 읽은 원문 Markdown · 대화의 아이템·고객·톤 | 기존 관계를 보존한 표현 추천 · 선택 테마 | `bizplan-slides/scripts/design_advisor.py --units`·`--deck`(재사용) 또는 `--doc`(기존 파서 호출). 실행 도구가 없으면 `design-selection.md`로 대화 안에서 분류 |
 | 손익 · 재무 표 | growth | `finance:financial-statements` | 매출·비용 가정 | 손익 형식 표 | growth E절 |
 | 계획 대비 실적(단계 평가) | growth, review | `finance:variance-analysis` | 계획 · 실적 | 차이 원인 | 직접 비교 |
 | 규제 · 인허가 확인 | solution | `legal:compliance-check`, `legal:legal-risk-assessment` | 기능 · 데이터 · 업종 | 해당 규제 · 필요 승인 · 위험 등급 | 라우터 분야표의 게이트 + "법률 확인 필요" |

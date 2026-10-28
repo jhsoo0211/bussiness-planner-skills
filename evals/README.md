@@ -8,13 +8,23 @@
 python scripts/check_installation.py
 ```
 
-- 17개 스킬 이름과 frontmatter를 확인한다.
+- 18개 스킬 이름과 frontmatter를 확인한다.
 - Codex/Claude 목적지에 참조 문서·스크립트가 원본과 같은 해시로 복사되는지 확인한다.
 - 기존 설치/사용자 수정본을 덮어쓰지 않는지, 충돌이 있으면 복사 전에 중단하는지 확인한다.
 - 스킬 소스 안으로 설치하거나 소스를 덮는 목적지는 거부한다.
 - 사용자 스킬 경로를 변경하거나 모델을 호출하지 않는다.
 
 This is a deterministic installation check, not a live agent or model benchmark.
+
+### Design preparation and installed execution paths
+
+```bash
+python -B scripts/check_design_advisor.py
+```
+
+This deterministic regression suite checks existing-unit reuse, source Markdown through the unchanged parser, repeated output updates, input/theme preservation, and default output without internal lookup identifiers. It installs the same skill source into temporary Claude local and Codex skill directories and tests a Claude plugin-style layout, running the parser from an unrelated working directory with spaces in its path. The resulting relations and palette must match across the three layouts.
+
+These checks establish installation/resource/import compatibility. They do not run Claude or Codex model sessions or prove natural-language skill selection. Cases 42–45 in `trigger-evals.json` cover design-only requests and remain live-host evaluation fixtures until actual sessions are recorded. For a host without Python/file execution, separately observe whether the agent applies the same parsing/design guidance in conversation without asking the user to prepare JSON or claiming unexecuted files.
 
 ## 2. Discovery, explicit invocation, and full workflow
 
@@ -74,7 +84,7 @@ Record evidence integrity, PSST/form adherence, problem-solution consistency, us
 
 ## Current evidence boundary
 
-The repository includes deterministic installation checks, 37 routing test cases, and illustrative Korean plan/review examples. These fixtures are not evidence that all live routing cases passed.
+The repository includes deterministic installation checks, 45 routing test cases, and illustrative Korean plan/review examples. These fixtures are not evidence that all live routing cases passed.
 
 The earlier 2026-09-04 U300 DOCX exercise used Codex with one baseline draft and one skill-enabled draft, followed by the same clarification request for both. The observed business-plan skill reads were `bizplan/SKILL.md`, `bizplan-quick/SKILL.md`, and `bizplan/references/common-rules.md`. It did not observe separate reads of the problem, solution, growth, team, or review skills, or review's `references/case-insights.md`. It therefore records one automatic quick-path drafting case, not validation of all section guidance, complete author-insight application, or a Claude performance comparison.
 

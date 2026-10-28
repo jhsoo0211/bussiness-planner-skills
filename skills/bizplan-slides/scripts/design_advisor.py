@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""확정된 파싱 결과에 디자인만 추천한다. 원문·관계·패턴·deck.json은 수정하지 않는다.
+"""원문 또는 기존 파싱 결과를 읽어 디자인을 추천한다. 원문·관계·덱은 수정하지 않는다.
 
     python3 -B design_advisor.py --units 단위.json --context 디자인문맥.json \
         --out 디자인분류.json --md 디자인분류.md --theme-out 선택테마.json
+    python3 -B design_advisor.py --doc 사업계획서.md --item '로컬 식품' --tone '따뜻한' \
+        --out 디자인분류.json --theme-out 선택테마.json
 
 문맥: item, industry, audience, tone(문자열), theme(선택), brand_primary(6자리 hex),
       fixed_template(true면 지정 양식 보존, 테마 파일을 생성하지 않음).
@@ -60,6 +62,28 @@ TREATMENTS = {
 
 def read_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def parse_source(path):
+    """기존 파서의 단위 분리·관계 판별을 그대로 호출한다(새 판별 규칙 없음)."""
+    from suggest_patterns import classify, parse_md
+    units = parse_md(path)
+    if not units:
+        raise ValueError("원문에서 정보 단위를 찾지 못했다. 읽을 수 있는 본문을 확인한다")
+    for unit in units:
+        code, pattern, signal, alt, spec = classify(unit, str(Path(path).resolve().parent))
+        unit.update(code=code, pattern=pattern, signal=signal, alt=alt, spec=spec)
+    return units
+
+
+def units_from_deck(path):
+    """기존 덱의 type을 그대로 읽는다. 관계 코드를 새로 추론하지 않는다."""
+    deck = read_json(path)
+    slides = deck.get("slides") if isinstance(deck, dict) else None
+    if not isinstance(slides, list) or not slides or any(not isinstance(s, dict) for s in slides):
+        raise ValueError("덱 JSON에는 기존 슬라이드 객체 배열 slides가 있어야 한다")
+    return [{"id": f"S{i:02d}", "code": "기존 패턴", "pattern": slide.get("type", ""),
+             "spec": deepcopy(slide)} for i, slide in enumerate(slides, 1)]
 
 
 def theme_path(name):
@@ -146,7 +170,7 @@ def recommend(units, context, explicit_theme=None, accent=None):
               "reference_researched_at": catalog["researched_at"], "units": []}
     for unit in units:
         pattern, code = unit.get("pattern", ""), unit.get("code", "")
-        pending = "?" in code or pattern not in TREATMENTS
+        pending = not code or code == "—" or "?" in code or pattern not in TREATMENTS
         treatment = "확정된 관계·패턴이 없어 표현 추천 보류" if pending else TREATMENTS[pattern]
         refs = [r for r in catalog["references"] if r["status"] == "mapped" and pattern in r["patterns"]]
         refs.sort(key=lambda r: -(theme is not None and theme["name"] in r["themes"]))
@@ -157,14 +181,19 @@ def recommend(units, context, explicit_theme=None, accent=None):
     return result, theme
 
 
-def markdown(result):
-    lines = ["# 디자인 분류 (내용·논리 구조 변경 없음)", "", result["selection_reason"], "",
-             f"테마: `{result['theme'] or '지정 양식 보존'}` · 참고 모아보기 조사: {result['reference_researched_at']}", "",
-             "| 단위 | 기존 관계 | 기존 패턴 | 표현 추천 | 참고 templateKey |", "|---|---|---|---|---|"]
+def markdown(result, details=False):
+    lines = ["# 디자인 적용", "", result["selection_reason"], "",
+             f"테마: `{result['theme'] or '지정 양식 보존'}`", ""]
+    if details:
+        lines += [f"내부 조사 기준일: {result['reference_researched_at']}", "",
+                  "| 단위 | 기존 관계 | 기존 패턴 | 표현 추천 | 참고 식별자 |", "|---|---|---|---|---|"]
+    else:
+        lines += ["| 단위 | 표현 추천 |", "|---|---|"]
     for u in result["units"]:
-        cells = [u["id"], u["code"], u["pattern"], u["treatment"], ", ".join(u["reference_keys"]) or "—"]
+        cells = ([u["id"], u["code"], u["pattern"], u["treatment"], ", ".join(u["reference_keys"]) or "—"]
+                 if details else [u["id"], u["treatment"]])
         lines.append("| " + " | ".join(str(c or "").replace("|", "\\|").replace("\n", " ") for c in cells) + " |")
-    lines += ["", "기존 단위·순서·수치·원문·spec은 수정하지 않았다. 레퍼런스는 배치 문법만 참고하며 원본을 복제하지 않는다."]
+    lines += ["", "기존 내용·논리 구조를 유지하고 디자인 적용만 제안했다."]
     return "\n".join(lines) + "\n"
 
 
@@ -176,34 +205,56 @@ def write(path, value):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--units", required=True, help="기존 suggest_patterns.py --json 출력")
+    source = ap.add_mutually_exclusive_group(required=True)
+    source.add_argument("--units", help="기존 suggest_patterns.py --json 출력(있으면 재사용)")
+    source.add_argument("--deck", help="기존 deck.json의 슬라이드 순서·type을 그대로 재사용")
+    source.add_argument("--doc", help="파싱 결과가 없을 때 읽을 UTF-8 Markdown 원문")
     ap.add_argument("--context", help="아이템·고객·목적·톤·브랜드 문맥 JSON")
+    for key, label in (("item", "아이템"), ("industry", "분야"), ("audience", "고객·청중"), ("tone", "원하는 인상")):
+        ap.add_argument("--" + key, help=label + "(에이전트가 대화·브리프에서 확인한 값)")
+    ap.add_argument("--fixed-template", action="store_true", default=None, help="지정 양식 보존")
     ap.add_argument("--theme", help="명시적 테마 이름 또는 JSON 경로(문맥보다 우선)")
     ap.add_argument("--accent", help="명시적 브랜드 강조색(문맥보다 우선)")
     ap.add_argument("--out", required=True, help="분류 결과 JSON")
     ap.add_argument("--md", help="분류표 Markdown")
+    ap.add_argument("--details", action="store_true", help="Markdown에 내부 관계·참고 식별자도 표시")
     ap.add_argument("--theme-out", help="PPT·HTML에 공통으로 넘길 선택 테마 JSON")
     args = ap.parse_args()
     try:
         # 기존 입력/덱을 결과로 덮어쓰는 실수를 방지한다.
-        inputs = {Path(p).resolve() for p in (args.units, args.context) if p}
+        context = read_json(args.context) if args.context else {}
+        if not isinstance(context, dict):
+            raise ValueError("디자인 문맥은 JSON 객체여야 한다")
+        if args.doc and "item" not in context:
+            # 제목을 그대로 재사용한다. 업종·고객·성과를 새로 추론하지 않는다.
+            lines = Path(args.doc).read_text(encoding="utf-8").splitlines()
+            context["item"] = next((line[2:].strip() for line in lines if line.startswith("# ")), "")
+        for key in ("item", "industry", "audience", "tone", "fixed_template"):
+            value = getattr(args, key)
+            if value is not None:
+                context[key] = value
+        units = read_json(args.units) if args.units else units_from_deck(args.deck) if args.deck else parse_source(args.doc)
+        result, theme = recommend(units, context, args.theme, args.accent)
+        inputs = {Path(p).resolve() for p in (args.units, args.deck, args.doc, args.context) if p}
+        inputs.add(CATALOG.resolve())
+        if not context.get("fixed_template"):
+            inputs.add(theme_path(choose_theme(context, args.theme)[0]).resolve())
         outputs = [Path(p).resolve() for p in (args.out, args.md, args.theme_out) if p]
         if inputs.intersection(outputs) or len(set(outputs)) != len(outputs):
             raise ValueError("입력과 출력, 각 출력 파일은 서로 다른 경로여야 한다")
-        if any(p.exists() for p in outputs):
-            raise ValueError("기존 파일을 덮어쓰지 않는다. 새 출력 경로를 사용한다")
-        result, theme = recommend(read_json(args.units), read_json(args.context) if args.context else {},
-                                  args.theme, args.accent)
+        result["input_mode"] = "units" if args.units else "existing-deck" if args.deck else "source-draft"
         if args.theme_out and theme:
             result["theme_file"] = str(Path(args.theme_out))
             write(args.theme_out, json.dumps(theme, ensure_ascii=False, indent=2) + "\n")
         write(args.out, json.dumps(result, ensure_ascii=False, indent=2) + "\n")
         if args.md:
-            write(args.md, markdown(result))
+            write(args.md, markdown(result, details=args.details))
         print(f"디자인 분류: {args.out} · {len(result['units'])}개 단위 · {result['theme'] or '지정 양식 보존'}")
         if args.theme_out and theme is None:
             print("지정 양식 보존: --theme-out 파일은 생성하지 않았다")
-    except (ValueError, OSError, KeyError) as exc:
+        if args.doc:
+            print("원문 파싱 초안: 기존 관계 기준으로 확인한 뒤 디자인만 적용한다")
+    except (ValueError, OSError, KeyError, UnicodeError) as exc:
         ap.error(str(exc))
 
 

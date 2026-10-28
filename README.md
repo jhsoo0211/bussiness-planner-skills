@@ -167,7 +167,7 @@ python scripts/check_installation.py
 | `bizplan-slides/scripts/theme_deck.py` | 내용 스펙(JSON) → 테마 디자인의 편집 가능한 PPTX(패턴 23종·네이티브 차트), 스펙 검사·누락 대조 | python-pptx, Pillow |
 | `bizplan-slides/scripts/deck_check.py` | 발표 PPTX의 수치·날짜(차트 값 포함)를 원문과 대조, 미확보 표기·작은 글자 집계 | python-pptx |
 | `bizplan-slides/scripts/theme_from_pdf.py` | 그림 템플릿(PDF·PNG)에서 쪽 이미지·모아보기·색 후보·시작용 테마 JSON 추출 | pdftoppm, Pillow |
-| `bizplan-slides/scripts/design_advisor.py` | 기존 파싱 결과에 디자인만 추천 — 아이템·고객·톤·브랜드 → 테마·단위별 표현·미리캔버스 참고 식별자. 원문·관계·패턴·덱 보존 | Python 표준 라이브러리 |
+| `bizplan-slides/scripts/design_advisor.py` | 기존 파싱 결과 재사용 또는 원문 자동 파싱 → 아이템·고객·톤·브랜드에 맞는 테마·단위별 표현 추천. 원문·관계·패턴·덱 보존 | Python 표준 라이브러리 |
 
 ## 섹션 설계도 · 조사노트 · 도구 지도
 
@@ -199,9 +199,9 @@ python scripts/check_installation.py
 
 ### 파싱 결과에 어떤 디자인을 적용할지
 
-논리 구조와 디자인 선택은 분리한다. 기존 파서가 정한 관계·패턴과 PSST 흐름을 유지한 채, [디자인 분류 지침](skills/bizplan-visual/references/design-selection.md)으로 아이템·고객·브랜드에 맞는 색·구획·여백·강조만 고른다. `design_advisor.py`는 별도 추천표와 선택 테마를 만들며 원문·`단위.json`·`deck.json`을 수정하지 않는다.
+Claude Code와 Codex 모두 자연어 요청이나 명시 호출에서 같은 [자동 준비 절차](skills/bizplan-visual/references/design-selection.md)를 따른다. 에이전트가 원문·브리프를 읽고 기존 파싱이 있으면 재사용하며, 없으면 기존 파서를 호출해 디자인 선택까지 이어간다. 사용자가 JSON이나 스킬 경로를 준비할 필요는 없다. 기존 PSST 논리·관계·패턴·수치는 유지한다.
 
-미리캔버스 **90개 후보의 모아보기 조사 기록과 30개 패턴 매핑**을 [참고집](skills/bizplan-visual/assets/design-references.json)에 정리했다. 원본 PPT·PDF·이미지·문구·로고는 포함하지 않았다. 기존 3개 테마에 민트·샌드·플럼·라임을 더해 7개 후보를 제공한다. 업종별 색상은 고정하지 않으며 지정 양식과 사용자 브랜드가 우선이다.
+내장 디자인 패턴과 7개 테마에서 아이템·고객·브랜드에 맞는 색·구획·여백·강조만 고른다. 지정 양식과 사용자 브랜드가 우선이며 업종별 색상은 고정하지 않는다. 출처·조사 식별자는 내부 작업 기록으로 남기고 기본 결과물에는 적용 디자인을 설명한다. 원본 디자인 파일·사진·문구·로고는 복제하지 않는다.
 
 ## 자료 넣는 법 (템플릿 · 사업계획서 자료)
 
