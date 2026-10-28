@@ -18,6 +18,7 @@ UNITS = [("천만원", 1e7), ("백만원", 1e6), ("천만", 1e7), ("백만", 1e6
          ("만원", 1e4), ("천원", 1e3), ("조", 1e12), ("억", 1e8), ("만", 1e4), ("천", 1e3), ("원", 1)]
 TOTAL = re.compile(r"^\s*(\*\*)?\s*(합\s*계|총\s*계|총\s*합|소\s*계|계|total|sum)\b", re.I)
 SUBTOTAL = re.compile(r"소\s*계")
+PLACEHOLDER = re.compile(r"○○|\[(?:작성 필요|산정 예정|공고 확인 필요|미확보)")
 NUM = r"[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?"
 COMPOUND = re.compile(rf"({NUM})\s*(조|억|천만|백만|만|천)?\s*(?:({NUM})\s*(억|천만|백만|만|천))?\s*(원|%|명|개|건|회|가구|곳|대|톤|t|㎡)?")
 
@@ -97,12 +98,18 @@ def check_table(line_no, header, rows, tol, errors, holds):
     for c in range(1, ncols):
         hu = header_unit(header[c]) or header_unit(" ".join(header))
         is_pct_col = "%" in header[c] or re.search(r"비율|비중|구성비|점유율", header[c])
-        vals = []
+        vals, blank = [], 0
         for ln, r in body:
             if c < len(r):
+                if PLACEHOLDER.search(r[c]):
+                    blank += 1          # 미확보 칸 — 숫자가 아니므로 합계를 검산할 수 없다
+                    continue
                 v = parse_amount(r[c], hu)
                 if v:
                     vals.append((ln, v))
+        if blank and totals:
+            holds.append(f"{totals[0][0]}행 '{header[c]}' 열: 미확보 값(○○) {blank}칸 — 합계를 검산하지 못해 판단 보류")
+            continue
         if not vals:
             continue
         kinds = {k for _, (_, k) in vals}
@@ -198,6 +205,7 @@ def main():
         lines = f.read().splitlines()
     tbls = list(tables(lines))
     errors, holds = [], []
+    blanks = sum(1 for _, _, rows in tbls for _, r in rows for cell in r if PLACEHOLDER.search(cell))
     for line_no, header, rows in tbls:
         check_table(line_no, header, rows, args.tolerance, errors, holds)
     check_formulas(lines, args.tolerance, errors)
@@ -208,6 +216,8 @@ def main():
         print("  △ " + h)
     if not errors:
         print("  합계·비율·곱셈식 오류 없음" + (" (판단 보류는 직접 확인)" if holds else ""))
+    if blanks:
+        print(f"  미확보 칸(○○·[작성 필요]) {blanks}개는 검산하지 않았다 — 숫자가 들어오면 다시 돌린다")
     if args.xlsx:
         to_xlsx(args.xlsx, tbls)
         print(f"검산용 엑셀: {args.xlsx} (합계 행은 =SUM 수식)")

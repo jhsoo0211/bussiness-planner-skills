@@ -20,7 +20,10 @@ import re
 
 FILL = "✍ (이 초안을 읽고 채운다)"
 SKIP = ("보강 제안", "있으면 좋을", "요청 자료", "참고 자료", "조사용 프롬프트", "자체 일관성", "심화 안내", "작성 기준")
-MARK = re.compile(r"\[(작성 필요|산정 예정|공고 확인 필요|미확보)[^\]]*\]|\((?:팀 )?가설[^)]*\)|\(계획안[^)]*\)|\(가정[^)]*\)|팀 판단")
+MARK = re.compile(r"\[(?:작성 필요|산정 예정|공고 확인 필요)[^\]]*\]|\[미확보[:：][^\]]*\]|\((?:팀 )?가설[^)]*\)|\(계획안[^)]*\)|팀 판단")
+ASSUME = re.compile(r"\(가정[^)]*\)|`가정`|근거 수준[:：]?\s*가정")    # 정직한 근거 라벨 — 빈칸이 아니라 '팀이 확정할 가정'으로 따로 센다
+TAG = re.compile(r"\*{0,2}\[[^\]\n]{1,20}\](?!\()\*{0,2}")              # [내부 배경] 같은 블록 태그(링크 [글](url)은 제외)
+NUM = r"\d[\d,.]*\s*(%|억|만|조|천|개|명|원|달러|건|곳|배|회|가구|개소|시간|분|초|일|주|개월|년)"
 
 # (이름, 소제목 신호, [(작성법 항목, 있음 판정 정규식)], 심사 관점, 부탁할 자산, 검토 하위 항목 신호)
 CHECKS = [
@@ -33,7 +36,7 @@ CHECKS = [
      "대표 이미지(앱 화면·시제품 사진 1장), 서비스 로고·이름", r"$^"),
     ("배경", r"시장 배경|배경 및 필요성|창업 배경|배경", [
         ("대표·팀의 직접 경험(내부 배경)", r"내부 배경|대표.{0,30}(겪|경험|직접)|직접 겪"),
-        ("공적 통계 수치(외부 배경)", r"\d[\d,.]*\s*(%|억|만|조|개|명|원|달러)"),
+        ("공적 통계 수치(외부 배경)", NUM),
         ("출처 표기", r"출처|\((?:[^)]*?)(19|20)\d\d[.)]"),
         ("왜 지금(제도·수요·기술 가격 중 하나)", r"왜 지금|제도|규제|정책|가격 하락|수요 변화|최근")],
      "장면 → 확인 행동 → 확산 확인 → 왜 지금. 문제는 크게, 해법은 좁게(B3)",
@@ -152,7 +155,7 @@ CHECKS = [
      "MOU·협약서·자문 확약 메일·공문(단계 그대로)", r"협력"),
 ]
 
-CLAIM = re.compile(r"^\s*(?:[-*]\s*)?(○|◆)\s+\S")
+CLAIM = re.compile(r"^\s*(?:#{1,6}\s+)?(?:[-*]\s+)?(?:\*\*)?(○|◆)\s*\S")
 VISUAL = re.compile(r"!\[|\[이미지|\[그림|\[시각자료")
 
 
@@ -215,7 +218,15 @@ def todo(mark):
 def section_block(title, body, check, items):
     text = "\n".join(body)
     marks = sorted(set(m.group(0) for m in MARK.finditer(text)))
-    plain = MARK.sub(" ", re.sub(r"\*\*\[[^\]]*\]\*\*", " ", text))   # 빈칸 표기 속 낱말('[작성 필요: 경력]')은 있음으로 세지 않는다
+    kept = []
+    for line in body:
+        if MARK.search(line):
+            rest = re.sub(r"[\s\-*:：·|,.()○◆]+", "", TAG.sub("", MARK.sub("", line)))
+            if len(rest) < 12:          # '관련 경력·전공: [작성 필요]'처럼 라벨·태그만 남는 줄은 내용이 없는 줄이다
+                continue
+        kept.append(line)
+    plain = MARK.sub(" ", re.sub(r"\*\*\[[^\]]*\]\*\*", " ", "\n".join(kept)))   # 빈칸 표기 속 낱말('[작성 필요: 경력]')은 있음으로 세지 않는다
+    assumes = len(ASSUME.findall(text))
     got = [(bool(re.search(rx, plain)), label) for label, rx in check[2]] if check else []
     gains = []
     if check and items:
@@ -226,9 +237,12 @@ def section_block(title, body, check, items):
     claims = [l for l in [title] + body if CLAIM.match(l) or (l is title and re.match(r"^\S*\s*\[[^\]]{1,15}\]", l))]
     numbered = sum(1 for l in claims if re.search(r"\d", l))
     visuals = sum(1 for l in body if VISUAL.search(l))
+    tables = sum(1 for k, l in enumerate(body) if l.lstrip().startswith("|") and (k == 0 or not body[k - 1].lstrip().startswith("|")))
     out = [f"### {title}", "",
            f"**지금 상태** *(자동 판정 — 확인 필요)*: 작성법 {state} / 헤드라인 {len(claims)}개(숫자 {numbered}) · 시각자료 {visuals}개"
+           + (f" · 표 {tables}개" if tables else "")
            + (f" / 빈칸 {len(marks)}곳" if marks else "")
+           + (f" / 팀이 확정할 가정 {assumes}곳" if assumes else "")
            + (f" / 점수 영향 {' · '.join(gains)}" if gains else (" / 점수 영향 검토 후 계산" if not items else "")), "",
            "**고려해야 할 점**", ""]
     if check:
@@ -240,7 +254,7 @@ def section_block(title, body, check, items):
             out.append(f"- [ ] {josa(short)} 적어야 한다" + (f" (작성법: {label})" if short != label else " (작성법)"))
     if not claims:
         out.append("- [ ] 소제목을 주장 문장(`○ [태그] 결론 문장`)으로 바꿔야 한다 (섹션 설계도 1-1)")
-    if not visuals:
+    if not visuals and not tables:
         out.append("- [ ] 이 부분을 증명할 시각자료를 하나 이상 두어야 한다 (섹션 설계도 3절)")
     for t in dict.fromkeys(todo(m) for m in marks):      # 같은 할 일은 한 번만
         out.append(f"- [ ] {t}")
@@ -257,8 +271,8 @@ def registry(path):
     m = re.search(r"^##[^\n]*숫자 등록부[^\n]*\n([\s\S]*?)(?=^## |\Z)", text, re.M)
     if not m:
         return None
-    rows = [r for r in m.group(1).splitlines() if r.startswith("|") and not re.match(r"^\|\s*(값|-)", r)]
-    return sum(1 for r in rows if r.strip("| ").replace("|", "").strip())
+    rows = [r for r in m.group(1).splitlines() if r.startswith("|") and not re.match(r"^\|\s*:?-", r)]
+    return sum(1 for r in rows[1:] if r.strip("| ").replace("|", "").strip())      # 첫 줄은 머리행
 
 
 def main():
@@ -329,7 +343,9 @@ def main():
             "- [ ] 공고 양식의 목차·항목 번호·분량을 지켰고 양식 안내 문구를 지웠는가",
             "- [ ] 블라인드 — 성명·학교·직장명·소재지 등 유추 가능한 정보를 가렸는가",
             "- [ ] 협력·실적 표현이 증빙 단계(접촉 < 협의 < LOI < MOU < 실적) 안에 있는가",
-            "- [ ] 문제-솔루션 대응표의 '미해결·추가 검증 필요' 표기가 본문과 일치하는가", ""]
+            "- [ ] 문제-솔루션 대응표의 '미해결·추가 검증 필요' 표기가 본문과 일치하는가", "",
+            "## 자체 점검 *(작성 스킬이 옮겨 적는다 — 사업계획서.md에는 붙이지 않는다)*", "",
+            "- 문제-솔루션 대응: ✍", "- 차별점 논리(고유한가 · 모방 가능한가 · 근거 있는가): ✍", "- 보강 제안(있으면 좋을 내용 · 요청 자료): ✍", ""]
     open(a.out, "w", encoding="utf-8").write("\n".join(head + body_out + tail) + "\n")
     print(f"작성 가이드 골격: {a.out} — 목차 {n_blocks}개, 빈칸 {len(all_marks)}곳, "
           f"점수 영향 {len(all_gains)}건{'' if a.review else '(검토 리포트 없음)'}")
