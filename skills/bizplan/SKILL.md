@@ -135,7 +135,7 @@ description: 정부지원사업 사업계획서 작성을 처음부터 끝까지
 **변환 절차 (.docx · .hwpx)**
 
 1. 먼저 `scripts/check_tables.py 사업계획서.md`로 합계·비율·곱셈식을 검산한다.
-2. **.docx**: `scripts/md_to_docx.py 사업계획서.md 사업계획서.docx [--gov-bullets]` — pandoc이 있으면 한국어 A4 기준 서식으로, 없으면 python-docx로 직접 변환한다(표는 실제 표, 테두리·열 너비 포함).
+2. **.docx**: `scripts/md_to_docx.py 사업계획서.md 사업계획서.docx [--gov-bullets]` — pandoc이 있으면 한국어 A4 기준 서식으로, 없으면 python-docx로 직접 변환한다(표는 실제 표, 테두리·열 너비 포함). 그림은 `html_visuals.py --print`로 만든 것을 넣고, 그림 앞 헤드라인은 그림과 같은 쪽에 묶인다(alt 캡션은 `--captions`일 때만).
 3. **.hwpx**: `scripts/md_to_hwpx.py 사업계획서.md 사업계획서.hwpx [--hwp]` — python-hwpx 필요. 구조 검증까지만 하므로 한컴오피스에서 1회 열어 확인하라고 안내한다.
 4. 변환 후 검수: 표 셀 채움, 굵게 반영, 한글 깨짐, 그림 위치. 표만 옮기는 요령은 `bizplan-visual`의 `references/visual-howto.md` "마크다운 표 → 한글/워드 이관" 절.
 5. 파일 이름·저장 위치(검토 리포트·발표 구성안·시각자료 분리)는 `references/common-rules.md`의 '파일 저장 규칙'을 따른다.

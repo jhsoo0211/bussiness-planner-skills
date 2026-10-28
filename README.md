@@ -150,11 +150,11 @@ python scripts/check_installation.py
 |----------|---------|-----------|
 | `bizplan/scripts/read_form.py` | 공고·제출 양식(.hwp/.hwpx/.docx/.pdf)에서 목차·안내 문구·분량 지시·표 추출 | python-hwpx(.hwp), pdftotext(.pdf) |
 | `bizplan/scripts/check_tables.py` | 합계·비율 100%·곱셈식 검산, `=SUM` 수식 검산표 .xlsx | openpyxl(.xlsx) |
-| `bizplan/scripts/md_to_docx.py` | .md → A4·맑은 고딕·표 테두리 .docx (`--gov-bullets`로 □○-·) | python-docx, pandoc(선택) |
+| `bizplan/scripts/md_to_docx.py` | .md → A4·맑은 고딕·표 테두리 .docx (`--gov-bullets`로 □○-·). 그림 앞 헤드라인·표 제목을 같은 쪽에 묶고, 표 행이 쪽에서 갈라지지 않게, 열 너비는 낱말이 끊기지 않게 정한다. 그림 alt 캡션은 `--captions`일 때만 | python-docx, pandoc(선택) |
 | `bizplan/scripts/md_to_hwpx.py` | .md → 한글 .hwpx/.hwp (개조식·표·그림) + 구조 검증 | python-hwpx |
 | `bizplan/scripts/guide_draft.py` | 사업계획서 목차 순서대로 '작성 가이드'(별도 산출물) 골격 — 작성법·섹션 설계도 항목 판정, 주장형 헤드라인·시각자료 수, 숫자 등록부(`--brief`), 미확보 표기·검토 점수 영향·넣어 줄 자산 | — |
 | `bizplan/scripts/find_tools.py` | 이 환경에 설치된 스킬을 읽어 도구 지도(`tool-map.md`)의 작업별로 지금 쓸 수 있는 스킬과 대안을 보여 준다 | — |
-| `bizplan-visual/scripts/html_visuals.py` | 시각자료 spec(JSON) → HTML(인라인 SVG) + PNG. 결론 제목 · 그래서 한 줄 · 출처 틀로 사업계획서 목차별 33종(TAM·세분 시장·페르소나·설문·인용·구성비·추이·문제→해결·사진 격자·화면 ①②③·흐름도·비교표·포지셔닝·벤·막대·전후·BM 구조도·BMC·단위 경제성·채널별 매출·사업비·손익·월별 매출·3지표·퍼널·간트·로드맵·계단·연혁·SWOT·팀·협력 단계·표), 발표용 16:9(`--slide`, 넘치면 맞춤)·테마 색(`--theme`), 합계·성장률·손익 불일치 경고 | Node + Playwright(PNG), 한글 글꼴 |
+| `bizplan-visual/scripts/html_visuals.py` | 시각자료 spec(JSON) → HTML(인라인 SVG) + PNG. 결론 제목 · 그래서 한 줄 · 출처 틀로 사업계획서 목차별 33종(TAM·세분 시장·페르소나·설문·인용·구성비·추이·문제→해결·사진 격자·화면 ①②③·흐름도·비교표·포지셔닝·벤·막대·전후·BM 구조도·BMC·단위 경제성·채널별 매출·사업비·손익·월별 매출·3지표·퍼널·간트·로드맵·계단·연혁·SWOT·팀·협력 단계·표), 문서용 인쇄 크기(`--print`, A4 본문 폭에서 가장 작은 글자 7.4pt 이상)·발표용 16:9(`--slide`, 넘치면 맞춤)·테마 색(`--theme`), 합계·성장률·손익 불일치 경고 | Node + Playwright(PNG), 한글 글꼴 |
 | `bizplan-visual/scripts/chart_templates.py` | (대체 경로) matplotlib 차트 — 시장 추이·비교·TAM/SAM/SOM·포지셔닝맵·간트·퍼널·손익 콤보(200dpi, 출처 캡션) | matplotlib, 한글 폰트 |
 | `bizplan-slides/scripts/pptx_inspect.py` | 발표 템플릿의 레이아웃·자리표시자·샘플 슬라이드·테마 분석 | python-pptx |
 | `bizplan-slides/scripts/pptx_build.py` | 템플릿 디자인을 유지한 채 스펙(JSON)대로 PPTX 생성 | python-pptx, Pillow |

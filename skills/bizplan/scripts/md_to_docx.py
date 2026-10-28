@@ -3,9 +3,9 @@
 """누적한 사업계획서 .md를 제출 서식에 가까운 .docx로 바꾼다.
 
     python3 -B md_to_docx.py 사업계획서.md 사업계획서.docx [--gov-bullets] [--font "맑은 고딕"]
-                             [--resource-path 그림폴더] [--engine auto|pandoc|python]
+                             [--resource-path 그림폴더] [--engine auto|pandoc|python] [--captions]
 서식: A4·여백 20mm, 한글 글꼴(기본 맑은 고딕)·ko-KR, 검정 제목, 표 격자 테두리·머리행 굵게·열 너비 내용 비례,
-그림은 본문 폭에 맞춤. --gov-bullets는 불릿 계층을 공문서 개조식(□ → ○ → - → ·)으로 바꾼다.
+그림은 본문 폭에 맞추고 앞 문단(헤드라인)과 같은 쪽에 묶는다(alt 캡션은 --captions일 때만). --gov-bullets는 불릿 계층을 공문서 개조식(□ → ○ → - → ·)으로 바꾼다.
 pandoc이 있으면 기준 서식(reference.docx)을 만들어 쓰고, 없으면 python-docx로 직접 변환한다.
 """
 import argparse
@@ -38,9 +38,12 @@ def gov_bullets(md):
         m = re.match(r"^( *)[-*+] (.*)$", line)
         if m and not fence and not line.lstrip().startswith("|"):
             level = min(len(m.group(1)) // unit, len(GOV) - 1)
+            text = m.group(2)
+            # 글이 이미 ○·□ 같은 개조식 기호로 시작하면 기호를 겹쳐 붙이지 않는다('- ○ [한 줄 소개]' → '○ [한 줄 소개]')
+            mark = "" if re.match(r"^[□○◦·■●▪-] ", text) else f"{GOV[level]} "
             # 문단으로 쓰되 들여쓰기는 전각 공백으로 표현(목록 번호 체계 없이 공문서처럼)
             out.append("")
-            out.append("　" * level + f"{GOV[level]} {m.group(2)}")
+            out.append("　" * level + f"{mark}{text}")
             out.append("")
         else:
             out.append(line)
@@ -97,26 +100,62 @@ def _borders(tbl):
 
 
 def _em(text):
-    return sum(0.33 if c.isspace() else 1.0 if ord(c) > 0x2E7F else 0.6 for c in text)
+    # 한글·한자와 ①○★□ 같은 기호(전각으로 찍힌다)는 1em, 영문 대문자·%는 0.85em, 나머지 영문·숫자는 0.62em
+    return sum(0.33 if c.isspace() else 1.0 if ord(c) > 0x2E7F or 0x2460 <= ord(c) <= 0x27BF
+               else 0.85 if "A" <= c <= "Z" or c in "%@" else 0.62 for c in text)
 
 
-def _widths(tbl, total_mm=170):
-    """열 너비를 열별 최장 글 길이에 비례(최소 10%, 최대 55%)로 정한다."""
-    ncols = len(tbl.columns)
-    if not ncols:
-        return
-    lens = []
-    for c in range(ncols):
-        vals = [_em(row.cells[c].text) for row in tbl.rows if c < len(row.cells)]
-        lens.append(max(vals + [2]))
-    shares = [min(max(l / sum(lens), 0.10), 0.55) for l in lens]
-    norm = sum(shares)
+def _grid(tbl, widths):
+    """열 너비를 칸(tcW)과 표 격자(tblGrid) 둘 다에 쓴다 — LibreOffice·한글은 격자 값을 따른다."""
     tbl.autofit = False
-    for c in range(ncols):
-        w = Mm(total_mm * shares[c] / norm)
+    grid = tbl._tbl.tblGrid
+    cols = grid.findall(qn("w:gridCol")) if grid is not None else []
+    for c, w in enumerate(widths):
+        if c < len(cols):
+            cols[c].set(qn("w:w"), str(int(w.twips)))
         for row in tbl.rows:
             if c < len(row.cells):
                 row.cells[c].width = w
+
+
+def _widths(tbl, total_mm=170):
+    """열 너비를 열별 최장 글 길이에 비례(최소 10%, 최대 55%)로 정하되, 열마다 가장 긴 낱말은 끊기지 않게 한다.
+    7열 이상인 넓은 표(경쟁 비교 등)는 글자를 9pt로 줄인다."""
+    ncols = len(tbl.columns)
+    if not ncols:
+        return
+    wide = ncols >= 7
+    em_mm = 3.3 if wide else 4.3                      # 한 글자 폭: 넓은 표 9pt · 기본 12pt(pandoc 기준 서식) + 여유
+    lens, mins = [], []
+    for c in range(ncols):
+        texts = [row.cells[c].text for row in tbl.rows if c < len(row.cells)]
+        lens.append(max([_em(t) for t in texts] + [2]))
+        # 끊기면 읽기 어려운 낱말 폭: 한글 낱말은 4자, 영문·숫자 낱말(제품명 등)은 6em까지만 지킨다(URL은 끊겨도 된다)
+        word = max([min(_em(w), 4 if re.search("[가-힣]", w) else 6) for t in texts for w in t.split()] + [1])
+        mins.append(word * em_mm + 4.6)                # + 칸 안 좌우 여백(LibreOffice·한글 기본 약 1.9mm × 2)과 여유
+    shares = [min(max(l / sum(lens), 0.10), 0.55) for l in lens]
+    w = [total_mm * x / sum(shares) for x in shares]
+    if sum(mins) >= total_mm:                          # 최소 폭만으로 넘치면 최소 폭 비율로 나눈다
+        w = [total_mm * m / sum(mins) for m in mins]
+    else:
+        for _ in range(4):                             # 모자란 열을 최소 폭까지 올리고, 나머지 열에서 그만큼 덜어 낸다
+            low = [c for c in range(ncols) if w[c] < mins[c]]
+            if not low:
+                break
+            for c in low:
+                w[c] = mins[c]
+            free = [c for c in range(ncols) if c not in low]
+            rest = total_mm - sum(w[c] for c in low)
+            tot = sum(w[c] for c in free) or 1
+            for c in free:
+                w[c] = w[c] * rest / tot
+    _grid(tbl, [Mm(x) for x in w])
+    if wide:
+        for row in tbl.rows:
+            for cell in row.cells:
+                for par in cell.paragraphs:
+                    for r in par.runs:
+                        r.font.size = Pt(9)
 
 
 def _image_grid(tbl, total_mm=170, max_h=Mm(60)):
@@ -124,10 +163,7 @@ def _image_grid(tbl, total_mm=170, max_h=Mm(60)):
     from docx.shape import InlineShape
     ncols = len(tbl.columns) or 1
     col = Mm(total_mm / ncols)
-    tbl.autofit = False
-    for row in tbl.rows:
-        for cell in row.cells:
-            cell.width = col
+    _grid(tbl, [col] * ncols)
     for inline in tbl._tbl.xpath(".//wp:inline"):
         shape = InlineShape(inline)
         for limit, side in ((col - Mm(4), "width"), (max_h, "height")):
@@ -164,6 +200,20 @@ def _shade(p, fill="FFF8E6", bar="F59E0B"):
     bdr.addnext(shd)
 
 
+def _keep_with_next(doc):
+    """그림·표 바로 앞 문단(헤드라인·표 제목)이 쪽 끝에 홀로 남지 않게 다음 것과 같은 쪽에 묶는다."""
+    prev = None
+    for el in doc.element.body.iterchildren():
+        tag = el.tag.rsplit("}", 1)[-1]
+        if tag == "tbl" or (tag == "p" and el.xpath(".//w:drawing")):
+            if prev is not None:
+                prev.get_or_add_pPr().keepNext_val = True
+        if tag == "p" and "".join(el.itertext()).strip():
+            prev = el
+        elif tag == "tbl":
+            prev = None
+
+
 def postprocess(path, font):
     doc = Document(path)
     _page(doc)
@@ -179,6 +229,13 @@ def postprocess(path, font):
                     j += 1
     for tbl in doc.tables:
         _borders(tbl)
+        for row in tbl.rows:                  # 한 행이 두 쪽에 걸쳐 갈라지지 않게(합계 행이 '2,000 / 만 원'으로 쪼개지던 문제)
+            trPr = row._tr.get_or_add_trPr()
+            if trPr.find(qn("w:cantSplit")) is None:
+                cs = OxmlElement("w:cantSplit")       # 스키마 순서: cantSplit은 trHeight·tblHeader보다 앞
+                nxt = next((trPr.find(qn(t)) for t in ("w:trHeight", "w:tblHeader", "w:tblCellSpacing", "w:jc", "w:hidden")
+                            if trPr.find(qn(t)) is not None), None)
+                nxt.addprevious(cs) if nxt is not None else trPr.append(cs)
         if tbl._tbl.xpath(".//w:drawing"):
             _image_grid(tbl)                  # 사진 격자: 같은 너비 칸, 그림은 칸에 맞춘다
         else:
@@ -188,6 +245,7 @@ def postprocess(path, font):
                 for p in cell.paragraphs:
                     for r in p.runs:
                         r.bold = True
+    _keep_with_next(doc)
     # 그림이 본문 폭(170mm)을 넘지 않게, 정사각형 도식이 한 쪽을 다 차지하지 않게 높이는 120mm까지
     for shape in doc.inline_shapes:
         if shape._inline.xpath("ancestor::w:tc"):
@@ -212,14 +270,15 @@ def reference_docx(path, font):
     doc.save(path)
 
 
-def via_pandoc(md_text, out, font, resource_path):
+def via_pandoc(md_text, out, font, resource_path, captions=False):
     with tempfile.TemporaryDirectory() as tmp:
         ref = os.path.join(tmp, "reference.docx")
         reference_docx(ref, font)
         src = os.path.join(tmp, "in.md")
         with open(src, "w", encoding="utf-8") as f:
             f.write(re.sub(r"<u>([^<]+)</u>", r"[\1]{.underline}", md_text))   # pandoc은 <u>를 docx에서 버린다
-        cmd = ["pandoc", src, "-f", "markdown", "--reference-doc", ref, "-o", out,
+        # 시각자료는 그림 안에 결론 제목이 있다 — alt 글을 그림 아래 캡션으로 한 번 더 달지 않는다(--captions로 켠다)
+        cmd = ["pandoc", src, "-f", "markdown" if captions else "markdown-implicit_figures", "--reference-doc", ref, "-o", out,
                f"--resource-path={resource_path}"]
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
@@ -254,7 +313,7 @@ def _cells(line):
     return [re.sub(r"!\[([^\]]*)\]\([^)]+\)", r"[그림: \1]", c.strip()) for c in line.strip().strip("|").split("|")]
 
 
-def via_python(md_text, out, resource_path):
+def via_python(md_text, out, resource_path, captions=False):
     doc = Document()
     lines = md_text.splitlines()
     i, warnings = 0, []
@@ -299,7 +358,7 @@ def via_python(md_text, out, resource_path):
             path = m.group(2) if os.path.isabs(m.group(2)) else os.path.join(resource_path, m.group(2))
             if os.path.exists(path):
                 doc.add_picture(path, width=Mm(160))
-                if m.group(1):
+                if m.group(1) and captions:
                     doc.add_paragraph(m.group(1))
             else:
                 warnings.append(f"그림 없음: {m.group(2)}")
@@ -348,6 +407,7 @@ def main():
     ap.add_argument("--font", default="맑은 고딕")
     ap.add_argument("--resource-path", help="그림 상대 경로의 기준(기본: .md가 있는 폴더)")
     ap.add_argument("--engine", choices=("auto", "pandoc", "python"), default="auto")
+    ap.add_argument("--captions", action="store_true", help="그림 alt 글을 그림 아래 캡션으로도 단다(기본: 달지 않음)")
     args = ap.parse_args()
     with open(args.md, encoding="utf-8") as f:
         md = f.read()
@@ -357,7 +417,8 @@ def main():
     engine = args.engine
     if engine == "auto":
         engine = "pandoc" if shutil.which("pandoc") else "python"
-    warnings = via_pandoc(md, args.out, args.font, res) if engine == "pandoc" else via_python(md, args.out, res)
+    warnings = (via_pandoc(md, args.out, args.font, res, args.captions) if engine == "pandoc"
+                else via_python(md, args.out, res, args.captions))
     postprocess(args.out, args.font)
     doc = Document(args.out)
     print(f"저장: {args.out} (엔진: {engine}, 표 {len(doc.tables)}개, 그림 {len(doc.inline_shapes)}개)")

@@ -89,8 +89,10 @@ GPT-4o·Gemini·Nano Banana 등 범용 이미지 생성 AI로 만들 도식의 �
 
 ```bash
 python3 -B <설치 위치>/bizplan-visual/scripts/html_visuals.py --sample 시각자료/예시.json    # 목차순 예시 spec(34개 그림)
-python3 -B <설치 위치>/bizplan-visual/scripts/html_visuals.py 시각자료/spec.json --out 시각자료/
-#   발표용 16:9: --slide · 발표 템플릿 색: --theme <bizplan-slides>/assets/themes/<테마>.json 또는 --accent 0B3D91
+python3 -B <설치 위치>/bizplan-visual/scripts/html_visuals.py 시각자료/spec.json --out 시각자료/ --print
+#   사업계획서(docx·hwpx·PDF)에 넣을 그림: --print(170mm 폭에서 가장 작은 글자 7.4pt 이상) · 발표용 16:9: --slide
+#   화면 보기용은 옵션 없이(폭 1120px — 문서에 넣으면 글자가 5pt 안팎으로 작아진다)
+#   발표 템플릿 색: --theme <bizplan-slides>/assets/themes/<테마>.json 또는 --accent 0B3D91
 ```
 
 ```json

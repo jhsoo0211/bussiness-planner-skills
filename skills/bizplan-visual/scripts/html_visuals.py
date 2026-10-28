@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """사업계획서·발표용 시각자료를 HTML(인라인 SVG)로 만들고 PNG로 찍는다.
 
-    python3 -B html_visuals.py 시각자료.json --out 시각자료/ [--theme 테마.json | --accent 0066FF] [--slide] [--no-png]
+    python3 -B html_visuals.py 시각자료.json --out 시각자료/ [--theme 테마.json | --accent 0066FF] [--print | --slide] [--no-png]
 
 입력(JSON): {"visuals": [{"id": "tam", "type": "tam", "headline": "결론 문장", ...}, ...]}
 - 모든 시각자료에 공통: id · type · headline(필수 — 무엇을 보여주는지가 아니라 무엇을 말하는지)
@@ -28,6 +28,9 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+TXT = 1.0      # SVG 글자 배율 — 문서용(--print)에서 키운다. tw()와 font-size 후처리가 같은 값을 쓴다
+BODY_W = 1024  # HTML 유형의 본문 폭(확대 전 px) — build()가 모드에 맞춰 바꾼다
+MIN_FS = 0     # SVG 최소 글자(배율 전) — 문서용은 13: 170mm 폭에서 가장 작은 글자가 7.5pt 안팎이 되게
 BASE_DIR = os.getcwd()          # 이미지 경로의 기준(spec 파일 폴더) — main에서 바꾼다
 FONT = "Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif"
 INK, INK2, MUTED, GRID, BASE = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7"
@@ -43,12 +46,17 @@ def esc(text):
     return s.replace("○○", '<span class="ph">○○</span>')
 
 
+def fsz(size):
+    """SVG 글자의 실제 크기 — 최소 글자와 배율을 적용한다(글 폭 계산과 font-size 후처리가 같이 쓴다)."""
+    return max(size, MIN_FS) * TXT
+
+
 def tw(text, size):
-    """글자 폭 근사(px) — 한글 1em, 영문·숫자 0.56em, 공백 0.3em."""
+    """글자 폭 근사(px) — 한글·전각 기호(①○★) 1em, 영문·숫자 0.56em, 공백 0.3em."""
     w = 0.0
     for ch in str(text):
-        w += 0.3 if ch.isspace() else 1.0 if ord(ch) > 0x2E7F else 0.56
-    return w * size
+        w += 0.3 if ch.isspace() else 1.0 if ord(ch) > 0x2E7F or 0x2460 <= ord(ch) <= 0x27BF else 0.56
+    return w * fsz(size)
 
 
 def pct(part, whole):
@@ -150,7 +158,7 @@ def _place_labels(points, box, size_of):
     placed, out = [], []
     x0, y0, x1, y1 = box
     for (px, py, r, text, fs) in points:
-        w, h = size_of(text, fs), fs * 1.3
+        w, h = size_of(text, fs), fsz(fs) * 1.3
         cands = [(px + r + 8, py - h / 2), (px - r - 8 - w, py - h / 2), (px - w / 2, py - r - 6 - h),
                  (px - w / 2, py + r + 6)]
         best = None
@@ -220,7 +228,7 @@ def v_positioning(v, A):
         else:
             s.append(f'<circle cx="{px}" cy="{py}" r="{r}" fill="{GRAY}" stroke="#fff" stroke-width="2"/>')
             weight, color = 500, INK2
-        s.append(f'<text x="{bx[0]:.1f}" y="{bx[1] + fs:.1f}" font-size="{fs}" font-weight="{weight}" fill="{color}" '
+        s.append(f'<text x="{bx[0]:.1f}" y="{bx[1] + fsz(fs):.1f}" font-size="{fs}" font-weight="{weight}" fill="{color}" '
                  f'{HALO}>{html.escape(label)}</text>')
     legend = ('<div class="legend"><span><i class="dot" style="background:var(--accent)"></i>우리</span>'
               f'<span><i class="dot" style="background:{GRAY}"></i>경쟁 서비스</span>'
@@ -556,18 +564,38 @@ def v_bm(v, A):
                      f'marker-end="url(#{mid})"/>')
         label, detail = f.get("label", ""), f.get("detail", "")
         if label:
-            cw = tw(label, 13.5) + (tw(" · " + detail, 12) if detail else 0) + 20
+            fs = 13.5
+            cw = tw(label, fs) + (tw(" · " + detail, 12) if detail else 0) + 20
             mx, my = (x1 + x2) / 2, (y1 + y2) / 2
-            if abs(dy) > abs(dx) * 0.6:              # 세로에 가까운 선: 칩을 그 선이 비켜 선 쪽 바깥으로
+            vertical = abs(dy) > abs(dx) * 0.6
+            room = math.hypot(x2 - x1, y2 - y1) - 14          # 가로 선: 칩이 두 상자 사이에 들어가야 한다
+            two = bool(detail) and not vertical and cw > room  # 안 들어가면 '무엇'과 '언제'를 두 줄로
+            if two:
+                cw = max(tw(label, fs), tw(detail, 12)) + 20
+            if not vertical and cw > room:                     # 그래도 넘치면 글자를 조금 줄인다(최소 0.82배)
+                f_ = max(0.82, MIN_FS / fs, (room - 20) / (cw - 20))   # 문서용 최소 글자 아래로는 줄이지 않는다
+                fs, cw = fs * f_, (cw - 20) * f_ + 20
+            chh = (40 if two else 24) * TXT
+            if vertical:                                       # 세로에 가까운 선: 칩을 그 선이 비켜 선 쪽 바깥으로
                 side = 1 if nx * off >= 0 else -1
                 mx += side * (cw / 2 + 8)
+            else:                                              # 가로 선: 오가는 두 칩이 맞닿지 않게 바깥쪽으로 민다
+                push = max(0.0, chh / 2 - abs(off) + 3)
+                my += (1 if ny * off >= 0 else -1) * push
             money = kind == "money"
             # 칩은 '무엇을 주고받는가'를 같은 무게로 보인다 — 돈 칩만 옅은 강조색 바탕으로 구분
-            sub = f'<tspan font-size="12" font-weight="500" fill="{MUTED}"> · {html.escape(detail)}</tspan>' if detail else ""
-            chips.append(f'<rect x="{mx - cw / 2:.1f}" y="{my - 12:.1f}" width="{cw:.1f}" height="24" rx="12" '
-                         f'fill="{mix(A, 0.12) if money else "#fff"}" stroke="{mix(A, 0.35) if money else GRAY_FILL}"/>'
-                         f'<text x="{mx:.1f}" y="{my + 5:.1f}" text-anchor="middle" font-size="13.5" '
+            if two:
+                body_ = (f'<text x="{mx:.1f}" y="{my - chh / 2 + 18 * TXT:.1f}" text-anchor="middle" font-size="{fs:.1f}" '
+                         f'font-weight="600" fill="{INK}">{html.escape(label)}'
+                         f'<tspan x="{mx:.1f}" dy="{16 * TXT:.1f}" font-size="12" font-weight="500" fill="{MUTED}">'
+                         f'{html.escape(detail)}</tspan></text>')
+            else:
+                sub = f'<tspan font-size="12" font-weight="500" fill="{MUTED}"> · {html.escape(detail)}</tspan>' if detail else ""
+                body_ = (f'<text x="{mx:.1f}" y="{my + 5 * TXT:.1f}" text-anchor="middle" font-size="{fs:.1f}" '
                          f'font-weight="600" fill="{INK}">{html.escape(label)}{sub}</text>')
+            chips.append(f'<rect x="{mx - cw / 2:.1f}" y="{my - chh / 2:.1f}" width="{cw:.1f}" height="{chh:.1f}" '
+                         f'rx="{min(chh / 2, 12 * TXT):.1f}" '
+                         f'fill="{mix(A, 0.12) if money else "#fff"}" stroke="{mix(A, 0.35) if money else GRAY_FILL}"/>{body_}')
     boxes = []
     for a, ((x, y), hw, hh) in zip(acts, geo):
         ours = a.get("ours")
@@ -575,10 +603,11 @@ def v_bm(v, A):
                      f'fill="{A if ours else "#fff"}" stroke="{A if ours else GRAY_FILL}" stroke-width="{0 if ours else 1.5}"/>')
         tag = a.get("tag") or ("결제자" if a.get("payer") else "")
         if tag:
-            tw_ = tw(tag, 11.5) + 14
-            boxes.append(f'<rect x="{x - tw_ / 2}" y="{y - hh - 11}" width="{tw_}" height="20" rx="10" fill="{INK}"/>'
-                         f'<text x="{x}" y="{y - hh + 3}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fff">'
-                         f'{html.escape(tag)}</text>')
+            tw_, th = tw(tag, 11.5) + 14, fsz(11.5) + 8.5
+            boxes.append(f'<rect x="{x - tw_ / 2:.1f}" y="{y - hh - th / 2 - 1:.1f}" width="{tw_:.1f}" height="{th:.1f}" '
+                         f'rx="{th / 2:.1f}" fill="{INK}"/>'
+                         f'<text x="{x}" y="{y - hh - 1 + fsz(11.5) * 0.36:.1f}" text-anchor="middle" font-size="11.5" '
+                         f'font-weight="700" fill="#fff">{html.escape(tag)}</text>')
         boxes.append(f'<text x="{x}" y="{y - 3}" text-anchor="middle" font-size="{19 if ours else 17}" font-weight="700" '
                      f'fill="{"#fff" if ours else INK}">{html.escape(a["name"])}</text>')
         if a.get("role"):
@@ -603,7 +632,7 @@ def v_kpi(v, A):
     """tiles: [{label, value, basis, status}] — 매출 · 투자 · 고용처럼 3개."""
     tiles = "".join(
         f'<div class="tile"><div class="tl">{esc(t["label"])}{chip(t["status"], "st") if t.get("status") else ""}</div>'
-        f'<div class="tv">{esc(t["value"])}</div><div class="tb">{esc(t.get("basis", ""))}</div></div>'
+        f'<div class="tv{" long" if len(str(t["value"])) > 7 else ""}">{esc(t["value"])}</div><div class="tbs">{esc(t.get("basis", ""))}</div></div>'
         for t in v["tiles"])
     return f'<div class="kpis" style="grid-template-columns:repeat({len(v["tiles"])},1fr)">{tiles}</div>'
 
@@ -649,19 +678,28 @@ def v_gantt(v, A):
     out = [f'<div class="gt" style="grid-template-columns:{cols}"><div class="gh"></div>']
     out += [f'<div class="gh">{esc(p)}</div>' for p in per]
     out.append("</div>")
+    col_w = (BODY_W - 190) / n
     for t in v["tasks"]:
         st = cls.get(t.get("status", "예정"), "todo")
         start = max(1, min(int(t["start"]), n))
         span = max(1, min(int(t.get("length", 1)), n - start + 1))
         cells = "".join(f'<div class="gc" style="grid-column:{i + 2};grid-row:1"></div>' for i in range(n))
-        label = esc(t.get("out", "")) or esc(t.get("status", ""))
+        text = str(t.get("out", "") or t.get("status", ""))
+        label = f'<span>{esc(text)}</span>'                 # flex 안에서 '○○' 앞뒤 띄어쓰기가 사라지지 않게 감싼다
+        bar = f'<div class="gb {st}" style="grid-column:{start + 1} / span {span};grid-row:1">'
+        if tw(text, 12.5) / TXT + 28 <= span * col_w:
+            bar += f'{label}</div>'
+        elif start + span <= n:                              # 막대에 안 들어가면 오른쪽 빈칸에, 끝 열이면 왼쪽에
+            bar += f'</div><div class="gb-out" style="grid-column:{start + span + 1} / {n + 2};grid-row:1">{label}</div>'
+        else:
+            bar += f'</div><div class="gb-out l" style="grid-column:2 / {start + 1};grid-row:1">{label}</div>'
         out.append(f'<div class="gt grow" style="grid-template-columns:{cols}">'
-                   f'<div class="gn" style="grid-row:1">{esc(t["name"])}</div>{cells}'
-                   f'<div class="gb {st}" style="grid-column:{start + 1} / span {span};grid-row:1">{label}</div></div>')
+                   f'<div class="gn" style="grid-row:1">{esc(t["name"])}</div>{cells}{bar}</div>')
     if v.get("milestones"):
         cells = "".join(f'<div class="gc" style="grid-column:{i + 2};grid-row:1"></div>' for i in range(n))
+        # 글자는 마름모 아래 가운데 — 이웃 열의 마일스톤과 옆으로 맞붙지 않는다
         marks = "".join(f'<div class="gm" style="grid-column:{max(1, min(int(m["at"]), n)) + 1};grid-row:1">'
-                        f'<i></i>{esc(m["label"])}</div>' for m in v["milestones"])
+                        f'<i></i><span>{esc(m["label"])}</span></div>' for m in v["milestones"])
         out.append(f'<div class="gt grow ms" style="grid-template-columns:{cols}"><div class="gn" style="grid-row:1">'
                    f'마일스톤</div>{cells}{marks}</div>')
     legend = ('<div class="legend small"><span><i class="gl done"></i>완료</span><span><i class="gl doing"></i>진행</span>'
@@ -722,7 +760,8 @@ def v_screens(v, A):
             inner = f'<div class="ui"><div class="ui-top">{esc(ui.get("title", ""))}</div>{rows}{btn}</div>'
         else:
             inner = _slot(sc.get("what", sc.get("title", "")), "화면")
-        out.append(f'<div class="scr"><div class="phone">{inner}</div><div class="scr-cap"><span class="no">{esc(no)}</span>'
+        mock = "" if src else " mock"                     # 그린 화면 틀은 인쇄에서 낮춰도 된다(캡처는 비율을 지킨다)
+        out.append(f'<div class="scr"><div class="phone{mock}">{inner}</div><div class="scr-cap"><span class="no">{esc(no)}</span>'
                    f'<b>{esc(sc.get("title", ""))}</b><small>{esc(sc.get("desc", ""))}</small></div></div>')
     return f'<div class="screens" style="grid-template-columns:repeat({len(out)},1fr)">{"".join(out)}</div>'
 
@@ -762,7 +801,7 @@ def v_persona(v, A):
                    f'<div class="pdef">{esc(c.get("def", ""))}</div><div class="ptags">{tags}</div>'
                    f'<div class="pscene">{esc(c.get("scene", ""))}</div>{foot}</div>'
                    f'<div class="pr"><div class="pr-h">불편 장면</div>{"".join(pains)}</div></div>')
-    return f'<div class="personas">{"".join(out)}</div>'
+    return f'<div class="personas{" two" if len(out) == 2 else ""}">{"".join(out)}</div>'
 
 
 def v_quotes(v, A):
@@ -976,7 +1015,8 @@ def v_waterfall(v, A):
 
 
 def v_columns(v, A):
-    """labels(월·분기), values(없는 값은 null), unit, notes: [{at(인덱스), text}] 마일스톤, target: {value, label}, highlight: [인덱스]."""
+    """labels(월·분기), values(없는 값은 null), unit, notes: [{at(인덱스), text}] 마일스톤, target: {value, label}, highlight: [인덱스].
+    값 글은 첫 막대·강조 막대·최고점에 붙는다(헤드라인이 인용하는 값이 그림에 보이게). label_at: [인덱스]로 더하거나 "all"로 전부."""
     xs, ys = v["labels"], v["values"]
     known = [y for y in ys if isinstance(y, (int, float))]
     tg = v.get("target") or {}
@@ -988,6 +1028,9 @@ def v_columns(v, A):
     band = (R - L) / n
     bw = min(46, band * 0.56)
     hl = set(v.get("highlight", [n - 1]))
+    la = v.get("label_at", [])
+    shown = set(range(n)) if la == "all" else hl | {0} | set(la) | (
+        {max((k for k in range(n) if isinstance(ys[k], (int, float))), key=lambda k: ys[k])} if known else set())
     s = []
     for t in ticks:
         s.append(f'<line x1="{L}" y1="{py(t)}" x2="{R}" y2="{py(t)}" stroke="{GRID if t else BASE}"/>'
@@ -999,8 +1042,9 @@ def v_columns(v, A):
             y1 = py(y)
             s.append(f'<path d="M{x - bw / 2},{B} L{x - bw / 2},{y1 + 4} Q{x - bw / 2},{y1} {x - bw / 2 + 4},{y1} L{x + bw / 2 - 4},{y1} '
                      f'Q{x + bw / 2},{y1} {x + bw / 2},{y1 + 4} L{x + bw / 2},{B} Z" fill="{A if on else mix(A, 0.32)}"/>')
-            if on or k == 0:
-                s.append(f'<text x="{x}" y="{y1 - 8}" text-anchor="middle" font-size="14" font-weight="700" fill="{INK}">{fmt(y)}</text>')
+            if k in shown:
+                s.append(f'<text x="{x}" y="{y1 - 8}" text-anchor="middle" font-size="14" font-weight="{700 if on or k == 0 else 600}" '
+                         f'fill="{INK if on or k == 0 else INK2}">{fmt(y)}</text>')
         else:
             s.append(f'<rect x="{x - bw / 2}" y="{B - 30}" width="{bw}" height="30" rx="3" fill="none" stroke="{GRAY}" stroke-dasharray="4 3"/>'
                      f'<text x="{x}" y="{B - 38}" text-anchor="middle" font-size="12" fill="{MUTED}">○○</text>')
@@ -1073,7 +1117,7 @@ def v_timeline(v, A):
     """events: [{date, title, desc, status:'완료'|'진행'|'예정'}] 3~7개 — 연혁·준비 경과."""
     ev = v["events"]
     cls = {"완료": "done", "진행": "doing", "예정": "todo"}
-    items = "".join(f'<div class="tl {cls.get(e.get("status", "완료"), "done")}"><i></i><span class="tl-d">{esc(e["date"])}</span>'
+    items = "".join(f'<div class="tle {cls.get(e.get("status", "완료"), "done")}"><i></i><span class="tl-d">{esc(e["date"])}</span>'
                     f'<b>{esc(e["title"])}</b><small>{esc(e.get("desc", ""))}</small><em>{esc(e.get("status", ""))}</em></div>'
                     for e in ev)
     n = len(ev)
@@ -1124,15 +1168,36 @@ RENDER = {"tam": v_tam, "positioning": v_positioning, "swot": v_swot, "bar": v_b
 
 # ---------------------------------------------------------------- 페이지
 
-def css(A, slide):
+HTML_TYPES = (".swot,.strat,.bars,.bas,.funnel,.kpis,.rm,.ps,.gt,table.cmp,.flow,.screens,.photos,.personas,.quotes,"
+              ".donut,.seg,.rvs,.bgbar,table.tb,.stairs,.team,.pt-row,.tline,.bmc,.fx,.streams")
+PRINT_CSS = ("section.viz{width:860px;padding:24px 28px 18px}.kicker{display:none}"
+             "h2.headline{font-size:22px}.sub{font-size:14px}.body{margin-top:16px}"
+             ".takeaway{margin-top:14px;padding:9px 14px;font-size:15px}.note{margin-top:8px;font-size:13.5px}"
+             ".legend{font-size:14px}.legend.small{font-size:13.5px}"
+             "section.viz svg{max-width:100%;height:auto}"
+             # 문서 쪽 높이를 아끼는 압축 — 그린 화면 틀은 낮게, 표·간트 행은 촘촘히, 페르소나 2장은 나란히
+             ".phone.mock{aspect-ratio:9/13}.grow{min-height:38px}.gb{height:25px}"
+             ".rc,.ra{padding:8px 9px}.rh{padding:4px 6px}"
+             # 가장 작은 HTML 글자(11~11.5px)도 확대 후 7.5pt 안팎이 되게, 갤러리 바탕은 흰색(캡처 가장자리에 회색 선이 안 남게)
+             "body{background:#fff}.chip,.dis,.fw-who,.ph-badge,.tle em,.pk,.pt,.fx-term small,.slot span,.tm-st,.seg b em,"
+             "table.cmp thead th small,tr.vrow td,.pho figcaption small,.qt footer span{font-size:12px}"
+             # 확대(zoom)를 받지 않는 자리(TAM 오른쪽 글, 단위, 되돌이 화살표 글)는 글자를 직접 키운다
+             ".unit,.tam .chip,.loopbar span,.legend .unit-in{font-size:13.5px}.tam-formula{font-size:14px}"
+             ".personas.two{grid-template-columns:1fr 1fr}.personas.two .persona{grid-template-columns:1fr}"
+             ".pl{padding:16px 18px;gap:8px}.pr{padding:14px 18px;gap:8px}"
+             + HTML_TYPES + "{zoom:1.15}")
+
+
+def css(A, slide, print_=False):
     w = "1600px" if slide else "1120px"
     # 발표 장(16:9): 본문이 남는 높이를 채우고, SVG는 폭에 맞춰 키우되 높이를 넘지 않게
     extra = ("section.viz{height:900px;display:flex;flex-direction:column;padding:56px 72px 36px}"
              "section.viz .body{flex:1;min-height:0;position:relative;overflow:hidden}"
              ".fit{position:absolute;left:0;right:0;top:0;transform-origin:top center}"
              "section.viz .body>svg,section.viz .body>.rel>svg{width:100%;height:auto;max-height:540px}"
-             ".tam,.swot,.strat,.bars,.bas,.funnel,.kpis,.rm,.ps,.gt,table.cmp,.flow,.screens,.photos,.personas,.quotes,.donut,.seg,.rvs,.bgbar,table.tb,.stairs,.team,.pt-row,.tline,.bmc,.fx,.streams{zoom:1.2}"
-             "h2.headline{font-size:38px}.sub{font-size:18px}.takeaway{font-size:20px}.note{font-size:14px}") if slide else ""
+             ".tam," + HTML_TYPES + "{zoom:1.2}"
+             "h2.headline{font-size:38px}.sub{font-size:18px}.takeaway{font-size:20px}.note{font-size:14px}") if slide else (
+        PRINT_CSS if print_ else "")
     return f"""
 :root{{--accent:{A};--accent-ink:{darker(A, 0.78)};--a50:{mix(A, 0.07)};--a100:{mix(A, 0.14)};--a200:{mix(A, 0.3)}}}
 *{{box-sizing:border-box}}
@@ -1227,8 +1292,8 @@ tr.vrow td{{font-size:11.5px;color:{MUTED};word-break:break-all}}
 .kpis{{display:grid;gap:14px}}
 .tile{{border:1px solid {GRAY_FILL};padding:20px 22px;border-top:4px solid var(--accent)}}
 .tl{{font-size:15px;font-weight:700;color:{INK2}}}
-.tv{{font-size:38px;font-weight:800;margin:10px 0 8px;letter-spacing:-.02em}}
-.tb{{font-size:13.5px;color:{INK2};line-height:1.5;word-break:keep-all}}
+.tv{{font-size:38px;font-weight:800;margin:10px 0 8px;letter-spacing:-.02em;word-break:keep-all}} .tv.long{{font-size:28px;line-height:1.25}}
+.tbs{{font-size:13.5px;color:{INK2};line-height:1.5;word-break:keep-all}}
 /* roadmap */
 .rm{{display:grid;gap:4px}}
 .rh{{font-size:13px;font-weight:700;color:{MUTED};padding:6px 8px;text-align:center}}
@@ -1255,7 +1320,8 @@ tr.vrow td{{font-size:11.5px;color:{MUTED};word-break:break-all}}
 .gb{{z-index:1;height:28px;margin:0 4px;border-radius:6px;font-size:12.5px;font-weight:600;display:flex;align-items:center;padding:0 10px;white-space:nowrap;overflow:hidden}}
 .gb.done{{background:var(--accent-ink);color:#fff}} .gb.doing{{background:var(--accent);color:#fff}}
 .gb.todo{{background:var(--a50);border:1.5px dashed var(--accent);color:var(--accent-ink)}}
-.gm{{z-index:1;justify-self:center;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px;white-space:nowrap}}
+.gb-out{{z-index:1;font-size:12.5px;font-weight:600;color:var(--accent-ink);padding:0 8px;white-space:nowrap}} .gb-out.l{{justify-self:end}}
+.gm{{z-index:1;justify-self:center;font-size:12.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:7px;white-space:nowrap;padding:8px 0 6px}}
 .gm i{{width:12px;height:12px;background:{INK};transform:rotate(45deg);display:inline-block}}
 .legend .gl{{display:inline-block;width:18px;height:10px;border-radius:3px;margin-right:6px}}
 .gl.done{{background:var(--accent-ink)}} .gl.doing{{background:var(--accent)}} .gl.todo{{background:var(--a50);border:1.5px dashed var(--accent)}}
@@ -1289,7 +1355,7 @@ h1.chapter{{font-size:20px;font-weight:800;color:{INK2};margin:18px 0 -8px;lette
 /* screens */
 .screens{{display:grid;gap:22px;justify-items:center}}
 .scr{{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}}
-.phone{{width:180px;aspect-ratio:9/16.5;border:7px solid #232323;border-radius:28px;overflow:hidden;background:#fff;position:relative}}
+.phone{{width:100%;max-width:180px;aspect-ratio:9/16.5;border:7px solid #232323;border-radius:28px;overflow:hidden;background:#fff;position:relative}}
 .phone img{{width:100%;height:100%;object-fit:cover;display:block}}
 .ui{{padding:14px 12px;display:flex;flex-direction:column;gap:8px;height:100%}}
 .ui-top{{font-size:13px;font-weight:800;padding:4px 2px 8px;border-bottom:1px solid {GRID}}}
@@ -1395,13 +1461,13 @@ table.tb.plan{{margin-top:14px}}
 .tline{{display:grid;position:relative;padding-top:8px}}
 .tl-line{{position:absolute;left:0;top:15px;height:0;border-top:2px dashed {GRAY_FILL}}}
 .tl-prog{{position:absolute;left:0;top:15px;height:2px;background:var(--accent-ink)}}
-.tl{{position:relative;display:flex;flex-direction:column;gap:4px;padding:0 10px 0 0}}
-.tl i{{width:16px;height:16px;border-radius:50%;position:relative;z-index:1;margin-bottom:8px;border:3px solid #fff}}
-.tl.done i{{background:var(--accent-ink)}} .tl.doing i{{background:var(--accent);box-shadow:0 0 0 3px var(--a200)}}
-.tl.todo i{{background:#fff;border:2px dashed {GRAY}}}
-.tl-d{{font-size:12.5px;font-weight:700;color:{MUTED}}} .tl b{{font-size:15px;word-break:keep-all}}
-.tl small{{font-size:12.5px;color:{INK2};line-height:1.45;word-break:keep-all}} .tl em{{font-style:normal;font-size:11px;font-weight:700;color:{MUTED}}}
-.tl.todo b{{color:{INK2}}}
+.tle{{position:relative;display:flex;flex-direction:column;gap:4px;padding:0 10px 0 0}}
+.tle i{{width:16px;height:16px;border-radius:50%;position:relative;z-index:1;margin-bottom:8px;border:3px solid #fff}}
+.tle.done i{{background:var(--accent-ink)}} .tle.doing i{{background:var(--accent);box-shadow:0 0 0 3px var(--a200)}}
+.tle.todo i{{background:#fff;border:2px dashed {GRAY}}}
+.tl-d{{font-size:12.5px;font-weight:700;color:{MUTED}}} .tle b{{font-size:15px;word-break:keep-all}}
+.tle small{{font-size:12.5px;color:{INK2};line-height:1.45;word-break:keep-all}} .tle em{{font-style:normal;font-size:11px;font-weight:700;color:{MUTED}}}
+.tle.todo b{{color:{INK2}}}
 /* BMC */
 .bmc{{display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:auto auto auto;gap:4px}}
 .bmc>div{{background:#f6f5f2;padding:12px 12px;min-height:110px}}
@@ -1427,7 +1493,10 @@ def section(v, A):
     parts.append(f'<h2 class="headline">{esc(v["headline"])}</h2>')
     if v.get("sub"):
         parts.append(f'<p class="sub">{esc(v["sub"])}</p>')
-    parts.append(f'<div class="body"><div class="fit">{RENDER[kind](v, A)}</div></div>')
+    body = RENDER[kind](v, A)
+    if TXT != 1.0 or MIN_FS:      # SVG 글자만 키운다(HTML 글자는 CSS가 맡는다)
+        body = re.sub(r'font-size="([\d.]+)"', lambda m: f'font-size="{fsz(float(m.group(1))):.1f}"', body)
+    parts.append(f'<div class="body"><div class="fit">{body}</div></div>')
     if v.get("takeaway"):
         parts.append(f'<div class="takeaway">{esc(v["takeaway"])}</div>')
     if v.get("note"):
@@ -1449,12 +1518,17 @@ document.fonts.ready.then(window.__fit);
 </script>"""
 
 
-def build(spec, accent, slide=False):
+def build(spec, accent, slide=False, print_=False):
+    global TXT, BODY_W, MIN_FS
+    TXT = 1.3 if print_ else 1.0
+    MIN_FS = 13 if print_ else 0
+    # HTML 유형이 실제로 쓰는 본문 폭(확대 전 px) — 간트 라벨이 막대에 들어가는지 가늠할 때 쓴다
+    BODY_W = (1600 - 144) / 1.2 if slide else (860 - 56) / 1.15 if print_ else 1120 - 96
     A = "#" + accent.lstrip("#")
     secs = "".join(f'<h1 class="chapter">{esc(v.get("title", ""))}</h1>' if v.get("type") == "chapter" else section(v, A)
                    for v in spec["visuals"])
     return (f'<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>{esc(spec.get("title", "시각자료"))}</title>'
-            f'<style>{css(A, slide)}</style></head><body><div class="page">{secs}</div>{FIT_JS if slide else ""}</body></html>')
+            f'<style>{css(A, slide, print_)}</style></head><body><div class="page">{secs}</div>{FIT_JS if slide else ""}</body></html>')
 
 
 def warn(spec):
@@ -1532,6 +1606,8 @@ def main():
     ap.add_argument("--accent", help="강조색 hex(기본 #2a78d6)")
     ap.add_argument("--theme", help="bizplan-slides 테마 JSON — colors.primary를 강조색으로")
     ap.add_argument("--slide", action="store_true", help="16:9(1600×900) 장 크기로")
+    ap.add_argument("--print", dest="print_", action="store_true",
+                    help="사업계획서(A4)에 넣을 크기 — 폭 860px, 글자를 키워 본문 폭 170mm에서 가장 작은 글자 7.4pt 이상")
     ap.add_argument("--no-png", action="store_true")
     ap.add_argument("--sample", metavar="경로", help="예시 spec을 이 경로에 쓰고 끝낸다")
     a = ap.parse_args()
@@ -1541,6 +1617,8 @@ def main():
         return
     if not a.spec:
         ap.error("spec(JSON) 경로가 필요하다")
+    if a.slide and a.print_:
+        ap.error("--slide와 --print는 함께 쓸 수 없다")
     spec = json.load(open(a.spec, encoding="utf-8"))
     global BASE_DIR
     BASE_DIR = os.path.dirname(os.path.abspath(a.spec))
@@ -1550,7 +1628,7 @@ def main():
     os.makedirs(a.out, exist_ok=True)
     page = os.path.join(a.out, "visuals.html")
     with open(page, "w", encoding="utf-8") as f:
-        f.write(build(spec, accent, a.slide))
+        f.write(build(spec, accent, a.slide, a.print_))
     print(f"HTML: {page} ({sum(1 for v in spec['visuals'] if v.get('type') != 'chapter')}개)")
     for w in warn(spec):
         print(f"[확인] {w}")

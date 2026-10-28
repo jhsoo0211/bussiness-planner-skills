@@ -133,12 +133,16 @@
 
 ```bash
 python3 -B html_visuals.py --sample 예시.json                       # 목차순 예시 spec(33종)
-python3 -B html_visuals.py 시각자료.json --out 시각자료/              # 문서용(폭 1120px)
+python3 -B html_visuals.py 시각자료.json --out 시각자료/ --print      # 사업계획서(docx·hwpx·PDF)에 넣을 그림 — 이것을 쓴다
 python3 -B html_visuals.py 시각자료.json --out 시각자료/발표 --slide   # 발표용 16:9(넘치면 장에 맞춰 줄인다)
-python3 -B html_visuals.py 시각자료.json --theme <bizplan-slides>/assets/themes/report-blue.json
+python3 -B html_visuals.py 시각자료.json --out 시각자료/화면           # 화면 보기용(폭 1120px)
+python3 -B html_visuals.py 시각자료.json --print --theme <bizplan-slides>/assets/themes/report-blue.json
 ```
 
 - 결과: `visuals.html`(모두 한 장에, 장 구분 포함 — 브라우저로 열어 확인) + `<id>.png`(2배 해상도). PNG는 Node + Playwright가 있을 때 `html_shot.cjs`가 찍는다. 없으면 HTML을 브라우저로 열어 캡처한다.
+- **문서에 넣는 그림은 `--print`로 만든다.** 화면 보기용(폭 1120px)을 A4 본문 폭 170mm에 넣으면 가장 작은 글자가 4.7~5.2pt로 줄어 인쇄 심사본에서 읽히지 않는다. `--print`는 폭 860px에 SVG 글자를 1.3배(최소 13px)로, HTML 글자를 1.15배로 키우고 장식(머리 꼬리표)을 빼서 170mm 폭에서 가장 작은 글자가 7.4pt 이상이 되게 한다. 페르소나 2장은 나란히, 간트·로드맵 행은 촘촘히, 그린 화면 틀은 낮게 놓아 그림 높이도 줄인다.
+- 그림 높이는 170mm 폭 기준 120mm 이하가 되게 한다(`md_to_docx.py`·`md_to_hwpx.py`가 이보다 크면 줄이고, 그만큼 글자도 작아진다). 넘치는 그림은 항목·행 수를 줄이거나 두 그림으로 나눈다.
+- 문서 변환: `md_to_docx.py 사업계획서.md 사업계획서.docx --gov-bullets` → `export_pdf.py 사업계획서.docx` → `preview.py 사업계획서.pdf`로 쪽마다 연다. 변환기는 그림 alt 글을 캡션으로 다시 달지 않고(`--captions`로 켠다), 그림·표 바로 앞 문단(헤드라인·표 제목)을 같은 쪽에 묶고, 표 행이 두 쪽에 갈라지지 않게 한다. 확인할 것: 헤드라인만 쪽 끝에 남았는지, 그림이 넘어가며 생긴 빈 공간, 표 칸에서 낱말이 한 글자씩 끊기는지, 그림 숫자 = 숫자 등록부 = 본문 헤드라인, 쪽 수와 그림 수(브리프 16절 이미지 예산).
 - 강조색: 기본 `#2a78d6`. `--accent 0B3D91` 또는 `--theme`(테마의 `colors.primary`)로 발표 템플릿과 맞춘다.
 - 글꼴: Pretendard → Apple SD Gothic Neo → Noto Sans KR → 맑은 고딕 순으로 찾는다.
 - 본문에는 `![결론 문장](시각자료/<id>.png)`로 넣는다. 그림 안 제목이 결론이므로 본문 캡션 줄에 같은 문장을 반복하지 않는다.
