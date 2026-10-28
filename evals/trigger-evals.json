@@ -40,6 +40,8 @@
     {"id": 36, "query": "사업계획서 이 내용들 각각 어떤 도표 형식으로 보여주는 게 맞는지 정리해줘", "expected": "bizplan-visual", "note": "정보 유형 → 시각화 구조 진단"},
     {"id": 37, "query": "내 초안에서 어디를 어떻게 더 디벨롭해야 하는지 섹션마다 표시해줘. 넣으면 좋을 자료도 알려주고", "expected": "bizplan-review", "note": "작성 가이드(목차별 고려할 점·적을 것, 별도 산출물)"},
     {"id": 38, "query": "고객 인터뷰 질문지 만들어주고, 받아온 설문 결과랑 시장 수치를 출처 붙여서 정리해줘", "expected": "bizplan-research", "note": "인터뷰 가이드·종합 + 출처 표(조사노트)"},
-    {"id": 39, "query": "모두의 창업 도전신청서 문항별로 뭘 어떤 순서로 써야 하는지 잡아줘", "expected": "bizplan-outline", "note": "온라인 문항형 — 섹션 설계도 5절 매핑"}
+    {"id": 39, "query": "모두의 창업 도전신청서 문항별로 뭘 어떤 순서로 써야 하는지 잡아줘", "expected": "bizplan-outline", "note": "온라인 문항형 — 섹션 설계도 5절 매핑"},
+    {"id": 40, "query": "브리프랑 초안 다 있으니까 그림까지 전부 넣어서 제출용 완성본으로 만들어줘. 한글 파일이랑 PDF로", "expected": "bizplan-document", "note": "완성본·전 형식 요청"},
+    {"id": 41, "query": "쪽수 상관없이 개요 표부터 팀 구성까지 다 채운 최종본 워드 파일로 뽑아줘", "expected": "bizplan-document", "note": "분량 제한 없는 완성 문서"}
   ]
 }

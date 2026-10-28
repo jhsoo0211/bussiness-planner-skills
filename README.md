@@ -9,7 +9,7 @@
 </p>
 <p align="center"><sub>▶ <b>소개 영상 (50초)</b> — 이미지를 누르면 소리가 있는 영상이 브라우저에서 재생됩니다 · <a href="https://github.com/jhsoo0211/bussiness-planner-skills/raw/main/docs/motion-graphic/reel/bizplan-reel.mp4">원본 1080p 내려받기</a></sub></p>
 
-> 한국 정부 창업지원사업의 사업계획서를 **작성·검토·발표 준비**까지 단계별로 돕는 한국어 스킬 17종. Claude Code와 Codex에서 같은 `skills/` 원본을 사용한다.
+> 한국 정부 창업지원사업의 사업계획서를 **작성·검토·발표 준비**까지 단계별로 돕는 한국어 스킬 18종. Claude Code와 Codex에서 같은 `skills/` 원본을 사용한다.
 
 **한국 사업계획서의 PSST(Problem · Solution · Scale-up · Team) 구조에 맞춰 설계했다.** 문제 인식 → 실현 가능성 → 성장 전략 → 팀 구성의 흐름으로 아이디어를 구체화한다. 범용 글로벌 사업계획서나 해외 투자 IR 전용 템플릿이 아니며, 다른 유형에는 해당 공고·양식·평가 기준에 맞춘 조정이 필요하다.
 
@@ -24,6 +24,7 @@
 | `bizplan`          | 라우터                   | "사업계획서 도와줘"처럼 막연할 때. 상황을 물어 알맞은 모드로 안내                                                                     |
 | `bizplan-interview` | 심층 인터뷰              | 작성 전에 블록별로 사실·근거·제약을 묻고 `브리프.md`로 고정 — 이후 모든 모드가 이 파일을 읽어 긴 대화에서 내용이 섞이는 문제를 줄인다 |
 | `bizplan-quick`    | 간략 모드                | 5가지(업종·타겟·핵심기능·차별점·약점)만 답하고 PSST 전체 초안을 한 번에                                                                 |
+| `bizplan-document` | 완성 문서 모드 | 제출용 완성본 — 깊은 조사, 창업아이템 개요 양식 표부터 4장까지 전체 분량(경어체 서술·주제구·소주제), 시각자료 최대, .docx·.hwpx·.pdf·쪽 미리보기를 한 번에(쪽 수는 줄이지 않고 공고 분량 대비만 보고) |
 | `bizplan-item`     | ① 아이템 구체화         | 아이디어만 있음. 아이템명·문제·솔루션·차별점·페르소나 도출                                                                        |
 | `bizplan-outline`  | 큰틀 보기                | 본문 전에 대제목→중제목→소제목→한두 줄 요약·증빙 슬롯·배점 비례 분량을 한눈에 확정                                                   |
 | `bizplan-problem`  | ② 문제 인식 (P)         | SPIN 기법으로 Pain Point 설득, "배경 및 필요성" 작성                                                                                  |
@@ -69,7 +70,7 @@ cd bussiness-planner-skills
 python scripts/install_skills.py --agent codex
 ```
 
-17개 스킬과 하위 참조 문서·스크립트를 `~/.agents/skills/`에 설치한다. 하나라도 같은 이름이 이미 있으면 **아무것도 덮어쓰지 않고 중단**한다. 기존 설치를 업데이트할 때는 사용자 수정본을 먼저 백업하고 대상 폴더를 비운 뒤 다시 실행한다. 여러 위치에 중복 설치하지 않는다.
+18개 스킬과 하위 참조 문서·스크립트를 `~/.agents/skills/`에 설치한다. 하나라도 같은 이름이 이미 있으면 **아무것도 덮어쓰지 않고 중단**한다. 기존 설치를 업데이트할 때는 사용자 수정본을 먼저 백업하고 대상 폴더를 비운 뒤 다시 실행한다. 여러 위치에 중복 설치하지 않는다.
 
 특정 프로젝트에서만 쓰려면 목적지를 지정한다:
 
@@ -93,7 +94,7 @@ $bizplan-review 이 초안을 제공한 배점표로 검토해줘.
 
 특정 파트를 정했다면 라우터를 거치지 않고 해당 스킬을 직접 지정할 수 있다. 이름을 지정하지 않는 자연어 요청에서는 Codex가 설명에 맞는 스킬을 선택한다. **직접 지정과 자동 선택은 별도로 검증**하며, 스킬을 불렀다는 사실만으로 모든 파트·참고문서를 적용했다고 보지 않는다.
 
-설치본에 `bizplan/references/common-rules.md`가 포함됐는지 확인한다. 세부 스킬도 이 공통 문서를 참조하므로 17개를 함께 설치하는 것을 권장한다. Codex용 별도 프롬프트 복사본이나 영구 분기 없이 같은 스킬을 유지한다.
+설치본에 `bizplan/references/common-rules.md`가 포함됐는지 확인한다. 세부 스킬도 이 공통 문서를 참조하므로 18개를 함께 설치하는 것을 권장한다. Codex용 별도 프롬프트 복사본이나 영구 분기 없이 같은 스킬을 유지한다.
 
 ### ③ Claude Code에 설치 (터미널)
 
@@ -140,7 +141,7 @@ python scripts/install_skills.py --agent claude
 python scripts/check_installation.py
 ```
 
-위 명령은 임시 폴더에서 17개 스킬·리소스 복사와 덮어쓰기 방지를 확인한다. 모델을 실행하지 않으며 **Codex와 Claude의 작성 품질·속도·비용을 비교한 결과가 아니다**. 실제 평가 절차와 기록 기준은 [evals/README.md](evals/README.md)를 참고한다.
+위 명령은 임시 폴더에서 18개 스킬·리소스 복사와 덮어쓰기 방지를 확인한다. 모델을 실행하지 않으며 **Codex와 Claude의 작성 품질·속도·비용을 비교한 결과가 아니다**. 실제 평가 절차와 기록 기준은 [evals/README.md](evals/README.md)를 참고한다.
 
 ## 포함된 스크립트
 
@@ -150,8 +151,9 @@ python scripts/check_installation.py
 |----------|---------|-----------|
 | `bizplan/scripts/read_form.py` | 공고·제출 양식(.hwp/.hwpx/.docx/.pdf)에서 목차·안내 문구·분량 지시·표 추출 | python-hwpx(.hwp), pdftotext(.pdf) |
 | `bizplan/scripts/check_tables.py` | 합계·비율 100%·곱셈식 검산, `=SUM` 수식 검산표 .xlsx | openpyxl(.xlsx) |
-| `bizplan/scripts/md_to_docx.py` | .md → A4·맑은 고딕·표 테두리 .docx (`--gov-bullets`로 □○-·). 그림 앞 헤드라인·표 제목을 같은 쪽에 묶고, 표 행이 쪽에서 갈라지지 않게, 열 너비는 낱말이 끊기지 않게 정한다. 그림 alt 캡션은 `--captions`일 때만 | python-docx, pandoc(선택) |
-| `bizplan/scripts/md_to_hwpx.py` | .md → 한글 .hwpx/.hwp (개조식·표·그림) + 구조 검증 | python-hwpx |
+| `bizplan/scripts/md_to_docx.py` | .md → A4·맑은 고딕·표 테두리 .docx (`--gov-bullets`로 □○-·). 그림 앞 헤드라인·표 제목을 같은 쪽에 묶고, 표 행이 쪽에서 갈라지지 않게, 열 너비는 낱말이 끊기지 않게 정한다. 그림 alt 캡션은 `--captions`일 때만. `--style form`은 완성 문서 서식(제목 상자·장 띠·주제구 밑줄·개요 양식 표·연노랑 머리행·쪽 번호) | python-docx, pandoc(선택) |
+| `bizplan/scripts/md_to_hwpx.py` | .md → 한글 .hwpx/.hwp (개조식·표·그림) + 구조 검증. `--style form`은 완성 문서 서식 | python-hwpx |
+| `bizplan/scripts/build_document.py` | 완성본 한 번에: 검산 → 그림 `--print` → .docx → .pdf → 쪽 미리보기 → .hwpx, 쪽 수(공고 분량 대비)·그림 수·남은 사진 자리 보고 | 위 변환기 + LibreOffice·pdftoppm(있으면) |
 | `bizplan/scripts/guide_draft.py` | 사업계획서 목차 순서대로 '작성 가이드'(별도 산출물) 골격 — 작성법·섹션 설계도 항목 판정, 주장형 헤드라인·시각자료 수, 숫자 등록부(`--brief`), 미확보 표기·검토 점수 영향·넣어 줄 자산 | — |
 | `bizplan/scripts/find_tools.py` | 이 환경에 설치된 스킬을 읽어 도구 지도(`tool-map.md`)의 작업별로 지금 쓸 수 있는 스킬과 대안을 보여 준다 | — |
 | `bizplan-visual/scripts/html_visuals.py` | 시각자료 spec(JSON) → HTML(인라인 SVG) + PNG. 결론 제목 · 그래서 한 줄 · 출처 틀로 사업계획서 목차별 33종(TAM·세분 시장·페르소나·설문·인용·구성비·추이·문제→해결·사진 격자·화면 ①②③·흐름도·비교표·포지셔닝·벤·막대·전후·BM 구조도·BMC·단위 경제성·채널별 매출·사업비·손익·월별 매출·3지표·퍼널·간트·로드맵·계단·연혁·SWOT·팀·협력 단계·표), 문서용 인쇄 크기(`--print`, A4 본문 폭에서 가장 작은 글자 7.4pt 이상)·발표용 16:9(`--slide`, 넘치면 맞춤)·테마 색(`--theme`), 합계·성장률·손익 불일치 경고 | Node + Playwright(PNG), 한글 글꼴 |
@@ -248,7 +250,7 @@ python3 scripts/check_confidential.py [--terms 용어파일]
 
 - 어떤 지원사업·공모전인지 (평가 기준표/배점표가 있으면 첨부 요청)
 - 진행 단계 — 아이디어만 / 특정 섹션 작성 중 / 초안 완성
-- **빠른 버전**(전체 초안 한 번에) vs **꼼꼼 버전**(조사 포함 단계별, 오래 걸림) vs 특정 섹션만
+- **빠른 버전**(전체 초안 한 번에) vs **꼼꼼 버전**(조사 포함 단계별, 오래 걸림) vs **완성 문서**(제출용 완성본 + 그림 + docx·hwpx·pdf까지) vs 특정 섹션만
 - 출력 형식 — 채팅만 / .md 파일 저장 / .docx / .hwpx(한글) (세션에서 한 번만 정한다)
 
 > 질문에 답하기 어려우면 아이디어 메모·파일만 던져도 된다 — 스킬이 기획 요약 초안을 먼저 만들어 "이런 기획이 맞나요?"라고 확인받고 시작한다.

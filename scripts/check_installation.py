@@ -10,7 +10,7 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = {"bizplan", "bizplan-interview", "bizplan-quick", "bizplan-item", "bizplan-outline", "bizplan-problem",
+EXPECTED = {"bizplan", "bizplan-interview", "bizplan-quick", "bizplan-document", "bizplan-item", "bizplan-outline", "bizplan-problem",
             "bizplan-research", "bizplan-solution", "bizplan-growth", "bizplan-team",
             "bizplan-summary", "bizplan-visual", "bizplan-review", "bizplan-pitch",
             "bizplan-slides", "bizplan-export", "bizplan-analyze"}
@@ -87,6 +87,23 @@ def main():
                                  "--check", "--sample"], capture_output=True, text=True)
         assert result.returncode == 0, result.stdout + result.stderr
         print("PASS sample deck spec check")
+    try:
+        import docx  # noqa: F401
+    except ImportError:
+        print("SKIP complete-document build (python-docx not installed)")
+    else:
+        with tempfile.TemporaryDirectory(prefix="bizplan-document-") as temporary:
+            plan = Path(temporary) / "plan.md"
+            plan.write_text((ROOT / "skills/bizplan-document/assets/document-template.md").read_text(encoding="utf-8"),
+                            encoding="utf-8")
+            result = subprocess.run([sys.executable, "-B", str(ROOT / "skills/bizplan/scripts/build_document.py"),
+                                     str(plan), "--formats", "docx"], capture_output=True, text=True)
+            assert result.returncode == 0, result.stdout + result.stderr
+            from docx import Document
+            built = Document(str(Path(temporary) / "plan.docx"))
+            overview = built.tables[0]                      # 개요 양식 표: 4열, 첫 칸 이름표 '명  칭'
+            assert len(overview.columns) == 4 and overview.cell(0, 0).text.strip() == "명  칭", overview.cell(0, 0).text
+        print("PASS complete-document build (form style docx)")
     print("Static installation checks only; agent discovery and output quality are separate tests.")
 
 
