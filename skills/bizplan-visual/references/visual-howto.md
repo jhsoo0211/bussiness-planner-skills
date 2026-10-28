@@ -131,7 +131,9 @@ All text labels inside the image MUST be written in Korean, exactly as specified
 - [Arrow / caption]: "한국어 라벨 3"
 
 Style:
-- Flat, minimal vector infographic; white background; one base color (navy) plus one accent color only
+- Flat, minimal vector infographic; white background; base text color [SELECTED_THEME_TEXT_HEX] plus accent [SELECTED_THEME_PRIMARY_HEX] only
+- Select colors from the confirmed brand or item-specific design theme; do not default every business to navy or blue
+- Preserve the supplied structure, labels, order, hierarchy and arrow directions exactly; use references only for spacing, visual grouping and emphasis
 - Calm, neutral, document-friendly tone appropriate for an official Korean business plan — not flashy, not cartoonish
 - Do NOT use American/Western stock-imagery cliches: no clip-art office workers, no handshake photos, no cartoon mascots, no dollar-sign icons
 - No photorealistic people; if human figures are needed, use simple abstract pictograms in a Korean business context

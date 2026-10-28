@@ -231,7 +231,8 @@ Content is mapped to a visual form by the **relationship between pieces of infor
 - `skills/bizplan-slides/references/blueprints.md` breaks down three supplied templates page by page into information, format, and pattern: a 30-page proposal, a 20-page annual plan, and a 15-page basics deck. It also lists ten shared format rules and a PSST pitch mapping.
 - Slide tools:
   - `suggest_patterns.py` parses a plan into units with a suggested pattern each.
-  - `theme_deck.py` renders a spec into an editable PPTX in one of three themes (`report-blue`, `mono-line`, `basic-navy`).
+  - `theme_deck.py` renders the same spec into an editable PPTX with seven theme candidates: the original `report-blue`, `mono-line`, `basic-navy`, plus `forest-mint`, `warm-sand`, `plum-soft`, `lime-ink`.
+  - `design_advisor.py` reads the existing parsed units and recommends a theme and visual treatment from the item, audience, tone, and brand. It leaves PSST logic, relation codes, patterns, source text, numbers, and deck content unchanged. See the shared [design selection guide](skills/bizplan-visual/references/design-selection.md). The [MiriCanvas reference index](skills/bizplan-visual/assets/design-references.json) records 90 reviewed grid previews, with 30 mapped to existing patterns; no source designs, images, or presentation files are copied into the repository.
   - `deck_check.py` compares every number in a deck, chart values included, against the source.
   - `theme_from_pdf.py` extracts colors from an image-only template.
 

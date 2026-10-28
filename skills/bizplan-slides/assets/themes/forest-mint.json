@@ -1,0 +1,58 @@
+{
+  "name": "forest-mint",
+  "label": "포레스트 민트",
+  "summary": "차분한 녹색·민트·흰 바탕. 환경·돌봄·신뢰를 표현할 때의 후보. 업종 고정 규칙은 아니다.",
+  "derived_from": "독자 작성 테마. 미리캔버스 모아보기에서 관찰한 구획·대비·카드 문법만 참고했으며 원본 파일·문구·이미지·정확한 색상값을 복제하지 않았다.",
+  "fonts": {
+    "head": "Pretendard",
+    "body": "Pretendard",
+    "accent": "Pretendard"
+  },
+  "colors": {
+    "bg": "F7FAF8",
+    "surface": "FFFFFF",
+    "text": "182B25",
+    "muted": "53645D",
+    "faint": "A5B5AC",
+    "line": "DAE5DE",
+    "soft": "EAF4EF",
+    "primary": "14735B",
+    "neutral": "869A90",
+    "series": [
+      "14735B",
+      "709E8C",
+      "293D34",
+      "B9CEC2",
+      "7E8D83"
+    ]
+  },
+  "chrome": {
+    "header": "split"
+  },
+  "layout": {
+    "x": 64,
+    "title_y": 66,
+    "bottom": 506,
+    "gap": 24
+  },
+  "sizes": {
+    "title": 24,
+    "lead": 12,
+    "eyebrow": 10,
+    "body": 16,
+    "small": 12.5
+  },
+  "styles": {
+    "cover": "center",
+    "section": "number",
+    "toc": "list",
+    "card": "pill",
+    "kpi": "bar",
+    "process": "pill-line",
+    "callout": "soft",
+    "table": "soft",
+    "closing": "center",
+    "bullet": "•",
+    "radius": 8
+  }
+}

@@ -1,0 +1,1171 @@
+{
+  "version": 1,
+  "source": "MiriCanvas MCP search_templates + get_template_page_previews(type=grid)",
+  "researched_at": "2026-10-28",
+  "language": "ko",
+  "template_type": "PRESENTATION",
+  "review_scope": "후보 90개 모아보기(각 앞 최대 20쪽). 개별 페이지 정밀 분석·manifest·원본 파일은 수집하지 않음.",
+  "reuse_policy": "구조·배치 문법만 독립적으로 재작성. 원본 이미지·문구·사진·로고·파일 및 원시 manifest를 복제하거나 업로드하지 않음.",
+  "searches": [
+    {
+      "id": 1,
+      "keywords": [
+        "사업계획",
+        "스타트업",
+        "사업 제안"
+      ],
+      "count": 30
+    },
+    {
+      "id": 2,
+      "keywords": [
+        "친환경 사업",
+        "교육 서비스",
+        "헬스케어"
+      ],
+      "count": 30
+    },
+    {
+      "id": 3,
+      "keywords": [
+        "식품 브랜드",
+        "로컬 관광",
+        "인공지능 서비스"
+      ],
+      "count": 30
+    }
+  ],
+  "references": [
+    {
+      "template_key": "64dd1ce1-82da-4f18-a5bc-0e9c373bc6b7",
+      "page_count": 10,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "2zFUvYGJkLsCD9vGra2PX",
+      "page_count": 8,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "plum-soft",
+        "lime-ink"
+      ],
+      "patterns": [
+        "cards",
+        "image",
+        "process"
+      ],
+      "observation": "검정과 보라·핑크·녹색의 대비, 대제목·사진 격자."
+    },
+    {
+      "template_key": "32ov9rRXtZgXbQeHMGjMB",
+      "page_count": 20,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "warm-sand",
+        "mono-line"
+      ],
+      "patterns": [
+        "cards",
+        "rows",
+        "process",
+        "image",
+        "gantt"
+      ],
+      "observation": "밝은 바탕에 얇은 구획선, 번호 카드와 사진·설명 병치."
+    },
+    {
+      "template_key": "340TNuGTJAzSqPq4sTJ37",
+      "page_count": 10,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "lime-ink",
+        "mono-line"
+      ],
+      "patterns": [
+        "cards",
+        "timeline",
+        "gantt",
+        "kpi"
+      ],
+      "observation": "차콜·밝은 배경 교차, 라임 포인트와 일정 막대."
+    },
+    {
+      "template_key": "2zRxpkbsd4eZ2QExuKydU",
+      "page_count": 9,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "346JbfndF2aecQfMoKvUh",
+      "page_count": 11,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "mono-line"
+      ],
+      "patterns": [
+        "kpi",
+        "radial",
+        "image",
+        "process",
+        "chart"
+      ],
+      "observation": "흑백 대비, 제품 화면 중심과 수치·설명 구획."
+    },
+    {
+      "template_key": "1c6f0752-e524-49bd-93f7-e98c8e1fa2a8",
+      "page_count": 9,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "4dff506f-bd9a-4143-8e00-b01845ab55b7",
+      "page_count": 9,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "d1dd1bcd-e087-4c0d-b99e-bc411dfdefab",
+      "page_count": 10,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "mono-line"
+      ],
+      "patterns": [
+        "image",
+        "cards",
+        "kpi"
+      ],
+      "observation": "사진과 본문을 나눈 영역, 대등한 세로 카드."
+    },
+    {
+      "template_key": "33cVexmd3N8X1b3OCXPn5",
+      "page_count": 10,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "cd59ae75-0a68-4cbb-a3d2-61efa6523c9d",
+      "page_count": 13,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "b72c8952-1c7f-460a-a05e-7274569e7727",
+      "page_count": 10,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "f1ddd79b-eec4-4d00-af7b-97ce6676d0ce",
+      "page_count": 9,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "29aae2eb-c59e-42c1-ad9b-0efda36eb35f",
+      "page_count": 9,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "32Z3YUxjAZ0cSNVk1lmoD",
+      "page_count": 30,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "forest-mint",
+        "lime-ink"
+      ],
+      "patterns": [
+        "cards",
+        "image",
+        "kpi",
+        "rows"
+      ],
+      "observation": "큰 제목·밝은 녹색과 검정 대비, 화면·설명 영역 분리."
+    },
+    {
+      "template_key": "33wSZaOWeknOJTrZHnPlA",
+      "page_count": 13,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "mono-line"
+      ],
+      "patterns": [
+        "image",
+        "cards",
+        "kpi",
+        "chart",
+        "team"
+      ],
+      "observation": "모바일 화면 중심, 흑백 카드와 지표 격자."
+    },
+    {
+      "template_key": "346JbfUckOxEMqpk8dcV5",
+      "page_count": 13,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "forest-mint",
+        "report-blue"
+      ],
+      "patterns": [
+        "image",
+        "cards",
+        "chart",
+        "team"
+      ],
+      "observation": "옅은 민트 강조, 사진과 문장 병치, 비교 지표 구획."
+    },
+    {
+      "template_key": "33p36ytFGUZAKbNGC1HHF",
+      "page_count": 15,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "344Skaj5EiSPMknJ7SZzx",
+      "page_count": 10,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "ac73b696-1081-473a-96ec-f1953e6ffc56",
+      "page_count": 16,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "forest-mint"
+      ],
+      "patterns": [
+        "kpi",
+        "rows",
+        "before_after",
+        "process",
+        "chart"
+      ],
+      "observation": "흰 바탕·민트 강조, 수치 카드·좌우 대조·번호 단계."
+    },
+    {
+      "template_key": "4faa3f6b-a71e-4e1d-aaf9-117f02b0161d",
+      "page_count": 24,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "346JbUwF1ceqPRvKX2wiT",
+      "page_count": 11,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "33Kw2IDhDBx8hsSstgQPD",
+      "page_count": 15,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "plum-soft",
+        "report-blue"
+      ],
+      "patterns": [
+        "cards",
+        "chart",
+        "image",
+        "gantt",
+        "table"
+      ],
+      "observation": "사진·근거 병치, 카드·구축 단계·일정표의 구획."
+    },
+    {
+      "template_key": "d41fc6c5-3d41-4a1b-b662-c2d9c0dc86cc",
+      "page_count": 8,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "31T8JkbGG4P09EgSrzn2F",
+      "page_count": 21,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "mono-line",
+        "report-blue"
+      ],
+      "patterns": [
+        "cards",
+        "tam",
+        "chart",
+        "positioning",
+        "team",
+        "image"
+      ],
+      "observation": "IR 항목을 밝은 격자에 구획, 제품 화면과 근거 병치."
+    },
+    {
+      "template_key": "33wSZSmWsNRxVLdG2SHFy",
+      "page_count": 13,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "lime-ink"
+      ],
+      "patterns": [
+        "image",
+        "cards",
+        "kpi",
+        "chart",
+        "team",
+        "table"
+      ],
+      "observation": "라임과 흰 배경, 큰 제품 사진과 번호 카드, 지표 격자."
+    },
+    {
+      "template_key": "d0123e3e-d2f4-4c75-a031-c0be0e3c145a",
+      "page_count": 17,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "mono-line"
+      ],
+      "patterns": [
+        "cards",
+        "compare",
+        "kpi",
+        "table",
+        "process"
+      ],
+      "observation": "흑백의 단순 카드·좌우 대조·수치 강조."
+    },
+    {
+      "template_key": "31oofqZevUa57K4pHMbWF",
+      "page_count": 19,
+      "search": 1,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "forest-mint"
+      ],
+      "patterns": [
+        "chart",
+        "process",
+        "gantt",
+        "table",
+        "cards"
+      ],
+      "observation": "민트·화이트, 단계와 일정 및 비교표를 구획."
+    },
+    {
+      "template_key": "31x0fiHEEPWJl11RlY4z4",
+      "page_count": 12,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "31p0SF9kfDJ41eGzIt6Jn",
+      "page_count": 8,
+      "search": 1,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "33sUcPvl9UYDO20GI7Wf8",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "forest-mint"
+      ],
+      "patterns": [
+        "rows",
+        "chart",
+        "radial",
+        "gantt",
+        "image"
+      ],
+      "observation": "녹색 포인트, 문제·개선 좌우 대응과 차트·설명 병치."
+    },
+    {
+      "template_key": "33cVf17ZrkCoZfQRdaYiv",
+      "page_count": 9,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "31jBhaWHdQvb0RvTeWG1t",
+      "page_count": 9,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "b18f2f6c-ae36-48e3-b084-aa3a8e0c7412",
+      "page_count": 9,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "32Eei7Qwl9iGNR1FlVYAb",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "34Q7dAPBjoOFp2362sLYS",
+      "page_count": 15,
+      "search": 2,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "forest-mint"
+      ],
+      "patterns": [
+        "cards",
+        "process",
+        "team",
+        "rows",
+        "timeline"
+      ],
+      "observation": "화이트·연민트, 역할 카드·절차·행별 설명."
+    },
+    {
+      "template_key": "52e3c0ce-82f7-49a8-a949-018929d85baa",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "2zxblriGeGoj3OLCjYJKH",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "9a9e013d-624f-4de5-a6ce-b183a68e18e0",
+      "page_count": 9,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "9db64da4-dee1-4032-ba13-38f3dd0689b2",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "33KJkaebu7uRlnZ6NIbhz",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "33cVf1miDfVPg0BBq0ANX",
+      "page_count": 10,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "1bc17564-2abf-4d01-b37c-5e4ba6238d42",
+      "page_count": 9,
+      "search": 2,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "forest-mint"
+      ],
+      "patterns": [
+        "chart",
+        "cards",
+        "rows"
+      ],
+      "observation": "크림·녹색, 조사 결과와 해석을 나눈 영역."
+    },
+    {
+      "template_key": "b7c6600e-4159-4e67-a03f-8ecbee459fc2",
+      "page_count": 9,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "470206ab-0489-4e53-a27d-f219304ae6ce",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "c788dd78-c459-4fac-ba1e-1b25eb17b737",
+      "page_count": 12,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "9ea63b50-c89c-4392-bb1b-fb7b06da1772",
+      "page_count": 9,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "8082b608-7152-4c2c-8af6-bebc9d7c181d",
+      "page_count": 10,
+      "search": 2,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "forest-mint"
+      ],
+      "patterns": [
+        "process",
+        "cards",
+        "table",
+        "rows"
+      ],
+      "observation": "청록 포인트, 세로 절차와 좌우 안내·비교."
+    },
+    {
+      "template_key": "2zRQCvTOSF1AGYoqulp6Q",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "a428fccb-6b14-4d86-9311-bcd0efd7cb17",
+      "page_count": 9,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "895ac7be-5a09-4b05-985f-3eb2fa1e3715",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "31i8v5nbAGbn65y4cVyla",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "forest-mint",
+        "mono-line"
+      ],
+      "patterns": [
+        "chart",
+        "table",
+        "image",
+        "rows"
+      ],
+      "observation": "연녹색·흰 배경, 근거 사진·분석표·결론 띠."
+    },
+    {
+      "template_key": "727b60e2-cb95-4a83-89b8-ab34fc8b72d4",
+      "page_count": 10,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "1e0484d0-8b1c-4889-893c-5e0f8575fbce",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "344Sl7IZz6illQ0uj974g",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "33qBnFmThl7wMZ4vRgLpc",
+      "page_count": 10,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "bfb4d4db-2b0a-4712-9a21-8d703f9469b2",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "31TBGPdatJ2Gqu6KiuTEX",
+      "page_count": 8,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "2zx2Qq72ElfzCeLJzrvGp",
+      "page_count": 9,
+      "search": 2,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "plum-soft",
+        "warm-sand"
+      ],
+      "patterns": [
+        "cards",
+        "rows",
+        "compare",
+        "table"
+      ],
+      "observation": "연보라·노랑·연녹색 구획, 번호 카드와 두 칸 비교."
+    },
+    {
+      "template_key": "1fefde55-da9c-4414-976a-b8808e6ded8b",
+      "page_count": 9,
+      "search": 2,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "3166e9f7-7af3-48ee-9cac-5cea5bb84afa",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "warm-sand",
+        "mono-line"
+      ],
+      "patterns": [
+        "image",
+        "chart",
+        "cards"
+      ],
+      "observation": "오프화이트·베이지, 제품 사진과 단문·차트 병치."
+    },
+    {
+      "template_key": "ccf34a7f-e7f2-43d1-b03b-616bcad19e7f",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "b9e86e2e-6736-4a45-bb64-71ac65a08f18",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "38d77ffa-a798-48e9-82a1-f392564973f8",
+      "page_count": 10,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "e0f3e347-494f-4e49-9a78-07750055f30e",
+      "page_count": 12,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "6d1e25b2-8032-4c6c-9d2c-76497eef1dc5",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "plum-soft"
+      ],
+      "patterns": [
+        "timeline",
+        "cards",
+        "compare",
+        "image"
+      ],
+      "observation": "연보라·시안 영역, 연혁·대조·개념 이미지 구획."
+    },
+    {
+      "template_key": "e42dade1-fa51-4f3d-a373-3f4c997c93cd",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "34D2IO8PZEXVINr2oKxJy",
+      "page_count": 14,
+      "search": 3,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "warm-sand",
+        "forest-mint"
+      ],
+      "patterns": [
+        "image",
+        "cards",
+        "table"
+      ],
+      "observation": "올리브·크림, 현장 사진과 단계별 정보 구획."
+    },
+    {
+      "template_key": "2z7z6QnzZ6vkq7yNMuHBq",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "c2b44ae0-e691-41b6-a1b8-ad4774526a80",
+      "page_count": 8,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "33gWWDBiaXyqiWWawyvcY",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "forest-mint",
+        "warm-sand"
+      ],
+      "patterns": [
+        "image",
+        "timeline",
+        "table",
+        "process"
+      ],
+      "observation": "여정의 순서와 사진·지도·일정·비용 영역을 분리."
+    },
+    {
+      "template_key": "33uIWl1tJtf1wSSwLEfI5",
+      "page_count": 12,
+      "search": 3,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "report-blue",
+        "lime-ink"
+      ],
+      "patterns": [
+        "chart",
+        "cards",
+        "image",
+        "kpi"
+      ],
+      "observation": "흰 배경·검정·시안 대비, 지표와 근거 사진 병치."
+    },
+    {
+      "template_key": "344SmErOLc31wGoILM0ms",
+      "page_count": 10,
+      "search": 3,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "warm-sand"
+      ],
+      "patterns": [
+        "image",
+        "cards",
+        "chart"
+      ],
+      "observation": "브라운·크림·오렌지, 큰 제품 사진과 설명·근거 병치."
+    },
+    {
+      "template_key": "e174530a-a3fd-45ec-9b08-fd1b3b4fdf6f",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "344SkqnurRTJ4GhG1LXZ0",
+      "page_count": 10,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "33gcO2XtEIrkamg0QlmuD",
+      "page_count": 22,
+      "search": 3,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "warm-sand",
+        "forest-mint"
+      ],
+      "patterns": [
+        "image",
+        "chart",
+        "table",
+        "process",
+        "rows"
+      ],
+      "observation": "크림·오렌지·녹색, 제품 이미지·비교·공급 단계를 구획."
+    },
+    {
+      "template_key": "340TO6vlkClZgG1V77J1Y",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "warm-sand",
+        "plum-soft"
+      ],
+      "patterns": [
+        "image",
+        "cards",
+        "table"
+      ],
+      "observation": "밝은 크림과 옅은 색 구획, 공간 사진 격자와 설명."
+    },
+    {
+      "template_key": "34LdKw6hVoCR0khiyflPO",
+      "page_count": 10,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "344SkOEPPVas2zVvCQVFX",
+      "page_count": 8,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "4e04e78d-c701-469f-b2aa-7b8a8c05a3cd",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "340TO9MfRTPHMY45O3OXm",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "27dafa09-31bc-4acb-a82e-ba89d1746d0b",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "forest-mint",
+        "warm-sand"
+      ],
+      "patterns": [
+        "image",
+        "cards",
+        "process"
+      ],
+      "observation": "제품 사진의 여백과 짧은 설명, 번호형 차별 포인트."
+    },
+    {
+      "template_key": "f39533ef-df9a-43a6-862a-cc2ea7192713",
+      "page_count": 15,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "db9e2af6-16c2-4b68-ae0a-48650ac06b43",
+      "page_count": 10,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "61723966-334c-4933-bd9e-5a4d4aec5ad5",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "d3984fd4-ac86-4e1e-aa49-3dbe7f3326ef",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "33wSZbiDLaBFDhuLNGW6M",
+      "page_count": 20,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "344Slz7cHLSCDChSBNOC8",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "mapped",
+      "themes": [
+        "warm-sand"
+      ],
+      "patterns": [
+        "image",
+        "chart",
+        "cards"
+      ],
+      "observation": "브라운·검정의 대비, 제품 사진과 조사·제안 영역 분리."
+    },
+    {
+      "template_key": "feb13f83-fb5c-4b9e-903c-0597a94dfd59",
+      "page_count": 9,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    },
+    {
+      "template_key": "34QHwkXu2ty8HnYbrG8Q9",
+      "page_count": 10,
+      "search": 3,
+      "review": "grid",
+      "status": "discovery_only",
+      "themes": [],
+      "patterns": [],
+      "observation": "모아보기 확인. 현 제작 패턴에 대한 자동 추천 매핑은 보류."
+    }
+  ]
+}

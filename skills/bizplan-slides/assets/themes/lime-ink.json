@@ -1,0 +1,58 @@
+{
+  "name": "lime-ink",
+  "label": "라임 잉크",
+  "summary": "잉크색 본문·옅은 라임 구획·굵은 머리 카드. 제품 중심 IR에 선명한 인상이 필요할 때의 후보. 밝은 형광색을 본문색으로 쓰지 않는다.",
+  "derived_from": "독자 작성 테마. 미리캔버스 모아보기에서 관찰한 구획·대비·카드 문법만 참고했으며 원본 파일·문구·이미지·정확한 색상값을 복제하지 않았다.",
+  "fonts": {
+    "head": "Pretendard",
+    "body": "Pretendard",
+    "accent": "Pretendard"
+  },
+  "colors": {
+    "bg": "FAFCEB",
+    "surface": "FFFFFF",
+    "text": "20281A",
+    "muted": "5D6651",
+    "faint": "A9B49A",
+    "line": "DFE6C8",
+    "soft": "EDF4CF",
+    "primary": "48651C",
+    "neutral": "899675",
+    "series": [
+      "48651C",
+      "7E944D",
+      "28311E",
+      "BECF8D",
+      "A1AA92"
+    ]
+  },
+  "chrome": {
+    "header": "plain"
+  },
+  "layout": {
+    "x": 64,
+    "title_y": 66,
+    "bottom": 506,
+    "gap": 24
+  },
+  "sizes": {
+    "title": 24,
+    "lead": 12,
+    "eyebrow": 10,
+    "body": 16,
+    "small": 12.5
+  },
+  "styles": {
+    "cover": "center",
+    "section": "full",
+    "toc": "grid",
+    "card": "head",
+    "kpi": "box",
+    "process": "chevron",
+    "callout": "solid",
+    "table": "soft",
+    "closing": "full",
+    "bullet": "■",
+    "radius": 0
+  }
+}
