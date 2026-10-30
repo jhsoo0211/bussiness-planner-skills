@@ -42,6 +42,12 @@
     {"id": 38, "query": "고객 인터뷰 질문지 만들어주고, 받아온 설문 결과랑 시장 수치를 출처 붙여서 정리해줘", "expected": "bizplan-research", "note": "인터뷰 가이드·종합 + 출처 표(조사노트)"},
     {"id": 39, "query": "모두의 창업 도전신청서 문항별로 뭘 어떤 순서로 써야 하는지 잡아줘", "expected": "bizplan-outline", "note": "온라인 문항형 — 섹션 설계도 5절 매핑"},
     {"id": 40, "query": "브리프랑 초안 다 있으니까 그림까지 전부 넣어서 제출용 완성본으로 만들어줘. 한글 파일이랑 PDF로", "expected": "bizplan-document", "note": "완성본·전 형식 요청"},
-    {"id": 41, "query": "쪽수 상관없이 개요 표부터 팀 구성까지 다 채운 최종본 워드 파일로 뽑아줘", "expected": "bizplan-document", "note": "분량 제한 없는 완성 문서"}
+    {"id": 41, "query": "쪽수 상관없이 개요 표부터 팀 구성까지 다 채운 최종본 워드 파일로 뽑아줘", "expected": "bizplan-document", "note": "분량 제한 없는 완성 문서"},
+    {"id": 42, "query": "요양시설용 낙상 감지 레이더 센서 만드는 업력 2년 회사야. 사업계획서를 처음부터 같이 정리하고 싶어", "expected": "bizplan", "note": "하드웨어 × B2B 시작 요청 → 라우터(분야표 하드웨어·B2B 행)"},
+    {"id": 43, "query": "수출바우처 사업계획서를 제출용 완성본으로 다 써줘", "expected": "bizplan-export", "note": "'완성본'이 있어도 수출바우처는 export(완성 문서 목차와 다름)"},
+    {"id": 44, "query": "브리프 있으니까 제출용으로 그림이랑 표까지 다 써줘. 쪽수는 신경 안 써도 돼", "expected": "bizplan-document", "note": "'다 써줘' 3종 중 완성 문서"},
+    {"id": 45, "query": "시간 없으니까 일단 다 써줘, 초안이면 돼", "expected": "bizplan-quick", "note": "'다 써줘' 3종 중 빠른 초안"},
+    {"id": 46, "query": "검토 리포트 받았는데 어디를 어떻게 고쳐야 하는지 작성 가이드로 다시 정리해줘", "expected": "bizplan-review", "note": "검토 뒤 가이드 재생성"},
+    {"id": 47, "query": "시제품 대당 원가 분해랑 KC 인증·양산 일정을 사업계획서에 넣을 그림으로 만들어줘", "expected": "bizplan-visual", "note": "하드웨어 그림(waterfall·gantt)"}
   ]
 }

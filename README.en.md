@@ -143,7 +143,7 @@ Evaluation must separately record **evidence that a reference was read** and **e
 
 - `skills/bizplan/references/section-blueprints.md` defines fourteen writing blocks (one-line pitch, overview, background, problem, market, readiness, solution, differentiation, budget, business model, go-to-market, revenue/investment/hiring, roadmap, team).
   - Block grammar: a claim headline (`○ [tag] conclusion`), a visual that proves it, two to four evidence lines, then sources and attachments.
-  - A number register in the brief holds the six to ten key figures; the plan, overview, charts, and slides reuse the same values.
+  - A number register in the brief holds the six to ten key figures (no cap in complete-document mode); the plan, overview, charts, and slides reuse the same values.
   - Evidence labels (confirmed, derived, observed, assumed), conservative estimates (half of surveyed intent or conversion), and a check box under totals.
   - Form mapping places the same blocks into the current and older pre-startup package forms, the U300+ student form, and online question-style applications. Writing style follows the form type.
 - `bizplan-research` now produces `조사노트.md`: sub-questions, a source table with evidence level, verdict, and verification path, a first-customer estimate (population × incidence × intent × ½), interview synthesis, competitor comparison and cards, number-register candidates, draft sentences per block, and gaps with acquisition plans.
@@ -258,7 +258,7 @@ python scripts/check_installation.py
 
 It checks all 18 skill folders, exact resource copying, existing-installation protection, and source/destination overlap protection in temporary directories. It does **not** run either model, measure skill discovery, or establish output quality, speed, or cost. The [evaluation guide](evals/README.md) separates installation checks, trigger tests, and controlled quality comparisons.
 
-The ZIP files named `dist/*v0.4.0.zip` are earlier distribution artifacts. Install from the current checkout to use the Codex documentation and changes described here.
+Install from the current checkout (install script) or the plugin marketplace. The old v0.4.0 ZIP files no longer matched the current skills and were removed.
 
 ## Before submitting a plan
 

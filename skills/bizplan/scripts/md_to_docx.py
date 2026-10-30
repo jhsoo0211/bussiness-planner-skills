@@ -464,15 +464,9 @@ def postprocess(path, font, style="plain", forms=None, resource_path=None):
     _set_fonts(doc, font)
     if style == "form":
         _form_styles(doc)
-    paras = doc.paragraphs
-    for i, p in enumerate(paras):
+    for p in doc.paragraphs:
         if p.style.name == "Block Text":
             _shade(p)
-            if p.text.strip().startswith("디벨롭 가이드"):     # 상자 제목 뒤 목록(Compact)까지 같은 상자로
-                j = i + 1
-                while j < len(paras) and paras[j].style.name in ("Compact", "Block Text"):
-                    _shade(paras[j])
-                    j += 1
     for tbl in doc.tables:
         _borders(tbl)
         for row in tbl.rows:                  # 한 행이 두 쪽에 걸쳐 갈라지지 않게(합계 행이 '2,000 / 만 원'으로 쪼개지던 문제)

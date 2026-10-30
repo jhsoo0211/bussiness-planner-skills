@@ -104,6 +104,37 @@ def main():
             overview = built.tables[0]                      # 개요 양식 표: 4열, 첫 칸 이름표 '명  칭'
             assert len(overview.columns) == 4 and overview.cell(0, 0).text.strip() == "명  칭", overview.cell(0, 0).text
         print("PASS complete-document build (form style docx)")
+    scripts = ROOT / "skills/bizplan/scripts"
+    with tempfile.TemporaryDirectory(prefix="bizplan-tools-") as temporary:
+        tmp = Path(temporary)
+        table = "| 비목 | 금액 |\n|---|---|\n| 재료비 | 100 |\n| 인건비 | 200 |\n| **합계** | **{}** |\n"
+        for total, code in ((300, 0), (350, 1)):          # 합계가 맞으면 0, 틀리면 1
+            (tmp / "t.md").write_text(table.format(total), encoding="utf-8")
+            result = subprocess.run([sys.executable, "-B", str(scripts / "check_tables.py"), str(tmp / "t.md")],
+                                    capture_output=True, text=True)
+            assert result.returncode == code, result.stdout + result.stderr
+        print("PASS check_tables (sum ok / mismatch caught)")
+        # 검토 뒤 가이드를 다시 만들어도 완성 문서 모드가 채운 절(분량 · 교체할 자리)이 남아야 한다
+        plan, guide = tmp / "plan.md", tmp / "guide.md"
+        plan.write_text((ROOT / "skills/bizplan-document/assets/document-template.md").read_text(encoding="utf-8"),
+                        encoding="utf-8")
+        guide.write_text("# 작성 가이드\n\n## 분량\n\n- 빌드 결과: 12쪽 / 공고 10쪽\n\n"
+                         "## 교체할 자리\n\n- 시제품 사진 2장\n", encoding="utf-8")
+        result = subprocess.run([sys.executable, "-B", str(scripts / "guide_draft.py"), str(plan), "--out", str(guide)],
+                                capture_output=True, text=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        text = guide.read_text(encoding="utf-8")
+        assert "빌드 결과: 12쪽" in text and "시제품 사진 2장" in text and "## 목차별 가이드" in text
+        print("PASS guide_draft (rebuild keeps filled sections)")
+        try:
+            import hwpx  # noqa: F401
+        except ImportError:
+            print("SKIP hwpx build (python-hwpx not installed)")
+        else:
+            result = subprocess.run([sys.executable, "-B", str(scripts / "md_to_hwpx.py"), str(plan), str(tmp / "p.hwpx"),
+                                     "--style", "form"], capture_output=True, text=True)
+            assert result.returncode == 0 and "이슈 0건" in result.stdout, result.stdout + result.stderr
+            print("PASS hwpx build (form style, structure check)")
     print("Static installation checks only; agent discovery and output quality are separate tests.")
 
 

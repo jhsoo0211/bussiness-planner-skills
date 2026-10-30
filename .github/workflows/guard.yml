@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: pip install python-pptx pillow
+        run: pip install python-pptx pillow python-docx python-hwpx
       - name: Python syntax
         run: python -m compileall -q skills scripts
       - name: JSON files parse

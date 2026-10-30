@@ -43,6 +43,9 @@ THEME_DIR = os.path.normpath(os.path.join(HERE, "..", "assets", "themes"))
 SW, SH = 960.0, 540.0      # 16:9 슬라이드 크기(pt)
 LH = 1.2                   # 글꼴 기본 줄 높이(em) — Pretendard·맑은 고딕 모두 약 1.2
 NO_STYLE_TABLE = "{2D5ABB26-0587-4C30-8999-92F81FD0307C}"   # 표 스타일 없음·격자 없음
+# 팀 카드 이름 칸에 사람 이름 대신 역할을 적은 경우 — 이니셜을 찍지 않고 사람 모양 자리로 둔다
+ROLE = re.compile(r"대표|팀장|팀원|개발자|디자이너|기획자|담당|마케터|연구원|이사|매니저|자문|채용|예정|미정|공석|"
+                  r"\b(CEO|CTO|COO|CFO|CMO|PM|PO|TBD|Lead|Manager|Engineer|Developer|Designer|Marketer|Hire)\b", re.I)
 
 
 def E(v):
@@ -1657,7 +1660,7 @@ class Deck:
                 self.box(slide, mid - D / 2, y + 16, D, D, fill="soft", shape="oval", name="사진 자리")
                 nm = strip_md(it["name"])
                 ini = nm[:1]
-                if re.fullmatch(r"[가-힣]{2,4}|[A-Za-z][A-Za-z .'-]{1,30}", nm):   # 사람 이름일 때만 이니셜
+                if re.fullmatch(r"[가-힣]{2,4}|[A-Za-z][A-Za-z .'-]{1,30}", nm) and not ROLE.search(nm):   # 사람 이름일 때만 이니셜
                     self.text(slide, (mid - D / 2, y + 16, D, D), ini, 28, "primary", bold=True, align="c", anchor="m",
                               fit=False, name="이니셜")
                     self.texts[self.no].pop()

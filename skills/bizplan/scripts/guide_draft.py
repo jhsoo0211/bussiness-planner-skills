@@ -160,6 +160,16 @@ CHECKS = [
      "MOU·협약서·자문 확약 메일·공문(단계 그대로)", r"협력"),
 ]
 
+# 하드웨어·제조 아이템이면 해당 목차에 더 보는 작성법 항목(라우터 분야표 하드웨어 행 · 섹션 설계도 B6·B10·B13)
+HW = re.compile(r"BOM|양산|시제품|KC|EMS|금형|부품|센서")
+HW_EXTRA = {
+    "실행 증거": [("대당 원가(BOM)·생산 능력·양산처", r"BOM|원가|생산 능력|양산|EMS|월 ?[\d,]+\s*(대|개)")],
+    "일정": [("인증·시험·양산 일정(KC 등)", r"KC|KS|인증|적합성|시험성적|양산")],
+    "BM": [("원가 대비 단가(마진)", r"원가|마진|이익률|공헌이익")],
+}
+# 이미 있는 가이드에서 다시 만들어도 남길 절 — 완성 문서 모드가 채운 분량·교체할 자리, 작성 스킬이 채운 자체 점검
+KEEP = re.compile(r"^##\s*(분량|교체할 자리|자체 점검)")
+
 CLAIM = re.compile(r"^\s*(?:#{1,6}\s+)?(?:[-*]\s+)?(?:\*\*)?(○|◆)\s*\S")
 VISUAL = re.compile(r"!\[|\[이미지|\[그림|\[시각자료|^이미지\s*[:：]")   # 마지막은 ```개요``` 양식 블록의 이미지 줄
 
@@ -270,6 +280,22 @@ def section_block(title, body, check, items):
     return out, marks, gains, len(claims), visuals
 
 
+def kept_sections(path):
+    """이미 있는 가이드의 분량 · 교체할 자리 · 자체 점검 절 중 채워진 것({이름: 절 전체}) — 검토 뒤 다시 만들어도 지우지 않는다."""
+    try:
+        text = open(path, encoding="utf-8").read()
+    except OSError:
+        return {}
+    out = {}
+    for m in re.finditer(r"^## [^\n]*\n[\s\S]*?(?=^## |\Z)", text, re.M):
+        block = m.group(0).rstrip()
+        km = KEEP.match(block)
+        body = block.split("\n", 1)[1] if "\n" in block else ""
+        if km and re.search(r"^(?!.*✍).*[가-힣\d]", body, re.M):          # ✍ 자리만 있는 골격은 남기지 않는다
+            out[km.group(1)] = block
+    return out
+
+
 def registry(path):
     """브리프의 '숫자 등록부' 절에서 값이 채워진 행 수."""
     text = open(path, encoding="utf-8").read()
@@ -288,6 +314,8 @@ def main():
     ap.add_argument("--brief", help="브리프.md — 숫자 등록부 행 수를 '한눈에'에 적는다")
     a = ap.parse_args()
     lines = open(a.doc, encoding="utf-8").read().splitlines()
+    keep = kept_sections(a.out)
+    hw = bool(HW.search("\n".join(lines)))
     doc_title = next((l[2:].strip() for l in lines if l.startswith("# ")), "사업계획서")
     items, score = review_items(a.review) if a.review else ([], None)
     secs = sections(lines)
@@ -316,6 +344,8 @@ def main():
         elif not parent:
             last_parent = None
         check = pick(title) or pick(parent)
+        if hw and check and check[0] in HW_EXTRA:
+            check = (check[0], check[1], check[2] + HW_EXTRA[check[0]], *check[3:])
         blk, marks, gains, nc, nv = section_block(title, body, check, items)
         n_claims += nc
         n_visuals += nv
@@ -361,10 +391,15 @@ def main():
             "- [ ] 문제-솔루션 대응표의 '미해결·추가 검증 필요' 표기가 본문과 일치하는가", "",
             "## 자체 점검 *(작성 스킬이 옮겨 적는다 — 사업계획서.md에는 붙이지 않는다)*", "",
             "- 문제-솔루션 대응: ✍", "- 차별점 논리(고유한가 · 모방 가능한가 · 근거 있는가): ✍", "- 보강 제안(있으면 좋을 내용 · 요청 자료): ✍", ""]
+    if "자체 점검" in keep:                                # 채운 자체 점검은 골격 대신 그대로
+        tail = tail[:tail.index(next(t for t in tail if t.startswith("## 자체 점검")))] + [keep["자체 점검"], ""]
+    tail += [x for k in ("분량", "교체할 자리") if k in keep for x in (keep[k], "")]
     open(a.out, "w", encoding="utf-8").write("\n".join(head + body_out + tail) + "\n")
     print(f"작성 가이드 골격: {a.out} — 목차 {n_blocks}개, 빈칸 {len(all_marks)}곳, "
           f"점수 영향 {len(all_gains)}건{'' if a.review else '(검토 리포트 없음)'}")
     print(f"남은 빈칸(✍): {sum(1 for l in head + body_out if '✍' in l)}줄 — 이 초안을 읽고 채운다")
+    if keep:
+        print(f"이전 가이드에서 남긴 절: {' · '.join(keep)}")
 
 
 if __name__ == "__main__":

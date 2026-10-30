@@ -92,6 +92,10 @@ def main():
 
     pdf = os.path.join(folder, stem + ".pdf")
     if "pdf" in formats and os.path.exists(docx):
+        if shutil.which("fc-list"):                  # 문서 글꼴(md_to_docx 기본 '맑은 고딕')이 없으면 LibreOffice가 대체 글꼴로 그린다
+            fonts = subprocess.run(["fc-list", ":", "family"], capture_output=True, text=True).stdout
+            if not re.search(r"맑은 고딕|Malgun Gothic", fonts):
+                report.append("PDF 글꼴: 맑은 고딕이 없어 대체 글꼴로 그렸다 — 줄바꿈·쪽 수가 한글·워드와 다를 수 있다")
         if shutil.which("soffice") or shutil.which("libreoffice"):
             code, out = run([os.path.join(SLIDES, "export_pdf.py"), docx, "--out", pdf], cwd=folder)
             if code == 0 and os.path.exists(pdf):
