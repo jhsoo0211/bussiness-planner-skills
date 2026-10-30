@@ -17,6 +17,15 @@ const path = require('path');
   const ids = await page.$$eval('section.viz[id]', (els) => els.map((e) => e.id));
   for (const id of ids) {
     const el = await page.$(`section.viz[id="${id}"]`);
+    // 가로 넘침: 그림 안 요소가 그림 테두리 밖으로 나가면(잘림) 알린다
+    const over = await el.evaluate((sec) => {
+      const r = sec.getBoundingClientRect();
+      return [...sec.querySelectorAll('*')].some((c) => {
+        const b = c.getBoundingClientRect();
+        return b.width > 0 && (b.right > r.right + 1 || b.left < r.left - 1);
+      });
+    });
+    if (over) console.log(`OVERFLOW ${id}`);
     const file = path.join(outDir, `${id}.png`);
     await el.screenshot({ path: file });
     console.log(file);

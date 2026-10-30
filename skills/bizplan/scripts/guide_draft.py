@@ -58,7 +58,7 @@ CHECKS = [
      "경쟁사 한계를 우리가 어떻게 해소하는지 + '경쟁사가 같은 기능을 붙이면 무엇이 남나'에 답하는가(B8)",
      "경쟁 서비스 화면·가격표 캡처(확인 날짜), 직접 써 본 비교 메모, 사용 후기", r"$^"),
     ("필요성", r"필요성|왜 지금|개발 목적", [
-        ("필요성 2개", r"필요"),
+        ("필요성 2개", r"필요|목적|②"),
         ("해결 시 이점(Need-payoff)", r"이점|효과|해결되면|줄인|높인"),
         ("니즈 증거(성장률·성공 사례·인터뷰)", r"성장|사례|인터뷰|설문"),
         ("지원사업비로 해결할 핵심 기능", r"지원|사업비|협약")],
@@ -167,6 +167,11 @@ HW_EXTRA = {
     "일정": [("인증·시험·양산 일정(KC 등)", r"KC|KS|인증|적합성|시험성적|양산")],
     "BM": [("원가 대비 단가(마진)", r"원가|마진|이익률|공헌이익")],
 }
+HW_ASSETS = {"실행 증거": "시험성적서·인증 접수증, BOM·양산처 견적서, 시제품 사진(정면·설치 장면), 실증 LOI 원본"}
+# 완성 문서(```개요``` 양식 블록)의 개요는 칸 이름으로 본다
+FORM_OVERVIEW = [("명칭·범주", r"명칭\s*[:：][\s\S]*범주\s*[:：]"), ("소개(○ 헤드라인 + 사실 줄)", r"소개\s*[:：]"),
+                 ("진출 목표시장", r"진출 목표시장\s*[:：]"), ("경쟁사 대비 차별성", r"경쟁사 대비 차별성\s*[:：]"),
+                 ("산출물 및 개발단계", r"산출물 및 개발단계\s*[:：]"), ("이미지 2장", r"이미지\s*[:：].*=.*\|")]
 # 이미 있는 가이드에서 다시 만들어도 남길 절 — 완성 문서 모드가 채운 분량·교체할 자리, 작성 스킬이 채운 자체 점검
 KEEP = re.compile(r"^##\s*(분량|교체할 자리|자체 점검)")
 
@@ -243,12 +248,14 @@ def section_block(title, body, check, items):
     plain = MARK.sub(" ", re.sub(r"\*\*\[[^\]]*\]\*\*", " ", "\n".join(kept)))   # 빈칸 표기 속 낱말('[작성 필요: 경력]')은 있음으로 세지 않는다
     assumes = len(ASSUME.findall(text))
     got = [(bool(re.search(rx, plain)), label) for label, rx in check[2]] if check else []
+    blank_rows = any(l.lstrip().startswith("|") and "○○" in l for l in body)
+    got = [(None if ok and label.startswith("검산") and blank_rows else ok, label) for ok, label in got]   # 금액이 ○○면 판단 보류
     gains = []
     if check and items:
         for sec, name, mark, g, mx in items:
             if mark != "O" and re.search(check[5], name):
                 gains.append(f"{sec} '{name}' {mark}→O +{mx - g:g}점")
-    state = " · ".join(f"{'✓' if ok else '✗'} {label}" for ok, label in got) or "(해당 체크리스트 없음 — coaching.md 3절에서 고른다)"
+    state = " · ".join(f"{'△' if ok is None else '✓' if ok else '✗'} {label}" for ok, label in got) or "(해당 체크리스트 없음 — coaching.md 3절에서 고른다)"
     claims = [l for l in [title] + body if CLAIM.match(l) or (l is title and re.match(r"^\S*\s*\[[^\]]{1,15}\]", l))]
     numbered = sum(1 for l in claims if re.search(r"\d", l))
     visuals = sum(1 for l in body if VISUAL.search(l))
@@ -264,7 +271,9 @@ def section_block(title, body, check, items):
         out.append(f"- {check[3]}")
     out += [f"- {FILL}", "", "**꼭 적어야 할 것**", ""]
     for ok, label in got:
-        if not ok:
+        if ok is None:
+            out.append("- [ ] 표의 금액 ○○를 채운 뒤 합계를 검산해야 한다(`check_tables.py`)")
+        elif not ok:
             short = label.split("(")[0].strip()
             out.append(f"- [ ] {josa(short)} 적어야 한다" + (f" (작성법: {label})" if short != label else " (작성법)"))
     if not claims:
@@ -316,6 +325,7 @@ def main():
     lines = open(a.doc, encoding="utf-8").read().splitlines()
     keep = kept_sections(a.out)
     hw = bool(HW.search("\n".join(lines)))
+    complete = bool(re.search(r"^```\s*개요\s*$", "\n".join(lines), re.M))   # 완성 문서 서식(개요 양식 블록)
     doc_title = next((l[2:].strip() for l in lines if l.startswith("# ")), "사업계획서")
     items, score = review_items(a.review) if a.review else ([], None)
     secs = sections(lines)
@@ -345,7 +355,10 @@ def main():
             last_parent = None
         check = pick(title) or pick(parent)
         if hw and check and check[0] in HW_EXTRA:
-            check = (check[0], check[1], check[2] + HW_EXTRA[check[0]], *check[3:])
+            check = (check[0], check[1], check[2] + HW_EXTRA[check[0]], check[3],
+                     check[4] + (", " + HW_ASSETS[check[0]] if check[0] in HW_ASSETS else ""), check[5])
+        if complete and check and check[0] == "개요":
+            check = (check[0], check[1], FORM_OVERVIEW, *check[3:])
         blk, marks, gains, nc, nv = section_block(title, body, check, items)
         n_claims += nc
         n_visuals += nv
@@ -364,7 +377,6 @@ def main():
             top.append(f"{len(top) + 1}. ✍ (행동) — (기한) — {g} — {t}")
         if len(top) == 3:
             break
-    complete = bool(re.search(r"^```\s*개요\s*$", "\n".join(lines), re.M))   # 완성 문서 서식(개요 양식 블록)
     head = [f"# 작성 가이드 — {doc_title}", "",
             "> 사업계획서와 **따로 보는** 가이드다. 사업계획서 목차 순서대로 그 부분에서 고려해야 할 점과 적어야 할 것을 정리했다. "
             "기준: PSST 작성법 · 심사 성향 · 사례 체크포인트(bizplan/references/coaching.md).", "",

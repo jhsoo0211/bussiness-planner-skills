@@ -135,7 +135,7 @@ def main():
         limit = f" / 공고 분량 {a.pages_limit}쪽" + (f" (+{pages - a.pages_limit}쪽 — 줄일 후보를 작성가이드에)"
                                                     if a.pages_limit and pages > a.pages_limit else "")
         report.append(f"쪽 수: {pages}쪽" + (limit if a.pages_limit else ""))
-    report.append(f"그림: 본문 {figs}개 · 남은 [이미지: …] 자리 {len(slots)}곳 · 실물로 바꿀 사진·화면 자리 {len(holes)}곳 · ○○ {text.count('○○')}개")
+    report.append(f"그림: 본문 {figs}개 · 남은 [이미지: …] 자리 {len(slots)}곳 · 실물로 바꿀 사진·화면 자리 {len(holes)}곳 · ○○ {text.count('○○')}개(미확보 값과 블라인드 가림을 함께 셈)")
     for vid, kind, what in holes:
         report.append(f"  - 교체할 {kind} {vid}: {what}")
     print("\n".join(report))

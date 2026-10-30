@@ -96,6 +96,22 @@ def label_text(key):
     return "  ".join(key) if len(key) == 2 else key
 
 
+NOTE_LINE = re.compile(r"^\s*(※|\((출처|확인|참고)\s*[:：])")
+
+
+def note_breaks(md):
+    """'※ 주석'·'(출처: …)'·'(확인 경로: …)'·'(참고: …)' 줄 앞에 빈 줄을 넣는다.
+    마크다운은 이웃한 줄을 한 문단으로 합쳐, 주석과 출처가 작은 글씨 한 줄로 섞여 찍히던 것을 막는다."""
+    out, fence = [], False
+    for line in md.split("\n"):
+        if line.lstrip().startswith("```"):
+            fence = not fence
+        if not fence and NOTE_LINE.match(line) and out and out[-1].strip() and not out[-1].lstrip().startswith("|"):
+            out.append("")
+        out.append(line)
+    return "\n".join(out)
+
+
 def form_bullets(md, escape=True):
     """불릿을 서식 기호 문단으로 바꾼다: 1단 '-', 2단 이하 '·'. 표·코드 블록 안은 그대로.
     escape=True면 1단 '-'를 '\\-'로 적어 pandoc이 목록으로 다시 읽지 않게 한다."""

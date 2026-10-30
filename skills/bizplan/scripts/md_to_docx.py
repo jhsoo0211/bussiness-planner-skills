@@ -27,7 +27,7 @@ from docx.oxml.ns import qn
 from docx.shared import Mm, Pt, RGBColor
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from form_style import MARK_RE, OVERVIEW_MM, form_bullets, heading_kind, label_text, layout, split_forms  # noqa: E402
+from form_style import MARK_RE, OVERVIEW_MM, form_bullets, heading_kind, label_text, layout, note_breaks, split_forms  # noqa: E402
 
 GOV = ["□", "○", "-", "·"]
 FORM_FILL, HEAD_FILL, NOTE_INK = "D9D9D9", "FFF2CC", RGBColor(0x55, 0x55, 0x55)
@@ -318,7 +318,7 @@ def _form_paragraphs(doc):
             elif kind == "subtopic" and p.runs and not text.startswith("-"):
                 p.runs[0].text = "- " + p.runs[0].text
             continue
-        if text.startswith("※") or text.startswith("(출처") or text.startswith("(확인"):
+        if text.startswith(("※", "(출처", "(확인", "(참고")):
             for r in p.runs:
                 r.font.size = Pt(9)
                 r.font.color.rgb = NOTE_INK
@@ -476,6 +476,11 @@ def postprocess(path, font, style="plain", forms=None, resource_path=None):
                 nxt = next((trPr.find(qn(t)) for t in ("w:trHeight", "w:tblHeader", "w:tblCellSpacing", "w:jc", "w:hidden")
                             if trPr.find(qn(t)) is not None), None)
                 nxt.addprevious(cs) if nxt is not None else trPr.append(cs)
+        if len(tbl.rows) <= 12:               # 짧은 표는 한 쪽에 — 합계 행만 다음 쪽 첫 줄에 남지 않게(마지막 행 전까지 다음 행과 묶는다)
+            for row in tbl.rows[:-1]:
+                for cell in row.cells:
+                    for par in cell.paragraphs:
+                        par.paragraph_format.keep_with_next = True
         if tbl._tbl.xpath(".//w:drawing"):
             _image_grid(tbl)                  # 사진 격자: 같은 너비 칸, 그림은 칸에 맞춘다
         else:
@@ -661,7 +666,7 @@ def main():
     forms = []
     if args.style == "form":
         md, forms = split_forms(md)
-        md = form_bullets(md)
+        md = note_breaks(form_bullets(md))
     elif args.gov_bullets:
         md = gov_bullets(md)
     res = args.resource_path or os.path.dirname(os.path.abspath(args.md))

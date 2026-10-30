@@ -219,6 +219,9 @@ def v_positioning(v, A):
         label = p["name"] + (" (대체재)" if p.get("kind") == "substitute" else "")
         items.append((sx(p["x"]), sy(p["y"]), r, label, fs))
     boxes = _place_labels(items, (L + 4, T + 4, R - 4, B - 4), lambda t, f: tw(t, f))
+    gap = lambda px, py, b: math.hypot(max(b[0] - px, 0, px - b[2]), max(b[1] - py, 0, py - b[3]))
+    LABEL_WARN[v.get("id")] = [it[3] for k, (it, b) in enumerate(zip(items, boxes))      # 라벨이 남의 점에 더 붙으면 헷갈린다
+                               if any(gap(o[0], o[1], b) + 4 < gap(it[0], it[1], b) for j, o in enumerate(items) if j != k)]
     for p, (px, py, r, label, fs), bx in zip(pts, items, boxes):
         if p.get("ours"):
             s.append(f'<circle cx="{px}" cy="{py}" r="{r + 6}" fill="{mix(A, 0.18)}"/>')
@@ -862,6 +865,8 @@ def v_donut(v, A):
                       f'<b>{pct(p["value"], tot)}</b>'
                       + ("" if v.get("unit", "") == "%" else f'<small>{fmt(p["value"])}{esc(v.get("unit", ""))}</small>') + '</div>')
     c = v.get("center") or {"value": pct(next(p["value"] for p in parts if p["label"] == hi), tot), "label": hi}
+    if not isinstance(c, dict):                             # 문자열로 주면 값만 쓴다
+        c = {"value": str(c), "label": ""}
     s.append(f'<text x="{cx}" y="{cy + 2}" text-anchor="middle" font-size="30" font-weight="800" fill="{INK}">{html.escape(str(c["value"]))}</text>'
              f'<text x="{cx}" y="{cy + 26}" text-anchor="middle" font-size="13" fill="{INK2}">{html.escape(str(c.get("label", "")))}</text>')
     return (f'<div class="donut"><svg width="260" height="260" viewBox="0 0 260 260">{"".join(s)}</svg>'
@@ -1012,7 +1017,11 @@ def v_waterfall(v, A):
         sign = "" if k in (0, n - 1) or val < 0 else "+"
         s.append(f'<text x="{x:.1f}" y="{py(y1) - 8:.1f}" text-anchor="middle" font-size="14" font-weight="700" fill="{INK}">{sign}{fmt(val)}</text>')
         s.append(f'<text x="{x:.1f}" y="{B + 22}" text-anchor="middle" font-size="13" fill="{INK2}">{html.escape(lab)}</text>')
-    rate = f'<div class="badge" style="left:auto;right:30px">{esc(v.get("end_label", "마진"))}율 <b>{pct(end, start["value"])}</b></div>'
+    end_l = v.get("end_label", "마진")
+    last = end_l[-1:]
+    jong = (ord(last) - 0xAC00) % 28 if "가" <= last <= "힣" else 0
+    suffix = "율" if jong in (0, 4) else "률"            # 받침 없음·ㄴ 받침 → 율(마진율), 그 밖 → 률(이익률)
+    rate = f'<div class="badge" style="left:auto;right:30px">{esc(end_l)}{suffix} <b>{pct(end, start["value"])}</b></div>'
     unit = f'<div class="unit" style="left:44px;right:auto">단위: {esc(v["unit"])}</div>' if v.get("unit") else ""
     return f'<div class="rel">{rate}{unit}<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">{"".join(s)}</svg></div>'
 
@@ -1084,11 +1093,11 @@ def v_stairs(v, A):
 
 def v_team(v, A):
     """members: [{role, name('○○'), duty, skills, status:'확보'|'예정'|'협의 중'}], plan: [{gap, how, when, budget}] 보완 계획."""
-    cls = {"확보": "ok", "예정": "todo", "협의 중": "talk"}
+    cls = {"확보": "ok", "예정": "todo", "협의 중": "talk"}       # 그 밖의 상태(예: '파트타임 → 정규직 예정')는 글 그대로, 색은 '예정
     cards = []
     for m in v["members"]:
         st = m.get("status", "확보")
-        cards.append(f'<div class="tm {cls.get(st, "ok")}"><div class="tm-top"><span class="tm-role">{esc(m["role"])}</span>'
+        cards.append(f'<div class="tm {cls.get(st, "todo")}"><div class="tm-top"><span class="tm-role">{esc(m["role"])}</span>'
                      f'<span class="tm-st">{esc(st)}</span></div><b>{esc(m.get("name", "○○"))}</b>'
                      f'<div class="tm-duty">{esc(m.get("duty", ""))}</div><small>{esc(m.get("skills", ""))}</small></div>')
     out = f'<div class="team" style="grid-template-columns:repeat({min(len(cards), 4)},1fr)">{"".join(cards)}</div>'
@@ -1296,7 +1305,7 @@ svg{{display:block;font-family:{FONT};overflow:visible}}
 .fr.conv{{height:26px}} .fconv{{text-align:center;font-size:13px;color:{MUTED}}}
 /* compare */
 table.cmp{{width:100%;border-collapse:collapse;font-size:14.5px}}
-table.cmp th, table.cmp td{{padding:12px 12px;border-bottom:1px solid {GRID};text-align:center;vertical-align:top}}
+table.cmp th, table.cmp td{{padding:12px 12px;border-bottom:1px solid {GRID};text-align:center;vertical-align:top;word-break:keep-all}}
 table.cmp thead th{{font-size:15px;font-weight:700;border-bottom:2px solid {BASE}}}
 table.cmp thead th.ours{{background:var(--accent);color:#fff;border-bottom-color:var(--accent)}}
 table.cmp thead th small{{display:block;font-size:11.5px;font-weight:500;color:{MUTED}}}
@@ -1599,6 +1608,22 @@ def warn(spec):
             unnamed = [f for f in v.get("flows", []) if not f.get("label")]
             if unnamed:
                 out.append(f"{v['id']}: 이름 없는 화살표 {len(unnamed)}개 — 무엇이 오가는지 적는다")
+            pairs = {}
+            for f in v.get("flows", []):
+                key = tuple(sorted((str(f.get("from")), str(f.get("to")))))
+                pairs[key] = pairs.get(key, 0) + 1
+            crowded = [f"{a}↔{b} {n}개" for (a, b), n in pairs.items() if n > 2]
+            if crowded:
+                out.append(f"{v['id']}: 같은 두 주체 사이 화살표가 3개 이상({', '.join(crowded)}) — 칩이 겹친다. "
+                           "하나로 묶거나 수익원 카드(streams)로 옮긴다")
+            long_ = [f.get("detail") for f in v.get("flows", []) if len(f.get("detail", "")) > 12]
+            if long_:
+                out.append(f"{v['id']}: detail이 길다({', '.join(long_)}) — 12자 안으로(칩이 상자를 덮는다)")
+        if v.get("type") == "flow" and any(re.match(r"\s*([①-⑳]|\d+[.)])", s_.get("title", "")) for s_ in v.get("steps", [])):
+            out.append(f"{v['id']}: flow는 단계 번호를 자동으로 붙인다 — 제목 앞 번호(①·1.)를 뺀다")
+        if v.get("type") == "positioning" and LABEL_WARN.get(v.get("id")):
+            out.append(f"{v['id']}: 라벨이 다른 점에 더 가깝게 놓였다({', '.join(LABEL_WARN[v['id']])}) — "
+                       "좌표를 조금 옮기거나 이름을 줄인다")
         if v.get("type") == "pnl":
             prof = v.get("profit")
             if prof and any(abs((r - c) - p) > 0.5 for r, c, p in zip(v["revenue"], v["cost"], prof)):
@@ -1634,7 +1659,13 @@ def shoot(html_path, out_dir):
                        capture_output=True, text=True, timeout=300)
     if r.returncode != 0:
         return None, (r.stderr.strip() or "html_shot.cjs 실패") + " — Playwright(Node) 설치 여부 확인"
-    return r.stdout.split(), None
+    lines = r.stdout.split("\n")
+    SHOT_WARN[:] = [l.split(" ", 1)[1] for l in lines if l.startswith("OVERFLOW ")]
+    return [l for l in lines if l.endswith(".png")], None
+
+
+SHOT_WARN = []      # html_shot.cjs가 찍으며 잰 가로 넘침(그림 id)
+LABEL_WARN = {}     # 포지셔닝 그림 id → 다른 점에 더 가깝게 놓인 라벨
 
 
 def main():
@@ -1676,6 +1707,8 @@ def main():
             print(f"[PNG 건너뜀] {err}")
         else:
             print(f"PNG {len(files)}개: {', '.join(os.path.basename(f) for f in files)}")
+            for vid in SHOT_WARN:
+                print(f"[확인] {vid}: 내용이 그림 폭 밖으로 넘친다(잘림) — 단계·칸 수나 글을 줄인다")
             if a.print_:
                 for w in tall(spec, a.out):
                     print(f"[확인] {w}")
