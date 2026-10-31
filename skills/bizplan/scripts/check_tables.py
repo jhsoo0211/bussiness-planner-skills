@@ -107,7 +107,8 @@ def check_table(line_no, header, rows, tol, errors, holds):
                 v = parse_amount(r[c], hu)
                 if v:
                     vals.append((ln, v))
-        if blank and totals:
+        summed = any(c < len(r) and parse_amount(r[c], hu) for _, r in totals)   # 합계 행에 숫자가 있는 열만(글 열 '산출근거' 등은 제외)
+        if blank and totals and summed:
             holds.append(f"{totals[0][0]}행 '{header[c]}' 열: 미확보 값(○○) {blank}칸 — 합계를 검산하지 못해 판단 보류")
             continue
         if not vals:

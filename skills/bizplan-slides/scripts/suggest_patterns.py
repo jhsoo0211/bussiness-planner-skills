@@ -396,7 +396,9 @@ def outline_map(path, units):
     cs, ct, cm, cv = col("슬라이드"), col("제목"), col("메시지"), col("시각")
     out = []
     for r in rows[header_i + 1:]:
-        if len(r) < len(head) or not re.match(r"\d", r[cs]):
+        if len(r) < len(head) or not re.match(r"\d|부록|A\d", r[cs]):     # 번호 장과 '부록 1'·'A1' 같은 부록 장
+            if len(r) >= len(head) and r[cs].strip():
+                print(f"건너뜀: 구성안 '{r[cs]}' 행 — 슬라이드 칸은 숫자(또는 '부록 n')로 쓴다", file=sys.stderr)
             continue
         vis = r[cv] if cv is not None else ""
         ttl = r[ct] if ct is not None else ""
