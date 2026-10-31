@@ -50,9 +50,26 @@ def read_source(path):
     return open(path, encoding="utf-8", errors="ignore").read()
 
 
+SCALE = {"조": 1e12, "억": 1e8, "만": 1e4, "천": 1e3}
+# '20만 7천 원' · '1억 2,000만 원'처럼 이어 쓴 큰 수 — 한 값으로 합쳐 읽는다
+COMPOUND = re.compile(r"(?<![\d.])((?:\d[\d,.]*\s*[조억만천]\s*){2,})(원)?")
+
+
+def canon(v, u):
+    """같은 양을 같은 표기로: (20.7, '만원') = (207000, '원'), (1.9, '만') = (19000, '')."""
+    m = re.match(r"^(조|억|만|천)(.*)$", u or "")
+    return (round(v * SCALE[m.group(1)], 2), m.group(2)) if m else (v, u)
+
+
+def _compound(m):
+    total = sum(float(n.replace(",", "")) * SCALE[k] for n, k in re.findall(r"(\d[\d,.]*)\s*([조억만천])", m.group(1)))
+    return f" {total:.0f}{m.group(2) or ''} "
+
+
 def tokens(text):
     """(값, 단위) 목록. 날짜는 ('날짜', 'YYYY-M') 로 따로 센다."""
     out = []
+    text = COMPOUND.sub(_compound, text)
     for m in DATE.finditer(text):
         out.append(("날짜", f"{m.group(1)}-{int(m.group(2) or m.group(3))}"))
     text = DATE.sub(" ", text)
@@ -109,6 +126,7 @@ def main():
     src = "\n".join(read_source(p) for p in a.against)
     src_tok = tokens(src)
     exact = set(src_tok)
+    exact |= {canon(v, u) for v, u in src_tok if v != "날짜"}
     values = {v for v, _ in src_tok if v != "날짜"}
     prs = Presentation(a.pptx)
     rows, bad_total, unit_total = [], 0, 0
@@ -119,7 +137,7 @@ def main():
                 if (v, u) not in exact:
                     bad.append(u)
                 continue
-            if (v, u) in exact:
+            if (v, u) in exact or canon(v, u) in exact:
                 continue
             if v in values:
                 if u:

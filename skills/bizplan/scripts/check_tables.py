@@ -16,7 +16,7 @@ import sys
 
 UNITS = [("천만원", 1e7), ("백만원", 1e6), ("천만", 1e7), ("백만", 1e6), ("조원", 1e12), ("억원", 1e8),
          ("만원", 1e4), ("천원", 1e3), ("조", 1e12), ("억", 1e8), ("만", 1e4), ("천", 1e3), ("원", 1)]
-TOTAL = re.compile(r"^\s*(\*\*)?\s*(합\s*계|총\s*계|총\s*합|소\s*계|계|total|sum)\b", re.I)
+TOTAL = re.compile(r"^\s*(\*\*)?\s*(합\s*계|총\s*계|총\s*합|총\s*액|총\s*사업비|소\s*계|계|total|sum)\b", re.I)
 SUBTOTAL = re.compile(r"소\s*계")
 PLACEHOLDER = re.compile(r"○○|\[(?:작성 필요|산정 예정|공고 확인 필요|미확보)")
 NUM = r"[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?"
@@ -107,7 +107,8 @@ def check_table(line_no, header, rows, tol, errors, holds):
                 v = parse_amount(r[c], hu)
                 if v:
                     vals.append((ln, v))
-        if blank and totals:
+        summed = any(c < len(r) and parse_amount(r[c], hu) for _, r in totals)   # 합계 행에 숫자가 있는 열만(글 열 '산출근거' 등은 제외)
+        if blank and totals and summed:
             holds.append(f"{totals[0][0]}행 '{header[c]}' 열: 미확보 값(○○) {blank}칸 — 합계를 검산하지 못해 판단 보류")
             continue
         if not vals:

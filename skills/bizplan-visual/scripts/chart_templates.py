@@ -61,7 +61,7 @@ def setup_korean_font():
     name = pick()
     if name is None:
         # 폰트를 설치한 뒤라도 matplotlib 캐시가 옛 목록이면 못 찾는다 — 한 번만 다시 읽는다
-        fm._load_fontmanager(try_read_cache=False)
+        fm.fontManager = fm._load_fontmanager(try_read_cache=False)   # 반환값을 써야 pick()이 새 목록을 본다
         name = pick()
     if name:
         plt.rcParams["font.family"] = name

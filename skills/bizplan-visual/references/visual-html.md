@@ -40,13 +40,13 @@
 | 돈 내는 사람과 쓰는 사람이 누구인가 | `persona` | `cards[{name, size, def, tags[], scene, pains[{text, hypothesis}], verified}]` 1~2장 | R21 |
 | 고객이 가장 불편한 단계는 여기다 | `survey` | `question`, `n`, `options[{label, value}]`, `highlight` | R7 |
 | 고객의 말(실제 발언만) | `quotes` | `items[{text, who, source, date, pending}]` | R22 |
-| 지금 고객은 이렇게 버틴다(구성비) | `donut` | `parts[{label, value}]` 5조각 이하, `highlight`, `center` | R8 |
+| 지금 고객은 이렇게 버틴다(구성비) | `donut` | `parts[{label, value}]` 5조각 이하, `highlight`, `center{value, label}` | R8 |
 | **문제 · 해결 · 근거** | | | |
-| 문제가 커지고 있다(추이) | `trend` | `labels`, `values`, `unit`, `forecast_from`, `cagr` | R6 |
+| 문제가 커지고 있다(추이) | `trend` | `labels`, `values`, `unit`, `forecast_from`, `cagr` — 연도가 비면(예: 2020·2023·2024만) 간격이 왜곡되니 `bar`·`columns`를 쓴다 | R6 |
 | 문제 n을 기능 n이 푼다 | `ps_map` | `rows[{no, problem, evidence, solution, benefit}]` | R19 |
 | 현장·실물이 있다(사진 격자) | `photos` | `items[{src \| what, caption, date, place, badge}]`, `cols` | R22 |
 | 이렇게 쓴다(화면 ①②③) | `screens` | `screens[{no, title, desc, src \| ui{title, rows, highlight, button}}]` | R13·R22 |
-| 서비스·공정이 이렇게 돈다 | `flow` | `steps[{title, sub, who, ours}]`, `loop`, `loop_label` | R13 |
+| 서비스·공정이 이렇게 돈다 | `flow` | `steps[{title, sub, who, ours}]`, `loop`, `loop_label` — 단계 번호(1·2·3)는 자동이니 제목에 ①을 넣지 않는다 | R13 |
 | **차별** | | | |
 | 우리만 다르다(그리고 불리한 것도 있다) | `compare` | `entities`, `rows[{label, cells[[●◐○, 설명]], disadvantage}]`, `verify` | R10 |
 | 아무도 없는 칸을 우리가 차지한다 | `positioning` | `x_axis/y_axis{label, low, high}`, `points[{name, x, y, ours, kind}]`, `quadrant` | R12 |
@@ -143,11 +143,13 @@ python3 -B html_visuals.py 시각자료.json --print --theme <bizplan-slides>/as
 - **문서에 넣는 그림은 `--print`로 만든다.** 화면 보기용(폭 1120px)을 A4 본문 폭 170mm에 넣으면 가장 작은 글자가 4.7~5.2pt로 줄어 인쇄 심사본에서 읽히지 않는다. `--print`는 폭 860px에 SVG 글자를 1.3배(최소 13px)로, HTML 글자를 1.15배로 키우고 장식(머리 꼬리표)을 빼서 170mm 폭에서 가장 작은 글자가 7.4pt 이상이 되게 한다. 페르소나 2장은 나란히, 간트·로드맵 행은 촘촘히, 그린 화면 틀은 낮게 놓아 그림 높이도 줄인다.
 - 그림 높이는 170mm 폭 기준 120mm 이하가 되게 한다(`md_to_docx.py`·`md_to_hwpx.py`가 이보다 크면 줄이고, 그만큼 글자도 작아진다). 넘치는 그림은 항목·행 수를 줄이거나 두 그림으로 나눈다.
   - `--print`로 찍은 뒤 렌더러가 PNG 높이를 문서 기준으로 환산해, 120mm를 넘으면 `[확인]`을 낸다.
+  - 줄일 때 비교표의 불리한 행(`disadvantage`)과 핵심 과업은 빼지 않는다. 행이 많으면 그림을 둘로 나눈다.
+- 찍을 때 렌더러가 더 보는 것: 내용이 그림 폭 밖으로 넘침(잘림), BM 같은 두 주체 사이 화살표 3개 이상·긴 `detail`, flow 제목 앞 번호, 포지셔닝 라벨이 다른 점에 더 가까움. 모두 `[확인]`으로 나온다.
 - **반폭 그림** `"size": "half"`: 완성 문서 개요 표의 이미지 칸(폭 약 70mm)에 넣는 그림이다.
   - 폭 430px로 그리고 HTML 글자를 1.3배로 키워, 70mm 칸에서 가장 작은 글자가 6.5pt 안팎이 되게 한다.
   - 높이는 칸 기준 62mm 이하(넘으면 `[확인]`). 변환기도 개요 칸 그림을 62mm에서 자른다.
   - 맞는 유형: `screens`(화면 2개), `photos`(1~2칸), `flow`(3단계 이하). SVG 그림(막대·TAM·BM)과 표형은 칸에서 읽히지 않으니 쓰지 않는다.
-- 문서 변환: `md_to_docx.py 사업계획서.md 사업계획서.docx --gov-bullets` → `export_pdf.py 사업계획서.docx` → `preview.py 사업계획서.pdf`로 쪽마다 연다. 변환기는 그림 alt 글을 캡션으로 다시 달지 않고(`--captions`로 켠다), 그림·표 바로 앞 문단(헤드라인·표 제목)을 같은 쪽에 묶고, 표 행이 두 쪽에 갈라지지 않게 한다. 확인할 것: 헤드라인만 쪽 끝에 남았는지, 그림이 넘어가며 생긴 빈 공간, 표 칸에서 낱말이 한 글자씩 끊기는지, 그림 숫자 = 숫자 등록부 = 본문 헤드라인, 쪽 수와 그림 수(브리프 16절 이미지 예산).
+- 문서 변환: `md_to_docx.py 사업계획서.md 사업계획서.docx --gov-bullets` → `export_pdf.py 사업계획서.docx` → `preview.py 사업계획서.pdf`로 쪽마다 연다. 완성 문서 모드는 `bizplan/scripts/build_document.py`(서식 `--style form`, □○ 변환 없음)로 한 번에 만든다. 변환기는 그림 alt 글을 캡션으로 다시 달지 않고(`--captions`로 켠다), 그림·표 바로 앞 문단(헤드라인·표 제목)을 같은 쪽에 묶고, 표 행이 두 쪽에 갈라지지 않게 한다. 확인할 것: 헤드라인만 쪽 끝에 남았는지, 그림이 넘어가며 생긴 빈 공간, 표 칸에서 낱말이 한 글자씩 끊기는지, 그림 숫자 = 숫자 등록부 = 본문 헤드라인, 쪽 수와 그림 수(브리프 16절 이미지 예산).
 - 강조색: 기본 `#2a78d6`. `--accent 0B3D91` 또는 `--theme`(테마의 `colors.primary`)로 발표 템플릿과 맞춘다.
 - 글꼴: Pretendard → Apple SD Gothic Neo → Noto Sans KR → 맑은 고딕 순으로 찾는다.
 - 본문에는 `![결론 문장](시각자료/<id>.png)`로 넣는다. 그림 안 제목이 결론이므로 본문 캡션 줄에 같은 문장을 반복하지 않는다.

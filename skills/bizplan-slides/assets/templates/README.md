@@ -20,7 +20,7 @@
 
 | 파일 | 용도 | 비고 |
 |------|------|------|
-| `bizplan-basic.pptx` | 사용자 템플릿이 없을 때 기본값 | 16:9, 흰 배경·남색·강조 1색, 맑은 고딕. `scripts/make_basic_template.py`로 다시 만든다 |
+| `bizplan-basic.pptx` | 빈 .pptx 틀이 필요할 때(경로 T 시험·사용자가 원할 때). 템플릿이 없을 때 기본은 테마 렌더(경로 R) | 16:9, 흰 배경·남색·강조 1색, 맑은 고딕. `scripts/make_basic_template.py`로 다시 만든다 |
 | `local/*.pdf` (비공개, 저장소 밖) | 사용자 제공 그림 템플릿 3종 — 필수 구성 제안서(30장)·Annual Business Plan(20장)·기본 구성(15장) | 구조는 `references/blueprints.md` 청사진 A·B·C, 색은 테마 `report-blue`·`mono-line` |
 
 ## 넣기 전 확인

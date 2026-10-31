@@ -48,7 +48,7 @@ CHECKS = [
         ("현재 대처행동과 한계", r"대처|대신|지금은|현재 방식|임시|다시"),
         ("직접 근거(인터뷰·관찰·인용)", r"인터뷰|관찰|설문|응답|“|”|\"[^\"]+\"|\d+\s*명")],
      "직접 근거(인터뷰·관찰·민원)가 통계 인용보다 강하다, 자체 설문만이면 약하다(B4, C 1)",
-     "고객 인터뷰 메모·녹취 요약(표), 설문 결과(응답 수·기간), 불편 장면 사진·리뷰 캡처", r"문제 정의|근거 수치"),
+     "고객 인터뷰 메모·녹취 요약(표), 설문 결과(응답 수·기간), 불편 장면 사진·리뷰 캡처", r"문제 정의|근거 수치|대응"),
     ("경쟁", r"한계|경쟁|차별", [
         ("실명 비교 3곳 이상", r"\|.*\|.*\|.*\|"),
         ("대체재(고객의 현재 대처행동)", r"대체"),
@@ -58,7 +58,7 @@ CHECKS = [
      "경쟁사 한계를 우리가 어떻게 해소하는지 + '경쟁사가 같은 기능을 붙이면 무엇이 남나'에 답하는가(B8)",
      "경쟁 서비스 화면·가격표 캡처(확인 날짜), 직접 써 본 비교 메모, 사용 후기", r"$^"),
     ("필요성", r"필요성|왜 지금|개발 목적", [
-        ("필요성 2개", r"필요"),
+        ("필요성 2개", r"필요|목적|②"),
         ("해결 시 이점(Need-payoff)", r"이점|효과|해결되면|줄인|높인"),
         ("니즈 증거(성장률·성공 사례·인터뷰)", r"성장|사례|인터뷰|설문"),
         ("지원사업비로 해결할 핵심 기능", r"지원|사업비|협약")],
@@ -85,7 +85,7 @@ CHECKS = [
         ("기술 보호·지재권 상태", r"특허|출원|지재권|보호|보안")],
      "기능 나열이 아니라 '문제 n을 이렇게 푼다'는 편익 중심, 동작 안 하는 기능은 계획으로(B7)",
      "프로토타입·MVP 화면/영상(1분), 기술 구조도, 성능 테스트 결과, 특허 출원서(번호·상태)",
-     r"기능·구현|대응 구조|증빙"),
+     r"기능|구현|대응 구조|증빙"),
     ("일정", r"일정|로드맵|마일스톤", [
         ("월차·분기별 활동·산출물", r"산출물"),
         ("마일스톤", r"마일스톤|M\d|★"),
@@ -151,7 +151,7 @@ CHECKS = [
         ("보완 계획(시점·예산·검증)", r"보완|채용|자문|외주"),
         ("협업 구조", r"협업|주간|도구|의사결정")],
      "빈 분야를 먼저 본다 — 비어 있는데 계획이 없는 것만 감점(B14)",
-     "팀원 이력 요약·합류 확약, 채용 공고·후보", r"구성·보완"),
+     "팀원 이력 요약·합류 확약, 채용 공고·후보", r"구성·보완|협력"),
     ("협력", r"협력|파트너", [
         ("기관·보유 역량·협력 내용", r"기관|협력|역량"),
         ("협력 시기(조건부 가능)", r"(19|20)\d\d|M\d|시기|후"),
@@ -159,6 +159,21 @@ CHECKS = [
      "협력 단계를 증빙 범위 안에서 최상위 격식 표현으로(J §4 사다리)",
      "MOU·협약서·자문 확약 메일·공문(단계 그대로)", r"협력"),
 ]
+
+# 하드웨어·제조 아이템이면 해당 목차에 더 보는 작성법 항목(라우터 분야표 하드웨어 행 · 섹션 설계도 B6·B10·B13)
+HW = re.compile(r"BOM|양산|시제품|KC|EMS|금형|부품|센서")
+HW_EXTRA = {
+    "실행 증거": [("대당 원가(BOM)·생산 능력·양산처", r"BOM|원가|생산 능력|양산|EMS|월 ?[\d,]+\s*(대|개)")],
+    "일정": [("인증·시험·양산 일정(KC 등)", r"KC|KS|인증|적합성|시험성적|양산")],
+    "BM": [("원가 대비 단가(마진)", r"원가|마진|이익률|공헌이익")],
+}
+HW_ASSETS = {"실행 증거": "시험성적서·인증 접수증, BOM·양산처 견적서, 시제품 사진(정면·설치 장면), 실증 LOI 원본"}
+# 완성 문서(```개요``` 양식 블록)의 개요는 칸 이름으로 본다
+FORM_OVERVIEW = [("명칭·범주", r"명칭\s*[:：][\s\S]*범주\s*[:：]"), ("소개(○ 헤드라인 + 사실 줄)", r"소개\s*[:：]"),
+                 ("진출 목표시장", r"진출 목표시장\s*[:：]"), ("경쟁사 대비 차별성", r"경쟁사 대비 차별성\s*[:：]"),
+                 ("산출물 및 개발단계", r"산출물 및 개발단계\s*[:：]"), ("이미지 2장", r"이미지\s*[:：].*=.*\|")]
+# 이미 있는 가이드에서 다시 만들어도 남길 절 — 완성 문서 모드가 채운 분량·교체할 자리, 작성 스킬이 채운 자체 점검
+KEEP = re.compile(r"^##\s*(분량|교체할 자리|자체 점검)")
 
 CLAIM = re.compile(r"^\s*(?:#{1,6}\s+)?(?:[-*]\s+)?(?:\*\*)?(○|◆)\s*\S")
 VISUAL = re.compile(r"!\[|\[이미지|\[그림|\[시각자료|^이미지\s*[:：]")   # 마지막은 ```개요``` 양식 블록의 이미지 줄
@@ -233,12 +248,14 @@ def section_block(title, body, check, items):
     plain = MARK.sub(" ", re.sub(r"\*\*\[[^\]]*\]\*\*", " ", "\n".join(kept)))   # 빈칸 표기 속 낱말('[작성 필요: 경력]')은 있음으로 세지 않는다
     assumes = len(ASSUME.findall(text))
     got = [(bool(re.search(rx, plain)), label) for label, rx in check[2]] if check else []
+    blank_rows = any(l.lstrip().startswith("|") and "○○" in l for l in body)
+    got = [(None if ok and label.startswith("검산") and blank_rows else ok, label) for ok, label in got]   # 금액이 ○○면 판단 보류
     gains = []
     if check and items:
         for sec, name, mark, g, mx in items:
             if mark != "O" and re.search(check[5], name):
                 gains.append(f"{sec} '{name}' {mark}→O +{mx - g:g}점")
-    state = " · ".join(f"{'✓' if ok else '✗'} {label}" for ok, label in got) or "(해당 체크리스트 없음 — coaching.md 3절에서 고른다)"
+    state = " · ".join(f"{'△' if ok is None else '✓' if ok else '✗'} {label}" for ok, label in got) or "(해당 체크리스트 없음 — coaching.md 3절에서 고른다)"
     claims = [l for l in [title] + body if CLAIM.match(l) or (l is title and re.match(r"^\S*\s*\[[^\]]{1,15}\]", l))]
     numbered = sum(1 for l in claims if re.search(r"\d", l))
     visuals = sum(1 for l in body if VISUAL.search(l))
@@ -254,7 +271,9 @@ def section_block(title, body, check, items):
         out.append(f"- {check[3]}")
     out += [f"- {FILL}", "", "**꼭 적어야 할 것**", ""]
     for ok, label in got:
-        if not ok:
+        if ok is None:
+            out.append("- [ ] 표의 금액 ○○를 채운 뒤 합계를 검산해야 한다(`check_tables.py`)")
+        elif not ok:
             short = label.split("(")[0].strip()
             out.append(f"- [ ] {josa(short)} 적어야 한다" + (f" (작성법: {label})" if short != label else " (작성법)"))
     if not claims:
@@ -268,6 +287,22 @@ def section_block(title, body, check, items):
     if check:
         out += ["**있으면 넣어 주세요**", ""] + [f"- {a_.strip()}" for a_ in re.split(r",\s*(?![^()]*\))", check[4])] + [""]
     return out, marks, gains, len(claims), visuals
+
+
+def kept_sections(path):
+    """이미 있는 가이드의 분량 · 교체할 자리 · 자체 점검 절 중 채워진 것({이름: 절 전체}) — 검토 뒤 다시 만들어도 지우지 않는다."""
+    try:
+        text = open(path, encoding="utf-8").read()
+    except OSError:
+        return {}
+    out = {}
+    for m in re.finditer(r"^## [^\n]*\n[\s\S]*?(?=^## |\Z)", text, re.M):
+        block = m.group(0).rstrip()
+        km = KEEP.match(block)
+        body = block.split("\n", 1)[1] if "\n" in block else ""
+        if km and re.search(r"^(?!.*✍).*[가-힣\d]", body, re.M):          # ✍ 자리만 있는 골격은 남기지 않는다
+            out[km.group(1)] = block
+    return out
 
 
 def registry(path):
@@ -288,6 +323,9 @@ def main():
     ap.add_argument("--brief", help="브리프.md — 숫자 등록부 행 수를 '한눈에'에 적는다")
     a = ap.parse_args()
     lines = open(a.doc, encoding="utf-8").read().splitlines()
+    keep = kept_sections(a.out)
+    hw = bool(HW.search("\n".join(lines)))
+    complete = bool(re.search(r"^```\s*개요\s*$", "\n".join(lines), re.M))   # 완성 문서 서식(개요 양식 블록)
     doc_title = next((l[2:].strip() for l in lines if l.startswith("# ")), "사업계획서")
     items, score = review_items(a.review) if a.review else ([], None)
     secs = sections(lines)
@@ -316,6 +354,11 @@ def main():
         elif not parent:
             last_parent = None
         check = pick(title) or pick(parent)
+        if hw and check and check[0] in HW_EXTRA:
+            check = (check[0], check[1], check[2] + HW_EXTRA[check[0]], check[3],
+                     check[4] + (", " + HW_ASSETS[check[0]] if check[0] in HW_ASSETS else ""), check[5])
+        if complete and check and check[0] == "개요":
+            check = (check[0], check[1], FORM_OVERVIEW, *check[3:])
         blk, marks, gains, nc, nv = section_block(title, body, check, items)
         n_claims += nc
         n_visuals += nv
@@ -326,6 +369,9 @@ def main():
         if check:
             assets.append((title, check[4]))
     reg = registry(a.brief) if a.brief else None
+    hit = {g.split("'")[1] for _, g, _ in all_gains if "'" in g}
+    loose = [f"{sec} '{name}' {mark}→O +{mx - g_:g}점" for sec, name, mark, g_, mx in items
+             if mark != "O" and name not in hit]              # 목차 제목에 걸리지 않은 하위 항목(완성도·대응 구조 등)
     seen, top = set(), []
     for pts, g, t in sorted(all_gains, reverse=True):
         key = g.split("'")[1] if "'" in g else g
@@ -334,7 +380,6 @@ def main():
             top.append(f"{len(top) + 1}. ✍ (행동) — (기한) — {g} — {t}")
         if len(top) == 3:
             break
-    complete = bool(re.search(r"^```\s*개요\s*$", "\n".join(lines), re.M))   # 완성 문서 서식(개요 양식 블록)
     head = [f"# 작성 가이드 — {doc_title}", "",
             "> 사업계획서와 **따로 보는** 가이드다. 사업계획서 목차 순서대로 그 부분에서 고려해야 할 점과 적어야 할 것을 정리했다. "
             "기준: PSST 작성법 · 심사 성향 · 사례 체크포인트(bizplan/references/coaching.md).", "",
@@ -345,9 +390,12 @@ def main():
             + ("(완성 문서: 번호 절마다 1개 이상 · 쪽당 그림·표·사진 1.5개 이상) · " if complete else "(문서형 10쪽 기준 12~16개 권장) · ")
             + (f"숫자 등록부 {reg}개" if reg is not None else
                "숫자 등록부 없음(브리프에 '숫자 등록부' 절을 만든다)" if a.brief else "숫자 등록부 — 브리프 확인(--brief)"), "",
-            "**점수가 가장 많이 오르는 행동 3개**", ""] + (top or ["1. ✍ (검토 리포트를 주면 점수 영향순으로 뽑는다)"]) + [
-            "", "**모아 주실 자료** *(있는 것만 — 받으면 반영할 목차)*", ""] + \
-           [f"- [ ] {asset} → {t}" for t, asset in assets] + ["", "## 목차별 가이드", ""]
+            "**점수가 가장 많이 오르는 행동 3개** *(검토 리포트 6절 필수 수정과 맞춘다 — 제출 전에 할 수 없는 행동이면 바꾼다)*", ""]
+    head += top or ["1. ✍ (검토 리포트를 주면 점수 영향순으로 뽑는다)"]
+    if loose:
+        head += ["", "**목차 하나에 걸리지 않는 점수 영향**: " + " · ".join(loose)]
+    head += ["", "**모아 주실 자료** *(있는 것만 — 받으면 반영할 목차)*", ""]
+    head += [f"- [ ] {asset} → {t}" for t, asset in assets] + ["", "## 목차별 가이드", ""]
     tail = ["## 제출 전 체크리스트", "",
             f"- [ ] 사업계획서의 [작성 필요]·[산정 예정]·[공고 확인 필요] 표기가 0개인가(지금 {len(all_marks)}곳)",
             "- [ ] 출처를 원문과 대조했는가(검색 색인·기사 요약만으로 쓴 수치가 남아 있지 않은가)",
@@ -361,10 +409,15 @@ def main():
             "- [ ] 문제-솔루션 대응표의 '미해결·추가 검증 필요' 표기가 본문과 일치하는가", "",
             "## 자체 점검 *(작성 스킬이 옮겨 적는다 — 사업계획서.md에는 붙이지 않는다)*", "",
             "- 문제-솔루션 대응: ✍", "- 차별점 논리(고유한가 · 모방 가능한가 · 근거 있는가): ✍", "- 보강 제안(있으면 좋을 내용 · 요청 자료): ✍", ""]
+    if "자체 점검" in keep:                                # 채운 자체 점검은 골격 대신 그대로
+        tail = tail[:tail.index(next(t for t in tail if t.startswith("## 자체 점검")))] + [keep["자체 점검"], ""]
+    tail += [x for k in ("분량", "교체할 자리") if k in keep for x in (keep[k], "")]
     open(a.out, "w", encoding="utf-8").write("\n".join(head + body_out + tail) + "\n")
     print(f"작성 가이드 골격: {a.out} — 목차 {n_blocks}개, 빈칸 {len(all_marks)}곳, "
           f"점수 영향 {len(all_gains)}건{'' if a.review else '(검토 리포트 없음)'}")
     print(f"남은 빈칸(✍): {sum(1 for l in head + body_out if '✍' in l)}줄 — 이 초안을 읽고 채운다")
+    if keep:
+        print(f"이전 가이드에서 남긴 절: {' · '.join(keep)}")
 
 
 if __name__ == "__main__":

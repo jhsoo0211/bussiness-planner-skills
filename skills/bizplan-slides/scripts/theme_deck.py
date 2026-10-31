@@ -25,6 +25,8 @@ import json
 import math
 import os
 import re
+import shutil
+import subprocess
 import sys
 
 from lxml import etree
@@ -43,6 +45,10 @@ THEME_DIR = os.path.normpath(os.path.join(HERE, "..", "assets", "themes"))
 SW, SH = 960.0, 540.0      # 16:9 슬라이드 크기(pt)
 LH = 1.2                   # 글꼴 기본 줄 높이(em) — Pretendard·맑은 고딕 모두 약 1.2
 NO_STYLE_TABLE = "{2D5ABB26-0587-4C30-8999-92F81FD0307C}"   # 표 스타일 없음·격자 없음
+ALIGN = {"l": "l", "left": "l", "왼쪽": "l", "c": "c", "center": "c", "가운데": "c", "r": "r", "right": "r", "오른쪽": "r"}
+# 팀 카드 이름 칸에 사람 이름 대신 역할을 적은 경우 — 이니셜을 찍지 않고 사람 모양 자리로 둔다
+ROLE = re.compile(r"대표|팀장|팀원|개발자|디자이너|기획자|담당|마케터|연구원|이사|매니저|자문|채용|예정|미정|공석|"
+                  r"\b(CEO|CTO|COO|CFO|CMO|PM|PO|TBD|Lead|Manager|Engineer|Developer|Designer|Marketer|Hire)\b", re.I)
 
 
 def E(v):
@@ -830,6 +836,9 @@ class Deck:
     def p_statement(self, slide, s):
         self.chrome(slide)
         y0 = 150.0
+        if s.get("eyebrow"):                     # 공통 선택 키 — 강조선 위 가운데
+            self.text(slide, (100, y0 - 34, SW - 200, 20), s["eyebrow"], self.sz["eyebrow"], "primary", bold=True,
+                      align="c", fit=False, name="머리말")
         self.box(slide, SW / 2 - 22, y0, 44, 4, fill="primary", name="장식:강조선")
         _, _, th = self.text(slide, (100, y0 + 26, SW - 200, 34 * LH * 3), s["title"], 34, "title", bold=True,
                              align="c", ls=1.12, min_size=24, shrink=True, font=self.fh, name="메시지")
@@ -1135,6 +1144,8 @@ class Deck:
         va.visible = not labels
         va.tick_labels.font.size = Pt(11)
         ca = chart.category_axis
+        if kind == "bar":                        # 가로 막대는 첫 항목이 아래에 그려진다 — 표·글 순서대로 위에서부터
+            ca.reverse_order = True
         ca.format.line.color.rgb = RGBColor.from_string(self.c("line"))
         ca.major_tick_mark = XL_TICK_MARK.NONE
         ca.tick_labels.font.size = Pt(12)
@@ -1499,7 +1510,7 @@ class Deck:
                 self._borders(cell, top=("primary", 1.5) if is_head and not solid else None,
                               bottom=("text", 1.0) if is_head else ("line", 0.75))
                 if aligns:
-                    al = aligns[j]
+                    al = ALIGN.get(str(aligns[j]).lower(), "c")
                 else:
                     plain = strip_md(c)
                     al = "c" if (len(plain) <= 10 or re.fullmatch(r"[\d,.\s%~+\-()억만천원조개명건배년월일·]+", plain)) else "l"
@@ -1657,7 +1668,7 @@ class Deck:
                 self.box(slide, mid - D / 2, y + 16, D, D, fill="soft", shape="oval", name="사진 자리")
                 nm = strip_md(it["name"])
                 ini = nm[:1]
-                if re.fullmatch(r"[가-힣]{2,4}|[A-Za-z][A-Za-z .'-]{1,30}", nm):   # 사람 이름일 때만 이니셜
+                if re.fullmatch(r"[가-힣]{2,4}|[A-Za-z][A-Za-z .'-]{1,30}", nm) and not ROLE.search(nm):   # 사람 이름일 때만 이니셜
                     self.text(slide, (mid - D / 2, y + 16, D, D), ini, 28, "primary", bold=True, align="c", anchor="m",
                               fit=False, name="이니셜")
                     self.texts[self.no].pop()
@@ -1873,6 +1884,19 @@ def validate(spec, base):
                     errs.append(f"#{i} positioning 항목{j}: x·y는 숫자(0~1 또는 0~100)")
             if not any(it.get("ours") for it in s.get("items") or []):
                 warns.append(f"#{i} positioning: 자사(ours: true)가 없다")
+        if t == "tam":
+            units = set()
+            for it in s.get("items") or []:
+                m = re.search(r"[\d,.]+\s*(만|억|조|천)?\s*([가-힣A-Za-z%]+)", str(it.get("value", "")) if isinstance(it, dict) else "")
+                if m:
+                    units.add("원" if m.group(2) in ("원", "달러") or m.group(1) else m.group(2))
+            if len(units) > 1:
+                warns.append(f"#{i} tam: 층마다 단위가 다르다({', '.join(sorted(units))}) — 포함 관계 그림은 한 단위(금액 또는 고객 수)로 맞춘다")
+        if t == "table":
+            for tb in s.get("tables") or [s]:
+                bad = [x for x in (tb.get("align") or []) if str(x).lower() not in ALIGN]
+                if bad:
+                    errs.append(f"#{i} table: align 값 {bad} — l·c·r(또는 left·center·right) 중에서")
         if t == "compare" and s.get("criteria"):
             if not isinstance(s["criteria"], list):
                 errs.append(f"#{i} compare: criteria는 목록")
@@ -1997,6 +2021,12 @@ def main():
     if not a.out:
         ap.error("--out이 필요하다")
     theme = load_theme(a.theme or spec.get("theme") or "report-blue")
+    want = a.font or spec.get("font")
+    if want and shutil.which("fc-list"):
+        fams = subprocess.run(["fc-list", ":", "family"], capture_output=True, text=True).stdout
+        if want not in fams:
+            print(f"주의: '{want}' 글꼴이 이 컴퓨터에 없다 — PDF·미리보기는 대체 글꼴로 그려져 줄바꿈·겹침이 실제와 다르다. "
+                  "발표 PC 글꼴을 모르면 --font 없이 테마 글꼴로 만들고 PDF를 함께 낸다")
     deck = Deck(theme, spec.get("meta"), font=a.font or spec.get("font"), base_dir=base)
     for s in spec["slides"]:
         deck.add(s)

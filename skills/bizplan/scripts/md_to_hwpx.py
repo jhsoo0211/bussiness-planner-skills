@@ -286,7 +286,7 @@ def build(md, resource_path, gov=True, captions=False, style="plain"):
             buf.append(lines[i].strip().lstrip("> "))
             i += 1
         text = " ".join(buf)
-        if form and (text.startswith("※") or text.startswith("(출처") or text.startswith("(확인")):
+        if form and text.startswith(("※", "(출처", "(확인", "(참고")):
             para(text, char=note, pp=align("RIGHT") if text.startswith("(") else None)
         elif form:
             para(text, pp=align("JUSTIFY"))
